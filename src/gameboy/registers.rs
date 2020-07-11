@@ -30,7 +30,7 @@ impl Registers {
         self.set_flag(3, bit)
     }
 
-    pub fn set_flags(&mut self, carry: u8, half_carry: u8, operation: u8, zero: u8) {
+    pub fn set_flags(&mut self, zero: u8, operation: u8, half_carry: u8, carry: u8) {
         self.set_carry_flag(carry);
         self.set_half_carry_flag(half_carry);
         self.set_operation_flag(operation);

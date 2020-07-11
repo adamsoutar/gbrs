@@ -3,6 +3,15 @@ use crate::gameboy::helpers::*;
 use crate::{bitmatch, compute_mask, compute_equal};
 use crate::gameboy::registers::Registers;
 
+const ALU_ADD: u8 = 0b000;
+const ALU_ADC: u8 = 0b001;
+const ALU_SUB: u8 = 0b010;
+const ALU_SBC: u8 = 0b011;
+const ALU_AND: u8 = 0b100;
+const ALU_XOR: u8 = 0b101;
+const ALU_OR: u8 = 0b110;
+const ALU_CP: u8 = 0b111;
+
 const BREAK_AT_INSTRUCTION: usize = 10;
 
 pub struct Cpu {
@@ -25,8 +34,83 @@ impl Cpu {
         combine_u8(b2, b1)
     }
 
-    fn alu(&mut self, operation: u8, value: u8) {
+    // TODO: Cleanup
+    fn alu(&mut self, operation: u8, n: u8) {
+        let a = self.regs.a;
+        let c = self.regs.get_carry_flag();
 
+        match operation {
+            ALU_ADD => {
+                // ADD
+                let res = a.wrapping_add(n);
+                self.regs.set_carry_flag((a as u16 + n as u16 > 0xFF) as u8);
+                self.regs.set_half_carry_flag(((a & 0x0F) + (n & 0x0F) > 0x0F) as u8);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.set_operation_flag(0);
+                self.regs.a = res;
+            },
+            ALU_ADC => {
+                // ADC
+                let res = a.wrapping_add(n).wrapping_add(c);
+                self.regs.set_carry_flag((a as u16 + n as u16 > 0xFF) as u8);
+                self.regs.set_half_carry_flag(((a & 0x0F) + (n & 0x0F) + c > 0x0F) as u8);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.set_operation_flag(0);
+                self.regs.a = res;
+            },
+            ALU_SUB => {
+                // SUB
+                let res = a.wrapping_sub(n);
+                self.regs.set_carry_flag((a < n) as u8);
+                self.regs.set_half_carry_flag(((a & 0x0F) < (n & 0x0F)) as u8);
+                self.regs.set_operation_flag(1);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.a = res;
+            },
+            ALU_SBC => {
+                // SBC
+                let res = a.wrapping_sub(n).wrapping_sub(c);
+                self.regs.set_carry_flag(((a as u16) < (n as u16 + c as u16)) as u8);
+                self.regs.set_half_carry_flag(((a & 0x0F) < (n & 0x0F) + c) as u8);
+                self.regs.set_operation_flag(1);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.a = res;
+            },
+            ALU_AND => {
+                // AND
+                let res = a & n;
+                self.regs.set_carry_flag(0);
+                self.regs.set_half_carry_flag(1);
+                self.regs.set_operation_flag(0);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.a = res;
+            },
+            ALU_XOR => {
+                // XOR
+                let res = a ^ n;
+                self.regs.set_carry_flag(0);
+                self.regs.set_half_carry_flag(0);
+                self.regs.set_operation_flag(0);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.a = res;
+            },
+            ALU_OR => {
+                // OR
+                let res = a | n;
+                self.regs.set_carry_flag(0);
+                self.regs.set_half_carry_flag(0);
+                self.regs.set_operation_flag(0);
+                self.regs.set_zero_flag((res == 0) as u8);
+                self.regs.a = res;
+            },
+            ALU_CP => {
+                // CP ("Compare")
+                // It's a subtraction in terms of flags, but it throws away the result
+                self.alu(ALU_SUB, n);
+                self.regs.a = a;
+            },
+            _ => panic!("Unsupported ALU operation {:b}", operation)
+        }
     }
 
     // TODO: Flags
@@ -49,7 +133,6 @@ impl Cpu {
 
             // LD R, N
             op if bitmatch!(op, (0,0,_,_,0,0,0,1)) => {
-            // 0b00_00_0001 | 0b00_01_0001 | 0b00_10_0001 | 0b00_11_0001 => {
                 let n = self.read_next_16();
                 self.regs.set_combined_register(v_r, n);
                 12
@@ -57,7 +140,6 @@ impl Cpu {
 
             // ADD HL, R
             op if bitmatch!(op, (0,0,_,_,1,0,0,1)) => {
-            // 0b00_00_1001 | 0b00_01_1001 | 0b00_10_1001 | 0b00_11_1001 => {
                 let hl = self.regs.get_hl();
                 let reg = self.regs.get_combined_register(v_r);
                 self.regs.set_hl(hl + reg);
@@ -66,7 +148,6 @@ impl Cpu {
 
             // LD (R), A
             op if bitmatch!(op, (0,0,0,_,0,0,1,0)) => {
-            // 0b000_0_0010 | 0b000_1_0010 => {
                 let reg_val = self.regs.get_combined_register(v_r);
                 let memval = self.mem.read(reg_val);
                 self.regs.a = memval;
@@ -83,7 +164,6 @@ impl Cpu {
 
             // INC R
             op if bitmatch!(op, (0,0,_,_,0,0,1,1)) => {
-            // 0b00_00_0011 | 0b00_01_0011 | 0b00_10_0011 | 0b00_11_0011 => {
                 let reg_val = self.regs.get_combined_register(v_r);
                 self.regs.set_combined_register(v_r, reg_val + 1);
                 8
@@ -91,7 +171,6 @@ impl Cpu {
 
             // DEC R
             op if bitmatch!(op, (0,0,_,_,1,0,1,1)) => {
-            // 0b00_00_1011 | 0b00_01_1011 | 0b00_10_1011 | 0b00_11_1011 => {
                 let reg_val = self.regs.get_combined_register(v_r);
                 self.regs.set_combined_register(v_r, reg_val - 1);
                 8
@@ -99,8 +178,6 @@ impl Cpu {
 
             // INC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,0)) => {
-            // 0b00_000_100 | 0b00_001_100 | 0b00_010_100 | 0b00_011_100 | 0b00_100_100 |
-            // 0b00_101_100 | 0b00_110_100 | 0b00_111_100 => {
                 let val = self.regs.get_singular_register(v_d);
                 self.regs.set_singular_register(v_d, val + 1);
                 4
@@ -108,8 +185,6 @@ impl Cpu {
 
             // DEC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
-            // 0b00_000_101 | 0b00_001_101 | 0b00_010_101 | 0b00_011_101 | 0b00_100_101 |
-            // 0b00_101_101 | 0b00_110_101 | 0b00_111_101 => {
                 let val = self.regs.get_singular_register(v_d);
                 self.regs.set_singular_register(v_d, val - 1);
                 4
