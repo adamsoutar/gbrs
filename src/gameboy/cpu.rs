@@ -12,6 +12,11 @@ const ALU_XOR: u8 = 0b101;
 const ALU_OR: u8 = 0b110;
 const ALU_CP: u8 = 0b111;
 
+const COND_NZ: u8 = 0b00;
+const COND_Z: u8 = 0b01;
+const COND_NC: u8 = 0b10;
+const COND_C: u8 = 0b11;
+
 pub struct Cpu {
     mem: Memory,
     regs: Registers
@@ -109,6 +114,20 @@ impl Cpu {
         }
     }
 
+    fn condition_met (&self, condition: u8) -> bool {
+        match condition {
+            // NZ
+            COND_NZ => self.regs.get_zero_flag() != 0,
+            // Z
+            COND_Z => self.regs.get_zero_flag() == 0,
+            // NC
+            COND_NC => self.regs.get_carry_flag() != 0,
+            // C
+            COND_C => self.regs.get_carry_flag() == 0,
+            _ => panic!("Invalid jump condition {:#b}", condition)
+        }
+    }
+
     // TODO: Flags
     fn step (&mut self) -> usize {
         println!("PC: {:#x}", self.regs.pc);
@@ -187,7 +206,38 @@ impl Cpu {
                 let val = self.read_next();
                 self.regs.set_singular_register(v_d, val);
                 8
-            }
+            },
+
+            // JR N
+            0b00011000 => {
+                // The displacement is signed
+                let disp = self.read_next() as i8;
+                if disp > 0 {
+                    self.regs.pc = self.regs.pc.wrapping_add(disp as u16);
+                } else {
+                    self.regs.pc = self.regs.pc.wrapping_sub(disp.abs() as u16);
+                }
+                12
+            },
+
+            // JR F, N
+            op if bitmatch!(op, (0,0,1,_,_,0,0,0)) => {
+                let disp = self.read_next() as i8;
+                let condition = (op & 0b000_11_000) >> 3;
+
+                if self.condition_met(condition) {
+                    // We do want to jump
+                    if disp > 0 {
+                        self.regs.pc = self.regs.pc.wrapping_add(disp as u16);
+                    } else {
+                        self.regs.pc = self.regs.pc.wrapping_sub(disp.abs() as u16);
+                    }
+                    12
+                } else {
+                    println!("Condition not met");
+                    8
+                }
+            },
 
             // LD (HL+/-), A
             op if bitmatch!(op, (0,0,1,_,0,0,1,0)) => {
@@ -204,11 +254,6 @@ impl Cpu {
 
                 8
             }
-
-            // ...
-
-            // HALT
-            0b01110110 => panic!("CPU HALT"),
 
             // ALU A, D
             op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {

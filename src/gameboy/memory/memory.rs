@@ -9,7 +9,7 @@ pub struct Memory {
 
 impl Memory {
     pub fn read (&self, address: u16) -> u8 {
-        println!("MEMORY READ AT {} ({:#x})", address, address);
+        // println!("MEMORY READ AT {} ({:#x})", address, address);
 
         match address {
             ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
