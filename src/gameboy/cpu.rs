@@ -163,7 +163,7 @@ impl Cpu {
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
-        let v_d_alt = (op & 0b00000_111);
+        let v_d_alt = op & 0b00000_111;
 
         // Loading from (HL) adds 4 cycles to ALU instructions
         let v_d_is_hl = (v_d & 0b110) == 0b110;

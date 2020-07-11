@@ -15,7 +15,7 @@ pub struct Registers {
 }
 impl Registers {
     fn set_flag(&mut self, flag_index: u8, bit: u8) {
-        set_bit(&mut self.f, flag_index, bit)
+        set_bit(&mut self.f, 4 + flag_index, bit)
     }
     pub fn set_carry_flag (&mut self, bit: u8) {
         self.set_flag(0, bit)

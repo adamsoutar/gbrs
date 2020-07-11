@@ -11,7 +11,7 @@ pub fn split_u16 (v: u16) -> (u8, u8) {
 pub fn set_bit (number: &mut u8, bit_index: u8, bit: u8) {
     let shifted = bit << bit_index;
     // Clear the bit
-    *number &= !shifted;
+    *number &= shifted;
     // Set it
     *number |= shifted;
 }
