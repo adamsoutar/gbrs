@@ -1,5 +1,5 @@
 pub struct Ram {
-    pub bytes: Vec<u8>
+    bytes: Vec<u8>
 }
 
 impl Ram {

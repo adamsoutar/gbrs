@@ -1,6 +1,8 @@
 pub mod gameboy;
-use gameboy::memory::memory::Memory;
+use gameboy::cpu::Cpu;
+
 
 fn main() {
-    let mem = Memory::new("Tetris.gb".to_string());
+    let mut processor = Cpu::from_rom("Tetris.gb".to_string());
+    processor.run();
 }

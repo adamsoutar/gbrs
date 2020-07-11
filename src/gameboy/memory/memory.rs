@@ -3,18 +3,28 @@ use crate::gameboy::memory::ram::Ram;
 use crate::gameboy::memory::rom::Rom;
 
 pub struct Memory {
-    pub rom: Rom,
-    pub wram: Ram
+    rom: Rom,
+    wram: Ram
 }
 
 impl Memory {
     pub fn read (&self, address: u16) -> u8 {
-        match address {
-            
+        match address as usize {
+            ROM_START ..= ROM_END => self.rom.read(address),
+            WRAM_START ..= WRAM_END => self.wram.read(address),
+            _ => panic!("Unsupported memory read at {}", address)
         }
     }
 
-    pub fn new (rom_path: String) -> Memory {
+    pub fn write (&mut self, address: u16, value: u8) {
+        match address as usize {
+            ROM_START ..= ROM_END => panic!("ROM is read only"),
+            WRAM_START ..= WRAM_END => self.wram.write(address, value),
+            _ => panic!("Unsupported memory write at {}", address)
+        }
+    }
+
+    pub fn from_rom (rom_path: String) -> Memory {
         Memory {
             rom: Rom::from_file(rom_path),
             wram: Ram::new(WRAM_SIZE)
