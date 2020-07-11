@@ -59,7 +59,7 @@ impl Registers {
     }
     pub fn set_af (&mut self, value: u16) {
         let (b1, b2) = split_u16(value);
-        self.a = b1; self.f = b2;
+        self.a = b2; self.f = b1;
     }
 
     pub fn get_bc (&self) -> u16 {
@@ -67,7 +67,7 @@ impl Registers {
     }
     pub fn set_bc (&mut self, value: u16) {
         let (b1, b2) = split_u16(value);
-        self.b = b1; self.c = b2;
+        self.b = b2; self.c = b1;
     }
 
     pub fn get_de (&self) -> u16 {
@@ -75,7 +75,7 @@ impl Registers {
     }
     pub fn set_de (&mut self, value: u16) {
         let (b1, b2) = split_u16(value);
-        self.d = b1; self.e = b2;
+        self.d = b2; self.e = b1;
     }
 
     pub fn get_hl (&self) -> u16 {
@@ -83,7 +83,7 @@ impl Registers {
     }
     pub fn set_hl (&mut self, value: u16) {
         let (b1, b2) = split_u16(value);
-        self.h = b1; self.l = b2;
+        self.h = b2; self.l = b1;
     }
 
     // These are left to right from the "GoldenCrystal Gameboy Z80 CPU Opcodes" PDF

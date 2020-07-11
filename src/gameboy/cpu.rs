@@ -12,13 +12,9 @@ const ALU_XOR: u8 = 0b101;
 const ALU_OR: u8 = 0b110;
 const ALU_CP: u8 = 0b111;
 
-const BREAK_AT_INSTRUCTION: usize = 10;
-
 pub struct Cpu {
     mem: Memory,
-    regs: Registers,
-
-    ins_count: usize
+    regs: Registers
 }
 
 impl Cpu {
@@ -115,17 +111,13 @@ impl Cpu {
 
     // TODO: Flags
     fn step (&mut self) -> usize {
+        println!("PC: {:#x}", self.regs.pc);
         let op = self.read_next();
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
         // Loading from (HL) adds 4 cycles to ALU instructions
         let v_d_is_hl = (v_d & 0b110) == 0b110;
-
-        if self.ins_count == BREAK_AT_INSTRUCTION {
-            panic!("BREAK AT INSTRUCTION");
-        }
-        self.ins_count += 1;
 
         match op {
             0 => { 4 },
@@ -165,29 +157,52 @@ impl Cpu {
             // INC R
             op if bitmatch!(op, (0,0,_,_,0,0,1,1)) => {
                 let reg_val = self.regs.get_combined_register(v_r);
-                self.regs.set_combined_register(v_r, reg_val + 1);
+                self.regs.set_combined_register(v_r, reg_val.wrapping_add(1));
                 8
             }
 
             // DEC R
             op if bitmatch!(op, (0,0,_,_,1,0,1,1)) => {
                 let reg_val = self.regs.get_combined_register(v_r);
-                self.regs.set_combined_register(v_r, reg_val - 1);
+                self.regs.set_combined_register(v_r, reg_val.wrapping_sub(1));
                 8
             }
 
             // INC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,0)) => {
                 let val = self.regs.get_singular_register(v_d);
-                self.regs.set_singular_register(v_d, val + 1);
+                self.regs.set_singular_register(v_d, val.wrapping_add(1));
                 4
             }
 
             // DEC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
                 let val = self.regs.get_singular_register(v_d);
-                self.regs.set_singular_register(v_d, val - 1);
+                self.regs.set_singular_register(v_d, val.wrapping_sub(1));
                 4
+            }
+
+            // LD D,N
+            op if bitmatch!(op, (0,0,_,_,_,1,1,0)) => {
+                let val = self.read_next();
+                self.regs.set_singular_register(v_d, val);
+                8
+            }
+
+            // LD (HL+/-), A
+            op if bitmatch!(op, (0,0,1,_,0,0,1,0)) => {
+                let is_inc = ((op & 0b000_1_0000) >> 4) == 1;
+                let mut hl = self.regs.get_hl();
+
+                // Load from mem into a
+                let val = self.mem.read(hl);
+                self.regs.a = val;
+
+                // Increment/decrement
+                if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
+                self.regs.set_hl(hl);
+
+                8
             }
 
             // ...
@@ -214,12 +229,12 @@ impl Cpu {
             // JP N
             0b11000011 => {
                 let address = self.read_next_16();
-                println!("Jumping to {:x}", address);
+                println!("JUMP TO {:x}", address);
                 self.regs.pc = address;
                 16
             }
 
-            _ => panic!("Unsupported op {:b} ({:#x}), PC: {}", op, op, self.regs.pc)
+            _ => panic!("Unsupported op {:b} ({:#x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
         }
     }
 
@@ -232,9 +247,7 @@ impl Cpu {
     pub fn from_rom (rom_path: String) -> Cpu {
         Cpu {
             mem: Memory::from_rom(rom_path),
-            regs: Registers::new(),
-
-            ins_count: 0
+            regs: Registers::new()
         }
     }
 }

@@ -9,18 +9,20 @@ pub struct Memory {
 
 impl Memory {
     pub fn read (&self, address: u16) -> u8 {
-        match address as usize {
-            ROM_START ..= ROM_END => self.rom.read(address),
-            WRAM_START ..= WRAM_END => self.wram.read(address),
-            _ => panic!("Unsupported memory read at {}", address)
+        println!("MEMORY READ AT {} ({:#x})", address, address);
+
+        match address {
+            ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
+            WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
+            _ => panic!("Unsupported memory read at {} ({:#x})", address, address)
         }
     }
 
     pub fn write (&mut self, address: u16, value: u8) {
-        match address as usize {
+        match address {
             ROM_START ..= ROM_END => panic!("ROM is read only"),
             WRAM_START ..= WRAM_END => self.wram.write(address, value),
-            _ => panic!("Unsupported memory write at {}", address)
+            _ => panic!("Unsupported memory write at {} ({:#x})", address, address)
         }
     }
 
