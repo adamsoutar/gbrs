@@ -135,9 +135,16 @@ impl Registers {
         }
     }
 
+    pub fn debug_dump (&self) {
+        println!("AF: {:#x} | BC: {:#x} | DE: {:#x} | HL: {:#x}", self.get_af(), self.get_bc(), self.get_de(), self.get_hl())
+    }
+
     pub fn new () -> Registers {
+        // NOTE: These values are what's in the registers after the boot rom,
+        //       since we don't run that.
         Registers {
-            a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, h: 0, l: 0,
+            a: 0x01, b: 0x00, c: 0x13, d: 0x00,
+            e: 0xD8, f: 0xB0, h: 0x01, l: 0x4D,
             sp: 0xFFFE, pc: 0x100
         }
     }

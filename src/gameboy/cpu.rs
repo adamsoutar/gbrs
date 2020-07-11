@@ -142,13 +142,13 @@ impl Cpu {
     fn condition_met (&self, condition: u8) -> bool {
         match condition {
             // NZ
-            COND_NZ => self.regs.get_zero_flag() != 0,
+            COND_NZ => self.regs.get_zero_flag() == 0,
             // Z
-            COND_Z => self.regs.get_zero_flag() == 0,
+            COND_Z => self.regs.get_zero_flag() == 1,
             // NC
-            COND_NC => self.regs.get_carry_flag() != 0,
+            COND_NC => self.regs.get_carry_flag() == 0,
             // C
-            COND_C => self.regs.get_carry_flag() == 0,
+            COND_C => self.regs.get_carry_flag() == 1,
             _ => panic!("Invalid jump condition {:#b}", condition)
         }
     }
@@ -156,10 +156,15 @@ impl Cpu {
     // TODO: Flags
     fn step (&mut self) -> usize {
         println!("PC: {:#x}", self.regs.pc);
+        self.regs.debug_dump();
+
         let op = self.read_next();
+        println!("OPCODE: {:#x}", op);
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
+        let v_d_alt = (op & 0b00000_111);
+
         // Loading from (HL) adds 4 cycles to ALU instructions
         let v_d_is_hl = (v_d & 0b110) == 0b110;
 
@@ -191,7 +196,6 @@ impl Cpu {
 
             // LD A, (R)
             op if bitmatch!(op, (0,0,0,_,1,0,1,0)) => {
-            // 0b000_0_1010 | 0b000_1_1010 => {
                 let reg_val = self.regs.get_combined_register(v_r);
                 self.mem.write(reg_val, self.regs.a);
                 8
@@ -260,7 +264,6 @@ impl Cpu {
                     }
                     12
                 } else {
-                    println!("Condition not met");
                     8
                 }
             },
@@ -283,7 +286,7 @@ impl Cpu {
 
             // ALU A, D
             op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
-                let val = self.regs.get_singular_register(v_d);
+                let val = self.regs.get_singular_register(v_d_alt);
                 let operation = (op & 0b00111000) >> 3;
                 self.alu(operation, val);
                 if v_d_is_hl { 8 } else { 4 }
