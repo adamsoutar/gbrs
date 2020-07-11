@@ -114,6 +114,31 @@ impl Cpu {
         }
     }
 
+    fn alu_dec (&mut self, n: u8) -> u8 {
+        let r = n.wrapping_sub(1);
+        self.regs.set_half_carry_flag((n.trailing_zeros() >= 4) as u8);
+        self.regs.set_operation_flag(1);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_inc(&mut self, n: u8) -> u8 {
+        let r = n.wrapping_add(1);
+        self.regs.set_half_carry_flag(((n & 0x0f) + 0x01 > 0x0f) as u8);
+        self.regs.set_operation_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_add_hl(&mut self, n: u16) {
+        let hl = self.regs.get_hl();
+        let r = hl.wrapping_add(n);
+
+        self.regs.set_carry_flag((hl > 0xffff - n) as u8);
+        self.regs.set_half_carry_flag(((hl & 0x0fff) + (n & 0x0fff) > 0x0fff) as u8);
+        self.regs.set_operation_flag(0);
+
+        self.regs.set_hl(r);
+    }
+
     fn condition_met (&self, condition: u8) -> bool {
         match condition {
             // NZ
@@ -151,9 +176,8 @@ impl Cpu {
 
             // ADD HL, R
             op if bitmatch!(op, (0,0,_,_,1,0,0,1)) => {
-                let hl = self.regs.get_hl();
                 let reg = self.regs.get_combined_register(v_r);
-                self.regs.set_hl(hl + reg);
+                self.alu_add_hl(reg);
                 8
             }
 
@@ -189,15 +213,17 @@ impl Cpu {
 
             // INC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,0)) => {
-                let val = self.regs.get_singular_register(v_d);
-                self.regs.set_singular_register(v_d, val.wrapping_add(1));
+                let mut val = self.regs.get_singular_register(v_d);
+                val = self.alu_inc(val);
+                self.regs.set_singular_register(v_d, val);
                 4
             }
 
             // DEC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
-                let val = self.regs.get_singular_register(v_d);
-                self.regs.set_singular_register(v_d, val.wrapping_sub(1));
+                let mut val = self.regs.get_singular_register(v_d);
+                val = self.alu_dec(val);
+                self.regs.set_singular_register(v_d, val);
                 4
             }
 
