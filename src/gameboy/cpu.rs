@@ -2,6 +2,7 @@ use crate::gameboy::memory::memory::Memory;
 use crate::gameboy::helpers::*;
 use crate::{bitmatch, compute_mask, compute_equal};
 use crate::gameboy::registers::Registers;
+use crate::gameboy::interrupts::*;
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
@@ -19,12 +20,16 @@ const COND_C: u8 = 0b11;
 
 pub struct Cpu {
     mem: Memory,
-    regs: Registers
+    regs: Registers,
+
+    ints: Interrupts,
+    // When EI is executed, they're turned on after the instruction after the EI
+    ime_on_pending: bool
 }
 
 impl Cpu {
     fn read_next (&mut self) -> u8 {
-        let byte = self.mem.read(self.regs.pc);
+        let byte = self.mem_read(self.regs.pc);
         // println!("Read address {:#x}, value: {:#x}", self.regs.pc, byte);
         self.regs.pc += 1;
         byte
@@ -33,6 +38,13 @@ impl Cpu {
         let b1 = self.read_next();
         let b2 = self.read_next();
         combine_u8(b2, b1)
+    }
+
+    fn mem_write (&mut self, address: u16, value: u8) {
+        self.mem.write(&mut self.ints, address, value)
+    }
+    fn mem_read (&mut self, address: u16) -> u8 {
+        self.mem.read(&self.ints, address)
     }
 
     // TODO: Cleanup
@@ -119,9 +131,6 @@ impl Cpu {
         self.regs.set_half_carry_flag((n.trailing_zeros() >= 4) as u8);
         self.regs.set_operation_flag(1);
         self.regs.set_zero_flag((r == 0) as u8);
-        println!("Just did a dec");
-        self.regs.debug_dump();
-        println!("See dump ^");
         r
     }
     fn alu_inc(&mut self, n: u8) -> u8 {
@@ -192,7 +201,7 @@ impl Cpu {
             // LD (R), A
             op if bitmatch!(op, (0,0,0,_,0,0,1,0)) => {
                 let reg_val = self.regs.get_combined_register(v_r);
-                let memval = self.mem.read(reg_val);
+                let memval = self.mem_read(reg_val);
                 self.regs.a = memval;
                 8
             }
@@ -200,7 +209,7 @@ impl Cpu {
             // LD A, (R)
             op if bitmatch!(op, (0,0,0,_,1,0,1,0)) => {
                 let reg_val = self.regs.get_combined_register(v_r);
-                self.mem.write(reg_val, self.regs.a);
+                self.mem_write(reg_val, self.regs.a);
                 8
             }
 
@@ -229,7 +238,6 @@ impl Cpu {
             // DEC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
                 let mut val = self.regs.get_singular_register(v_d);
-                println!("ALU DEC");
                 val = self.alu_dec(val);
                 self.regs.set_singular_register(v_d, val);
                 4
@@ -278,7 +286,7 @@ impl Cpu {
                 let mut hl = self.regs.get_hl();
 
                 // Load from mem into a
-                let val = self.mem.read(hl);
+                let val = self.mem_read(hl);
                 self.regs.a = val;
 
                 // Increment/decrement
@@ -312,20 +320,54 @@ impl Cpu {
                 16
             }
 
+            // LD (FF00+N), A
+            // TODO: Check if the register/memory direction is correct here
+            0b11100000 => {
+                let imm = self.read_next();
+                let a = self.regs.a;
+                self.mem_write(0xFF00 + imm as u16, a);
+
+                12
+            }
+
+            // DI
+            0b11110011 => {
+                self.ints.ime = false;
+                self.ime_on_pending = false;
+                4
+            }
+
+            // EI
+            0b11111011 => {
+                self.ime_on_pending = true;
+                4
+            }
+
             _ => panic!("Unsupported op {:b} ({:#x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
         }
     }
 
     pub fn run (&mut self) {
         loop {
+            let p = self.ime_on_pending;
+
             self.step();
+
+            // If IME's been pending for 2 steps, we turn it on
+            if p && self.ime_on_pending {
+                self.ints.ime = true;
+                self.ime_on_pending = false;
+            }
         }
     }
 
     pub fn from_rom (rom_path: String) -> Cpu {
         Cpu {
             mem: Memory::from_rom(rom_path),
-            regs: Registers::new()
+            regs: Registers::new(),
+
+            ints: Interrupts::new(),
+            ime_on_pending: false
         }
     }
 }
