@@ -229,11 +229,11 @@ impl Cpu {
     }
 
     fn step (&mut self) -> usize {
-        println!("PC: {:#x}", self.regs.pc);
+        println!("PC: {:#06x}", self.regs.pc);
         self.regs.debug_dump();
 
         let op = self.read_next();
-        println!("OPCODE: {:#x}", op);
+        println!("OPCODE: {:#04x}", op);
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
