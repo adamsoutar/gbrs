@@ -45,9 +45,9 @@ pub fn run_gui (mut gameboy: Cpu) {
         }
 
         let mut cycles = 0;
-        while cycles < CYCLES_PER_FRAME {
-            cycles += gameboy.step();
-        }
+        // while cycles < CYCLES_PER_FRAME {
+        //     cycles += gameboy.step();
+        // }
 
         unsafe {
             screen_texture.update_from_pixels(&gameboy.gpu.get_sfml_frame(), sw, sh, 0, 0);

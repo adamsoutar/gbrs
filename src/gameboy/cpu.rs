@@ -235,6 +235,8 @@ impl Cpu {
         println!("PC: {:#06x}", self.regs.pc);
         self.regs.debug_dump();
 
+        let p = self.ime_on_pending;
+
         let op = self.read_next();
         println!("OPCODE: {:#04x}", op);
 
@@ -245,7 +247,7 @@ impl Cpu {
         // Loading from (HL) adds 4 cycles to ALU instructions
         let v_d_is_hl = (v_d & 0b110) == 0b110;
 
-        match op {
+        let cycles = match op {
             0 => { 4 },
 
             // LD (N),SP
@@ -508,21 +510,14 @@ impl Cpu {
             }
 
             _ => panic!("Unsupported op {:b} ({:#x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
+        };
+
+        if p && self.ime_on_pending {
+            self.ints.ime = true;
+            self.ime_on_pending = false;
         }
-    }
 
-    pub fn run (&mut self) {
-        loop {
-            let p = self.ime_on_pending;
-
-            self.step();
-
-            // If IME's been pending for 2 steps, we turn it on
-            if p && self.ime_on_pending {
-                self.ints.ime = true;
-                self.ime_on_pending = false;
-            }
-        }
+        return cycles;
     }
 
     pub fn from_rom (rom_path: String) -> Cpu {

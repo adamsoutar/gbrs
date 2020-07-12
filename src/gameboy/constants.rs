@@ -6,8 +6,8 @@ pub const VRAM_SIZE: usize = 8192;
 pub const SCREEN_WIDTH: usize = 160;
 pub const SCREEN_HEIGHT: usize = 144;
 
-pub const SCREEN_VEC_SIZE: usize = SCREEN_WIDTH * SCREEN_HEIGHT;
-pub const SCREEN_RGBA_SLICE_SIZE: usize = SCREEN_VEC_SIZE * 4;
+pub const SCREEN_BUFFER_SIZE: usize = SCREEN_WIDTH * SCREEN_HEIGHT;
+pub const SCREEN_RGBA_SLICE_SIZE: usize = SCREEN_BUFFER_SIZE * 4;
 
 pub const CLOCK_SPEED: usize = 4194304;
 pub const FRAME_RATE: usize = 60;
