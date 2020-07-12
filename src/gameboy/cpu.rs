@@ -119,6 +119,9 @@ impl Cpu {
         self.regs.set_half_carry_flag((n.trailing_zeros() >= 4) as u8);
         self.regs.set_operation_flag(1);
         self.regs.set_zero_flag((r == 0) as u8);
+        println!("Just did a dec");
+        self.regs.debug_dump();
+        println!("See dump ^");
         r
     }
     fn alu_inc(&mut self, n: u8) -> u8 {
@@ -226,6 +229,7 @@ impl Cpu {
             // DEC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
                 let mut val = self.regs.get_singular_register(v_d);
+                println!("ALU DEC");
                 val = self.alu_dec(val);
                 self.regs.set_singular_register(v_d, val);
                 4
@@ -270,7 +274,7 @@ impl Cpu {
 
             // LD (HL+/-), A
             op if bitmatch!(op, (0,0,1,_,0,0,1,0)) => {
-                let is_inc = ((op & 0b000_1_0000) >> 4) == 1;
+                let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
                 let mut hl = self.regs.get_hl();
 
                 // Load from mem into a
