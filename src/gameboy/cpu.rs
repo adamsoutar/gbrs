@@ -182,7 +182,17 @@ impl Cpu {
 
         match op {
             0 => { 4 },
-            // TODO: LD (N),SP
+
+            // LD (N),SP
+            0b00001000 => {
+                // Store the stack pointer in ram
+                let addr = self.read_next_16();
+                let (b1, b2) = split_u16(self.regs.sp);
+                // Store in little endian
+                self.mem_write(addr, b2);
+                self.mem_write(addr + 1, b1);
+                20
+            }
 
             // LD R, N
             op if bitmatch!(op, (0,0,_,_,0,0,0,1)) => {
@@ -321,7 +331,6 @@ impl Cpu {
             }
 
             // LD (FF00+N), A
-            // TODO: Check if the register/memory direction is correct here
             0b11100000 => {
                 let imm = self.read_next();
                 let a = self.regs.a;
