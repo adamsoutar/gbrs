@@ -5,3 +5,4 @@ pub mod helpers;
 pub mod registers;
 pub mod interrupts;
 pub mod gpu;
+pub mod lcd;

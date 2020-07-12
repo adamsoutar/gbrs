@@ -1,49 +1,5 @@
 use crate::gameboy::constants::*;
-
-#[derive(Clone, Copy)]
-pub enum GreyShade {
-    White,
-    LightGrey,
-    DarkGrey,
-    Black
-}
-
-#[derive(Clone, Copy)]
-pub struct LcdStatus {
-    lyc: bool,
-    oam_interrupt: bool,
-    vblank_interrupt: bool,
-    hblank_interrupt: bool,
-    coincidence_flag: bool,
-    mode_flag: u8
-}
-impl LcdStatus {
-    pub fn new () -> LcdStatus {
-        LcdStatus::from(0)
-    }
-}
-impl From<u8> for LcdStatus {
-    fn from(n: u8) -> LcdStatus {
-        LcdStatus {
-            lyc: (n & 0b1000000) == 0b1000000,
-            oam_interrupt: (n & 0b100000) == 0b100000,
-            vblank_interrupt: (n & 0b10000) == 0b10000,
-            hblank_interrupt: (n & 0b1000) == 0b1000,
-            coincidence_flag: (n & 0b100) == 0b100,
-            mode_flag: n & 0b11
-        }
-    }
-}
-impl From<LcdStatus> for u8 {
-    fn from(lcd: LcdStatus) -> u8 {
-        lcd.mode_flag |
-        (lcd.coincidence_flag as u8) << 2 |
-        (lcd.hblank_interrupt as u8) << 3 |
-        (lcd.vblank_interrupt as u8) << 4 |
-        (lcd.oam_interrupt as u8) << 5 |
-        (lcd.lyc as u8) << 6
-    }
-}
+use crate::gameboy::lcd::*;
 
 pub struct Gpu {
     frame: [GreyShade; SCREEN_BUFFER_SIZE],
@@ -54,7 +10,8 @@ pub struct Gpu {
 
     // The scan-line Y co-ordinate
     ly: u8,
-    status: LcdStatus
+    status: LcdStatus,
+    control: LcdControl
 }
 
 impl Gpu {
