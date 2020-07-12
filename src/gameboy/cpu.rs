@@ -46,6 +46,12 @@ impl Cpu {
     fn mem_read (&mut self, address: u16) -> u8 {
         self.mem.read(&self.ints, address)
     }
+    fn mem_write_16 (&mut self, address: u16, value: u16) {
+        self.mem.write_16(&mut self.ints, address, value)
+    }
+    fn mem_read_16 (&mut self, address: u16) -> u16 {
+        self.mem.read_16(&self.ints, address)
+    }
 
     // TODO: Cleanup
     fn alu(&mut self, operation: u8, n: u8) {
@@ -201,6 +207,17 @@ impl Cpu {
         }
     }
 
+    fn stack_push (&mut self, value: u16) {
+        // TODO: Check this order
+        self.regs.sp -= 2;
+        self.mem_write_16(self.regs.sp, value);
+    }
+    fn stack_pop (&mut self) -> u16 {
+        let val = self.mem_read_16(self.regs.sp);
+        self.regs.sp += 2;
+        val
+    }
+
     fn condition_met (&self, condition: u8) -> bool {
         match condition {
             COND_NZ => self.regs.get_zero_flag() == 0,
@@ -232,10 +249,7 @@ impl Cpu {
             0b00001000 => {
                 // Store the stack pointer in ram
                 let addr = self.read_next_16();
-                let (b1, b2) = split_u16(self.regs.sp);
-                // Store in little endian
-                self.mem_write(addr, b2);
-                self.mem_write(addr + 1, b1);
+                self.mem_write_16(addr, self.regs.sp);
                 20
             }
 
@@ -373,6 +387,20 @@ impl Cpu {
                 let operation = (op & 0b00111000) >> 3;
                 self.alu(operation, val);
                 8
+            }
+
+            // POP R
+            op if bitmatch!(op, (1,1,_,_,0,0,0,1)) => {
+                let val = self.stack_pop();
+                self.regs.set_combined_register_alt(v_r, val);
+                12
+            }
+
+            // PUSH R
+            op if bitmatch!(op, (1,1,_,_,0,1,0,1)) => {
+                let val = self.regs.get_combined_register_alt(v_r);
+                self.stack_push(val);
+                16
             }
 
             // JP N

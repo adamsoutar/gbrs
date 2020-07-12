@@ -86,25 +86,39 @@ impl Registers {
     }
 
     // These are left to right from the "GoldenCrystal Gameboy Z80 CPU Opcodes" PDF
-    // TODO: Rename this
-    pub fn set_combined_register (&mut self, register: u8, value: u16) {
+    // The "sp" flag indicates whether 0b11 refers to the SP or AF
+    fn set_combined_register_base (&mut self, register: u8, value: u16, sp: bool) {
         match register {
             0b00 => self.set_bc(value),
             0b01 => self.set_de(value),
             0b10 => self.set_hl(value),
-            0b11 => self.sp = value,
+            0b11 => if sp { self.sp = value } else { self.set_af(value) },
             _ => panic!("Invalid combined register set")
         }
     }
-    pub fn get_combined_register (&mut self, register: u8) -> u16 {
+    fn get_combined_register_base (&self, register: u8, sp: bool) -> u16 {
         match register {
             0b00 => self.get_bc(),
             0b01 => self.get_de(),
             0b10 => self.get_hl(),
-            0b11 => self.sp,
+            0b11 => if sp { self.sp } else { self.get_af() },
             _ => panic!("Invalid combined register get")
         }
     }
+
+    pub fn get_combined_register (&self, register: u8) -> u16 {
+        self.get_combined_register_base(register, false)
+    }
+    pub fn set_combined_register(&mut self, register: u8, value: u16) {
+        self.set_combined_register_base(register, value, false)
+    }
+    pub fn get_combined_register_alt (&self, register: u8) -> u16 {
+        self.get_combined_register_base(register, true)
+    }
+    pub fn set_combined_register_alt (&mut self, register: u8, value: u16) {
+        self.set_combined_register_base(register, value, true)
+    }
+
 
     pub fn set_singular_register (&mut self, register: u8, value: u8) {
         match register {

@@ -2,6 +2,7 @@ use crate::gameboy::constants::*;
 use crate::gameboy::memory::ram::Ram;
 use crate::gameboy::memory::rom::Rom;
 use crate::gameboy::interrupts::*;
+use crate::gameboy::helpers::*;
 
 pub struct Memory {
     rom: Rom,
@@ -31,6 +32,15 @@ impl Memory {
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
             _ => panic!("Unsupported memory write at {} ({:#x})", address, address)
         }
+    }
+
+    pub fn read_16(&self, ints: &Interrupts, address: u16) -> u16 {
+        combine_u8(self.read(ints, address + 1), self.read(ints, address))
+    }
+    pub fn write_16(&mut self, ints: &mut Interrupts, address: u16, value: u16) {
+        let (b1, b2) = split_u16(value);
+        self.write(ints, address, b1);
+        self.write(ints, address + 1, b2);
     }
 
     pub fn from_rom (rom_path: String) -> Memory {
