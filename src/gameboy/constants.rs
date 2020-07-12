@@ -30,6 +30,9 @@ pub const WRAM_END: u16 = 0xDFFF;
 pub const HRAM_START: u16 = 0xFF80;
 pub const HRAM_END: u16 = 0xFFFE;
 
+pub const LINK_CABLE_SB: u16 = 0xFF01;
+pub const LINK_CABLE_SC: u16 = 0xFF02;
+
 // This isn't *strictly* true, but it only overlaps CGB
 // functionality, so it's OK.
 pub const LCD_DATA_START: u16 = 0xFF40;
