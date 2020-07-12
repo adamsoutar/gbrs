@@ -3,6 +3,7 @@ use crate::gameboy::helpers::*;
 use crate::{bitmatch, compute_mask, compute_equal};
 use crate::gameboy::registers::Registers;
 use crate::gameboy::interrupts::*;
+use crate::gameboy::gpu::Gpu;
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
@@ -19,8 +20,10 @@ const COND_NC: u8 = 0b10;
 const COND_C: u8 = 0b11;
 
 pub struct Cpu {
-    mem: Memory,
+    pub mem: Memory,
     regs: Registers,
+
+    pub gpu: Gpu,
 
     ints: Interrupts,
     // When EI is executed, they're turned on after the instruction after the EI
@@ -228,7 +231,7 @@ impl Cpu {
         }
     }
 
-    fn step (&mut self) -> usize {
+    pub fn step (&mut self) -> usize {
         println!("PC: {:#06x}", self.regs.pc);
         self.regs.debug_dump();
 
@@ -526,6 +529,8 @@ impl Cpu {
         Cpu {
             mem: Memory::from_rom(rom_path),
             regs: Registers::new(),
+
+            gpu: Gpu::new(),
 
             ints: Interrupts::new(),
             ime_on_pending: false

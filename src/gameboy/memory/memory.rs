@@ -6,7 +6,7 @@ use crate::gameboy::helpers::*;
 
 pub struct Memory {
     rom: Rom,
-    vram: Ram,
+    pub vram: Ram,
     wram: Ram
 }
 

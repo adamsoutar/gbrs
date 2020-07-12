@@ -6,6 +6,7 @@ pub struct InterruptFields {
     pub joypad: bool
 }
 
+// TODO: Impl for From<u8> instead of deserialise()
 impl InterruptFields {
     // TODO: Check these go in this order and not backwards
     pub fn serialise (&self) -> u8 {

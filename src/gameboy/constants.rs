@@ -1,6 +1,18 @@
 pub const WRAM_SIZE: usize = 8192;
 pub const VRAM_SIZE: usize = 8192;
 
+// Excluding invisible areas such as those above and to
+// the left of the screen
+pub const SCREEN_WIDTH: usize = 160;
+pub const SCREEN_HEIGHT: usize = 144;
+
+pub const SCREEN_VEC_SIZE: usize = SCREEN_WIDTH * SCREEN_HEIGHT;
+pub const SCREEN_RGBA_SLICE_SIZE: usize = SCREEN_VEC_SIZE * 4;
+
+pub const CLOCK_SPEED: usize = 4194304;
+pub const FRAME_RATE: usize = 60;
+pub const CYCLES_PER_FRAME: usize = CLOCK_SPEED / FRAME_RATE;
+
 // TODO: Switchable ROM
 pub const ROM_START: u16 = 0x0000;
 pub const ROM_END: u16 = 0x3FFF;
