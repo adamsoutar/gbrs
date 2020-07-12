@@ -5,6 +5,7 @@ use crate::gameboy::interrupts::*;
 
 pub struct Memory {
     rom: Rom,
+    vram: Ram,
     wram: Ram
 }
 
@@ -14,6 +15,7 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
             ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
+            VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
             _ => panic!("Unsupported memory read at {} ({:#x})", address, address)
         }
@@ -24,7 +26,9 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
             INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
             ROM_START ..= ROM_END => panic!("ROM is read only"),
-            WRAM_START ..= WRAM_END => self.wram.write(address, value),
+            // TODO: Disable writing to VRAM if PPU is reading it
+            VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
+            WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
             _ => panic!("Unsupported memory write at {} ({:#x})", address, address)
         }
     }
@@ -32,6 +36,7 @@ impl Memory {
     pub fn from_rom (rom_path: String) -> Memory {
         Memory {
             rom: Rom::from_file(rom_path),
+            vram: Ram::new(VRAM_SIZE),
             wram: Ram::new(WRAM_SIZE)
         }
     }

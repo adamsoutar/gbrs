@@ -54,7 +54,6 @@ impl Registers {
     }
 
     pub fn get_af (&self) -> u16 {
-        // TODO: Check these are the right way around
         combine_u8(self.a, self.f)
     }
     pub fn set_af (&mut self, value: u16) {
