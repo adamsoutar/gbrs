@@ -44,16 +44,16 @@ impl Cpu {
     }
 
     fn mem_write (&mut self, address: u16, value: u8) {
-        self.mem.write(&mut self.ints, address, value)
+        self.mem.write(&mut self.ints, &mut self.gpu, address, value)
     }
     fn mem_read (&mut self, address: u16) -> u8 {
-        self.mem.read(&self.ints, address)
+        self.mem.read(&self.ints, &self.gpu, address)
     }
     fn mem_write_16 (&mut self, address: u16, value: u16) {
-        self.mem.write_16(&mut self.ints, address, value)
+        self.mem.write_16(&mut self.ints, &mut self.gpu, address, value)
     }
     fn mem_read_16 (&mut self, address: u16) -> u16 {
-        self.mem.read_16(&self.ints, address)
+        self.mem.read_16(&self.ints, &self.gpu, address)
     }
 
     // TODO: Cleanup

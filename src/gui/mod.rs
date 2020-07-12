@@ -45,9 +45,10 @@ pub fn run_gui (mut gameboy: Cpu) {
         }
 
         let mut cycles = 0;
-        // while cycles < CYCLES_PER_FRAME {
-        //     cycles += gameboy.step();
-        // }
+        while cycles < CYCLES_PER_FRAME {
+            cycles += gameboy.step();
+            println!("Cycles: {} | Target for 60FPS: {}", cycles, CYCLES_PER_FRAME);
+        }
 
         unsafe {
             screen_texture.update_from_pixels(&gameboy.gpu.get_sfml_frame(), sw, sh, 0, 0);
@@ -63,6 +64,8 @@ pub fn run_gui (mut gameboy: Cpu) {
         let elapsed = start_time.elapsed();
         if elapsed < frame_time {
             thread::sleep(frame_time - elapsed);
+        } else {
+            println!("Running slower than 60FPS");
         }
     }
 }

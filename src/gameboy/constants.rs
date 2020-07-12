@@ -1,5 +1,6 @@
 pub const WRAM_SIZE: usize = 8192;
 pub const VRAM_SIZE: usize = 8192;
+pub const HRAM_SIZE: usize = 126;
 
 // Excluding invisible areas such as those above and to
 // the left of the screen
@@ -25,6 +26,14 @@ pub const OAM_END: u16 = 0xFE9F;
 
 pub const WRAM_START: u16 = 0xC000;
 pub const WRAM_END: u16 = 0xDFFF;
+
+pub const HRAM_START: u16 = 0xFF80;
+pub const HRAM_END: u16 = 0xFFFE;
+
+// This isn't *strictly* true, but it only overlaps CGB
+// functionality, so it's OK.
+pub const LCD_DATA_START: u16 = 0xFF40;
+pub const LCD_DATA_END: u16 = 0xFF4F;
 
 pub const INTERRUPT_ENABLE_ADDRESS: u16 = 0xFFFF;
 pub const INTERRUPT_FLAG_ADDRESS: u16 = 0xFF0F;

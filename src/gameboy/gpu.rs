@@ -9,11 +9,33 @@ pub enum GreyShade {
 }
 
 pub struct Gpu {
-    frame: [GreyShade; SCREEN_BUFFER_SIZE]
+    frame: [GreyShade; SCREEN_BUFFER_SIZE],
 
+    // X and Y of background position
+    scy: u8,
+    scx: u8,
+
+    // The scan-line Y co-ordinate
+    ly: u8,
 }
 
 impl Gpu {
+    pub fn raw_write (&mut self, raw_address: u16, value: u8) {
+        match raw_address {
+            0xFF42 => self.scy = value,
+            0xFF43 => self.scx = value,
+            _ => panic!("Unsupported GPU write at {:#06x}", raw_address)
+        }
+    }
+    pub fn raw_read (&self, raw_address: u16) -> u8 {
+        match raw_address {
+            0xFF42 => self.scy,
+            0xFF43 => self.scx,
+            0xFF44 => self.ly,
+            _ => panic!("Unsupported GPU read at {:#06x}", raw_address)
+        }
+    }
+
     pub fn get_sfml_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {
         let mut out_array = [0; SCREEN_RGBA_SLICE_SIZE];
         for i in 0..SCREEN_BUFFER_SIZE {
@@ -50,7 +72,8 @@ impl Gpu {
 
     pub fn new () -> Gpu {
         Gpu {
-            frame: [GreyShade::White; SCREEN_BUFFER_SIZE]
+            frame: [GreyShade::White; SCREEN_BUFFER_SIZE],
+            scy: 0, scx: 0, ly: 0
         }
     }
 }
