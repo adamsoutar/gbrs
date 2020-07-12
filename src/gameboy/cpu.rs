@@ -151,21 +151,66 @@ impl Cpu {
         self.regs.set_hl(r);
     }
 
+    // R for "Rotate" (Bitshift)
+    fn alu_rlc(&mut self, n: u8) -> u8 {
+        let c = (n & 0b10000000) >> 7;
+        let r = (n << 1) | c;
+        self.regs.set_carry_flag(c);
+        self.regs.set_operation_flag(0);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_rl (&mut self, n: u8) -> u8 {
+        let c = (n & 0b10000000) >> 7;
+        let r = (n << 1) | self.regs.get_carry_flag();
+        self.regs.set_carry_flag(c);
+        self.regs.set_operation_flag(0);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_rrc (&mut self, n: u8) -> u8 {
+        let c = n & 1;
+        let r = (n >> 1) | (c << 7);
+        self.regs.set_carry_flag(c);
+        self.regs.set_operation_flag(0);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_rr (&mut self, n: u8) -> u8 {
+        let c = n & 1;
+        let r = (n >> 1) | (self.regs.get_carry_flag() << 7);
+        self.regs.set_carry_flag(c);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_operation_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+
+    fn alu_rotate (&mut self, left: bool, carry: bool) {
+        let a = self.regs.a;
+
+        self.regs.a = if left {
+            if carry { self.alu_rlc(a) }
+            else { self.alu_rl(a) }
+        } else {
+            if carry { self.alu_rrc(a) }
+            else { self.alu_rr(a) }
+        }
+    }
+
     fn condition_met (&self, condition: u8) -> bool {
         match condition {
-            // NZ
             COND_NZ => self.regs.get_zero_flag() == 0,
-            // Z
             COND_Z => self.regs.get_zero_flag() == 1,
-            // NC
             COND_NC => self.regs.get_carry_flag() == 0,
-            // C
             COND_C => self.regs.get_carry_flag() == 1,
             _ => panic!("Invalid jump condition {:#b}", condition)
         }
     }
 
-    // TODO: Flags
     fn step (&mut self) -> usize {
         println!("PC: {:#x}", self.regs.pc);
         self.regs.debug_dump();
@@ -259,6 +304,14 @@ impl Cpu {
                 self.regs.set_singular_register(v_d, val);
                 8
             },
+
+            // RdCA and RdA
+            op if bitmatch!(op, (0,0,0,_,_,1,1,1)) => {
+                let dir = ((op & 0b0000_1_000) >> 3) == 1;
+                let carry = ((op & 0b000_1_0000) >> 4) == 1;
+                self.alu_rotate(dir, carry);
+                4
+            }
 
             // JR N
             0b00011000 => {
