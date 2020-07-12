@@ -403,13 +403,84 @@ impl Cpu {
                 16
             }
 
+            // RST N
+            op if bitmatch!(op, (1,1,_,_,_,1,1,1)) => {
+                let n = op & 0b00111000;
+                self.stack_push(self.regs.pc);
+                // TODO: Check if this should be 0x100 + n
+                self.regs.pc = n as u16;
+                16
+            }
+
+            // RET F
+            op if bitmatch!(op, (1,1,0,_,_,0,0,0)) => {
+                let condition = (op & 0b000_11_000) >> 3;
+
+                if self.condition_met(condition) {
+                    self.regs.pc = self.stack_pop();
+                    20
+                } else {
+                    8
+                }
+            }
+
+            // RET
+            0b11001001 => {
+                self.regs.pc = self.stack_pop();
+                16
+            }
+
+            // RETI
+            0b11011001 => {
+                self.regs.pc = self.stack_pop();
+                // TODO: Check if this is an immediate enable
+                self.ime_on_pending = true;
+                16
+            }
+
+            // JP F, N
+            op if bitmatch!(op, (1,1,0,_,_,0,1,0)) => {
+                let condition = (op & 0b000_11_000) >> 3;
+                let address = self.read_next_16();
+
+                if self.condition_met(condition) {
+                    self.regs.pc = address;
+                    16
+                } else {
+                    12
+                }
+            }
+
             // JP N
             0b11000011 => {
                 let address = self.read_next_16();
-                println!("JUMP TO {:x}", address);
                 self.regs.pc = address;
                 16
             }
+
+            // CALL F, N
+            op if bitmatch!(op, (1,1,0,_,_,0,1,0)) => {
+                let address = self.read_next_16();
+                // TODO: Pull out 0b000_11_000 into a common pattern like v_r
+                let condition = (op & 0b000_11_000) >> 3;
+
+                if self.condition_met(condition) {
+                    self.stack_push(self.regs.pc);
+                    self.regs.pc = address;
+                    24
+                } else {
+                    12
+                }
+            }
+
+            // CALL N
+            0b11001101 => {
+                let address = self.read_next_16();
+                self.stack_push(self.regs.pc);
+                self.regs.pc = address;
+                24
+            }
+
 
             // LD (FF00+N), A
             0b11100000 => {
