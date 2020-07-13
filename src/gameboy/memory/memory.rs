@@ -20,8 +20,12 @@ impl Memory {
             ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
             VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
-            // No real link cable support
+
+            // STUB: No real link cable support
             LINK_CABLE_SB | LINK_CABLE_SC => 0,
+            // STUB: No sound support yet
+            APU_START ..= APU_END => 0,
+
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
             _ => panic!("Unsupported memory read at {} ({:#x})", address, address)
@@ -36,8 +40,13 @@ impl Memory {
             // TODO: Disable writing to VRAM if GPU is reading it
             VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
+
+            // STUB: No link cable support
             LINK_CABLE_SB => println!("{:#04x} was written to the link cable", value),
             LINK_CABLE_SC => println!("{:#04x} was written to the link cable control field", value),
+            // STUB: No sound support yet
+            APU_START ..= APU_END => println!("{:#04x} was written to the APU at {:#06x}", value, address),
+
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
             _ => panic!("Unsupported memory write at {} ({:#x})", address, address)

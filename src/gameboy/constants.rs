@@ -27,11 +27,14 @@ pub const OAM_END: u16 = 0xFE9F;
 pub const WRAM_START: u16 = 0xC000;
 pub const WRAM_END: u16 = 0xDFFF;
 
-pub const HRAM_START: u16 = 0xFF80;
-pub const HRAM_END: u16 = 0xFFFE;
-
 pub const LINK_CABLE_SB: u16 = 0xFF01;
 pub const LINK_CABLE_SC: u16 = 0xFF02;
+
+pub const APU_START: u16 = 0xFF24;
+pub const APU_END: u16 = 0xFF26;
+
+pub const HRAM_START: u16 = 0xFF80;
+pub const HRAM_END: u16 = 0xFFFE;
 
 // This isn't *strictly* true, but it only overlaps CGB
 // functionality, so it's OK.
