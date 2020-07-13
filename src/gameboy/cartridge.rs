@@ -18,7 +18,7 @@ impl Cartridge {
         println!("ROM size: {:#04x}", rom_size);
         println!("RAM size: {:#04x}", ram_size);
 
-        if cart_type != 0 || rom_size != 0 || ram_size != 0 {
+        if /*cart_type != 0 ||*/ rom_size != 0 || ram_size != 0 {
             panic!("gbrs doesn't support switchable banked memory!");
         }
 

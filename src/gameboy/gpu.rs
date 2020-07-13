@@ -47,6 +47,9 @@ impl Gpu {
             0xFF47 => self.bg_pallette = value,
             0xFF48 => self.sprite_pallete_1 = value,
             0xFF49 => self.sprite_pallete_2 = value,
+
+            // CGB only
+            0xFF4F => {},
             _ => panic!("Unsupported GPU write at {:#06x}", raw_address)
         }
     }

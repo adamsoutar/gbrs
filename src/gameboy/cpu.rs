@@ -269,7 +269,7 @@ impl Cpu {
         let p = self.ime_on_pending;
 
         let op = self.read_next();
-        println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
+        // println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
 
         // for b in BREAKPOINTS.iter() {
         //     if self.regs.pc - 1 == *b {
@@ -414,6 +414,26 @@ impl Cpu {
                 8
             }
 
+            // LD A, (HL+/-)
+            op if bitmatch!(op, (0,0,1,_,1,0,1,0)) => {
+                let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
+                let mut hl = self.regs.get_hl();
+
+                self.regs.a = self.mem_read(hl);
+
+                if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
+                self.regs.set_hl(hl);
+
+                8
+            }
+
+            // LD D, D
+            op if bitmatch!(op, (0,1,_,_,_,_,_,_)) => {
+                let reg_val = self.get_singular_register(v_d_alt);
+                self.set_singular_register(v_d, reg_val);
+                4
+            }
+
             // ALU A, D
             op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
                 let val = self.get_singular_register(v_d_alt);
@@ -500,7 +520,7 @@ impl Cpu {
             }
 
             // CALL F, N
-            op if bitmatch!(op, (1,1,0,_,_,0,1,0)) => {
+            op if bitmatch!(op, (1,1,0,_,_,1,0,0)) => {
                 let address = self.read_next_16();
                 // TODO: Pull out 0b000_11_000 into a common pattern like v_r
                 let condition = (op & 0b000_11_000) >> 3;

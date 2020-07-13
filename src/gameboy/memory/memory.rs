@@ -33,7 +33,7 @@ impl Memory {
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
-            _ => panic!("Unsupported memory read at {} ({:#x})", address, address)
+            _ => panic!("Unsupported memory read at {:#06x}", address)
         }
     }
 
@@ -61,7 +61,8 @@ impl Memory {
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
-            _ => panic!("Unsupported memory write at {} ({:#x})", address, address)
+
+            _ => println!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 
