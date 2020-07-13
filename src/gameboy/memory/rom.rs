@@ -1,8 +1,10 @@
 use std::io::Read;
 use std::fs::File;
+use crate::gameboy::cartridge::Cartridge;
 
 pub struct Rom {
-    pub bytes: Vec<u8>
+    pub bytes: Vec<u8>,
+    pub cart_info: Cartridge
 }
 
 impl Rom {
@@ -15,8 +17,11 @@ impl Rom {
         let mut file = File::open(path).expect("Invalid ROM path");
         file.read_to_end(&mut buffer).expect("Unable to read ROM file");
 
+        let cart = Cartridge::parse(&buffer);
+
         Rom {
-            bytes: buffer
+            bytes: buffer,
+            cart_info: cart
         }
     }
 }

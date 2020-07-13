@@ -6,3 +6,4 @@ pub mod registers;
 pub mod interrupts;
 pub mod gpu;
 pub mod lcd;
+pub mod cartridge;

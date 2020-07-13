@@ -6,7 +6,8 @@ use crate::gameboy::interrupts::*;
 use crate::gameboy::helpers::*;
 
 pub struct Memory {
-    rom: Rom,
+    // Public 'cause the GUI reads it for the game title
+    pub rom: Rom,
     vram: Ram,
     wram: Ram,
     hram: Ram
