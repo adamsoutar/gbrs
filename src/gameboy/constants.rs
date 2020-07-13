@@ -27,6 +27,9 @@ pub const OAM_END: u16 = 0xFE9F;
 pub const WRAM_START: u16 = 0xC000;
 pub const WRAM_END: u16 = 0xDFFF;
 
+pub const UNUSABLE_MEMORY_START: u16 = 0xFEA0;
+pub const UNUSABLE_MEMORY_END: u16 = 0xFEFF;
+
 pub const LINK_CABLE_SB: u16 = 0xFF01;
 pub const LINK_CABLE_SC: u16 = 0xFF02;
 

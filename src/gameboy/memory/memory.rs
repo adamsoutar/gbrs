@@ -19,6 +19,9 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
             ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
+
+            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0,
+
             VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
 
@@ -37,10 +40,16 @@ impl Memory {
         match address {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
             INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
-            ROM_START ..= ROM_END => panic!("ROM is read only"),
+
+            // Games without a MBC (the only ones we support at the moment) ignore writes
+            ROM_START ..= ROM_END => {},
+
             // TODO: Disable writing to VRAM if GPU is reading it
             VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
+
+            // TETRIS writes here.. for some reason?
+            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
 
             // STUB: No link cable support
             LINK_CABLE_SB => println!("{:#04x} was written to the link cable", value),
