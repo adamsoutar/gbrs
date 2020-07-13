@@ -206,6 +206,38 @@ impl Cpu {
         r
     }
 
+    fn alu_sla (&mut self, n: u8) -> u8 {
+        let c = (n & 0x80) >> 7;
+        let r = n << 1;
+        self.regs.set_carry_flag(c);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_operation_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_sra (&mut self, n: u8) -> u8 {
+        let c = n & 1;
+        let r = (n >> 1) | (n & 0x80);
+        self.regs.set_carry_flag(c);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_operation_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+    fn alu_special_rotate (&mut self, right: bool, n: u8) -> u8 {
+        if right { self.alu_sra(n) } else { self.alu_sla(n) }
+    }
+
+    fn alu_srl (&mut self, n: u8) -> u8 {
+        let c = n & 1;
+        let r = n >> 1;
+        self.regs.set_carry_flag(c);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_operation_flag(0);
+        self.regs.set_zero_flag((r == 0) as u8);
+        r
+    }
+
     fn alu_rotate (&mut self, left: bool, carry: bool) {
         let a = self.regs.a;
 
@@ -613,7 +645,15 @@ impl Cpu {
                 4
             }
 
-            _ => panic!("Unsupported op {:b} ({:#x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
+            // Prefix CB
+            // More instructions are encoded by using 0xCB
+            // to access an extended instruction set
+            0b11001011 => {
+                let op2 = self.read_next();
+                self.execute_cb(op2)
+            }
+
+            _ => panic!("Unsupported op {:08b} ({:#04x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
         };
 
         if p && self.ime_on_pending {
@@ -625,6 +665,21 @@ impl Cpu {
         self.process_interrupts();
 
         return cycles;
+    }
+
+    fn execute_cb(&mut self, op: u8) -> usize {
+        let v_d = op & 0b111;
+        match op {
+            // SdA D
+            op if bitmatch!(op, (0,0,1,0,_,_,_,_)) => {
+                let right = ((op & 0b0000100) >> 3) == 1;
+                let reg_val = self.get_singular_register(v_d);
+                let result = self.alu_special_rotate(right, reg_val);
+                self.set_singular_register(v_d, result);
+                8
+            },
+            _ => panic!("Unsupported CB_op {:08b} ({:#04x})", op, op)
+        }
     }
 
     pub fn from_rom (rom_path: String) -> Cpu {
