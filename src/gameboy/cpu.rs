@@ -5,6 +5,8 @@ use crate::gameboy::registers::Registers;
 use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
 
+const BREAKPOINTS: [u16; 0] = [];
+
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
 const ALU_SUB: u8 = 0b010;
@@ -236,6 +238,12 @@ impl Cpu {
 
         let op = self.read_next();
         println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
+
+        // for b in BREAKPOINTS.iter() {
+        //     if self.regs.pc - 1 == *b {
+        //         panic!("BREAK");
+        //     }
+        // }
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
