@@ -69,14 +69,14 @@ impl Gpu {
             return;
         }
 
-        self.lx = (self.lx + 1) % GpuTiming::HTOTAL;
+        self.lx = (self.lx + 1) % gpu_timing::HTOTAL;
 
         let mode = self.status.get_mode();
 
         let new_mode = match mode {
             LcdMode::VBlank => {
                 if self.lx == 0 {
-                    self.ly = (self.ly + 1) % GpuTiming::VTOTAL;
+                    self.ly = (self.ly + 1) % gpu_timing::VTOTAL;
 
                     if self.ly == 0 {
                         LcdMode::OAMSearch
@@ -88,13 +88,13 @@ impl Gpu {
                     0 => {
                         self.ly += 1;
                         // Done with frame, enter VBlank
-                        if self.ly == GpuTiming::VBLANK_ON {
+                        if self.ly == gpu_timing::VBLANK_ON {
                             self.enter_vblank();
                             LcdMode::VBlank
                         } else { LcdMode::OAMSearch }
                     }
-                    GpuTiming::HTRANSFER_ON => LcdMode::Transfer,
-                    GpuTiming::HBLANK_ON => LcdMode::HBlank,
+                    gpu_timing::HTRANSFER_ON => LcdMode::Transfer,
+                    gpu_timing::HBLANK_ON => LcdMode::HBlank,
                     _ => mode
                 }
             }
@@ -102,7 +102,7 @@ impl Gpu {
         self.status.set_mode(new_mode);
 
         // The first line takes longer to draw
-        let line_start = GpuTiming::HTRANSFER_ON +
+        let line_start = gpu_timing::HTRANSFER_ON +
             if self.ly == 0 { 160 } else { 48 };
 
         // println!("[{}, {}], mode: {}", self.lx, self.ly, self.status.mode_flag);

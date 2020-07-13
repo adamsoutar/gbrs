@@ -5,7 +5,7 @@ use crate::gameboy::registers::Registers;
 use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
 
-const BREAKPOINTS: [u16; 0] = [];
+// const BREAKPOINTS: [u16; 0] = [];
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;

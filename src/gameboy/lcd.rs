@@ -82,8 +82,7 @@ impl LcdStatus {
             LcdMode::HBlank => 0,
             LcdMode::VBlank => 1,
             LcdMode::OAMSearch => 2,
-            LcdMode::Transfer => 3,
-            _ => panic!("Invalid LCD mode")
+            LcdMode::Transfer => 3
         }
     }
 

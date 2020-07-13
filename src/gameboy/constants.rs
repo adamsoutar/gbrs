@@ -44,7 +44,7 @@ pub const LCD_DATA_END: u16 = 0xFF4F;
 pub const INTERRUPT_ENABLE_ADDRESS: u16 = 0xFFFF;
 pub const INTERRUPT_FLAG_ADDRESS: u16 = 0xFF0F;
 
-pub mod GpuTiming {
+pub mod gpu_timing {
     // Total line size incl. HBlank
     pub const HTOTAL: u16 = 456;
 
