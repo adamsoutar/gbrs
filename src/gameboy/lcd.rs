@@ -8,29 +8,31 @@ pub enum GreyShade {
 
 #[derive(Clone, Copy)]
 pub struct LcdControl {
-    display_enable: bool,
-    tile_map_display_select: bool,
-    window_enable: bool,
-    bg_and_window_data_select: bool,
-    obj_size: bool,
-    obj_enable: bool,
-    bg_display: bool
+    pub display_enable: bool,
+    pub window_tile_map_display_select: bool,
+    pub window_enable: bool,
+    pub bg_and_window_data_select: bool,
+    pub bg_tile_map_display_select: bool,
+    pub obj_size: bool,
+    pub obj_enable: bool,
+    pub bg_display: bool
 }
 impl LcdControl {
     pub fn new () -> LcdControl {
-        LcdControl::from(0)
+        LcdControl::from(0b01001000)
     }
 }
 impl From<u8> for LcdControl {
     fn from(n: u8) -> LcdControl {
         LcdControl {
-            bg_display: (n & 1) == 1,
-            obj_enable: (n & 0b10) == 0b10,
-            obj_size: (n & 0b100) == 0b100,
-            bg_and_window_data_select: (n & 0b1000) == 0b1000,
-            window_enable: (n & 0b10000) == 0b10000,
-            tile_map_display_select: (n & 0b100000) == 0b100000,
-            display_enable: (n & 0b1000000) == 0b1000000
+            bg_display: (n & 0b0000_0001) == 0b0000_0001,
+            obj_enable: (n & 0b0000_0010) == 0b0000_0010,
+            obj_size: (n & 0b0000_0100) == 0b0000_0100,
+            bg_tile_map_display_select: (n & 0b0000_1000) == 0b0000_1000,
+            bg_and_window_data_select: (n & 0b0001_0000) == 0b0001_0000,
+            window_enable: (n & 0b0010_0000) == 0b0010_0000,
+            window_tile_map_display_select: (n & 0b0100_0000) == 0b0100_0000,
+            display_enable: (n & 0b1000_0000) == 0b1000_0000
         }
     }
 }
@@ -39,25 +41,55 @@ impl From<LcdControl> for u8 {
         lcd.bg_display as u8 |
         (lcd.obj_enable as u8) << 1 |
         (lcd.obj_size as u8) << 2 |
-        (lcd.bg_and_window_data_select as u8) << 3 |
-        (lcd.window_enable as u8) << 4 |
-        (lcd.tile_map_display_select as u8) << 5 |
-        (lcd.display_enable as u8) << 6
+        (lcd.bg_tile_map_display_select as u8) << 3 |
+        (lcd.bg_and_window_data_select as u8) << 4 |
+        (lcd.window_enable as u8) << 5 |
+        (lcd.window_tile_map_display_select as u8) << 6 |
+        (lcd.display_enable as u8) << 7
     }
+}
+
+#[derive(PartialEq)]
+pub enum LcdMode {
+    VBlank,
+    HBlank,
+    OAMSearch,
+    Transfer
 }
 
 #[derive(Clone, Copy)]
 pub struct LcdStatus {
-    lyc: bool,
-    oam_interrupt: bool,
-    vblank_interrupt: bool,
-    hblank_interrupt: bool,
-    coincidence_flag: bool,
-    mode_flag: u8
+    pub lyc: bool,
+    pub oam_interrupt: bool,
+    pub vblank_interrupt: bool,
+    pub hblank_interrupt: bool,
+    pub coincidence_flag: bool,
+    pub mode_flag: u8
 }
 impl LcdStatus {
+    pub fn get_mode (&self) -> LcdMode {
+        match self.mode_flag {
+            0 => LcdMode::HBlank,
+            1 => LcdMode::VBlank,
+            2 => LcdMode::OAMSearch,
+            3 => LcdMode::Transfer,
+            _ => panic!("Invalid LCD mode")
+        }
+    }
+
+    pub fn set_mode (&mut self, mode: LcdMode) {
+        self.mode_flag = match mode {
+            LcdMode::HBlank => 0,
+            LcdMode::VBlank => 1,
+            LcdMode::OAMSearch => 2,
+            LcdMode::Transfer => 3,
+            _ => panic!("Invalid LCD mode")
+        }
+    }
+
     pub fn new () -> LcdStatus {
-        LcdStatus::from(0)
+        // LCD starts in OAMSearch, not HBlank
+        LcdStatus::from(0b000000_10)
     }
 }
 impl From<u8> for LcdStatus {

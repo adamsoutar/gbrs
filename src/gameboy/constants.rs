@@ -40,3 +40,19 @@ pub const LCD_DATA_END: u16 = 0xFF4F;
 
 pub const INTERRUPT_ENABLE_ADDRESS: u16 = 0xFFFF;
 pub const INTERRUPT_FLAG_ADDRESS: u16 = 0xFF0F;
+
+pub mod GpuTiming {
+    // Total line size incl. HBlank
+    pub const HTOTAL: u16 = 456;
+
+    // lx coordinate where Transfer begins
+    pub const HTRANSFER_ON: u16 = 80;
+
+    // Start of HBlank
+    pub const HBLANK_ON: u16 = 252;
+
+    // Total vertical lines incl. VBlank
+    pub const VTOTAL:   u8 = 154;
+    // Start of VBlank
+    pub const VBLANK_ON: u8 = 144;
+}
