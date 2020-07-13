@@ -17,6 +17,7 @@ pub struct Gpu {
 impl Gpu {
     pub fn raw_write (&mut self, raw_address: u16, value: u8) {
         match raw_address {
+            0xFF40 => self.control = LcdControl::from(value),
             0xFF41 => self.status = LcdStatus::from(value),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
@@ -25,6 +26,7 @@ impl Gpu {
     }
     pub fn raw_read (&self, raw_address: u16) -> u8 {
         match raw_address {
+            0xFF40 => u8::from(self.control),
             0xFF41 => u8::from(self.status),
             0xFF42 => self.scy,
             0xFF43 => self.scx,

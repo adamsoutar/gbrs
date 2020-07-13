@@ -6,6 +6,7 @@ pub enum GreyShade {
     Black
 }
 
+#[derive(Clone, Copy)]
 pub struct LcdControl {
     display_enable: bool,
     tile_map_display_select: bool,
