@@ -47,7 +47,6 @@ pub fn run_gui (mut gameboy: Cpu) {
         let mut cycles = 0;
         while cycles < CYCLES_PER_FRAME {
             cycles += gameboy.step();
-            println!("Cycles: {} | Target for 60FPS: {}", cycles, CYCLES_PER_FRAME);
         }
 
         unsafe {

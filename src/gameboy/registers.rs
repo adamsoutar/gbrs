@@ -148,8 +148,8 @@ impl Registers {
         }
     }
 
-    pub fn debug_dump (&self) {
-        println!("AF: {:#06x} | BC: {:#06x} | DE: {:#06x} | HL: {:#06x}", self.get_af(), self.get_bc(), self.get_de(), self.get_hl())
+    pub fn debug_dump (&self) -> String {
+        format!("AF: {:#06x} | BC: {:#06x} | DE: {:#06x} | HL: {:#06x}", self.get_af(), self.get_bc(), self.get_de(), self.get_hl())
     }
 
     pub fn new () -> Registers {

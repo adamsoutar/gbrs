@@ -232,13 +232,10 @@ impl Cpu {
     }
 
     pub fn step (&mut self) -> usize {
-        println!("PC: {:#06x}", self.regs.pc);
-        self.regs.debug_dump();
-
         let p = self.ime_on_pending;
 
         let op = self.read_next();
-        println!("OPCODE: {:#04x}", op);
+        println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
@@ -492,6 +489,15 @@ impl Cpu {
                 let imm = self.read_next();
                 let a = self.regs.a;
                 self.mem_write(0xFF00 + imm as u16, a);
+
+                12
+            }
+
+            // LD A, (FF00+N)
+            0b11110000 => {
+                let imm = self.read_next();
+                let val = self.mem_read(0xFF00 + imm as u16);
+                self.regs.a = val;
 
                 12
             }
