@@ -306,15 +306,15 @@ impl Cpu {
             // LD (R), A
             op if bitmatch!(op, (0,0,0,_,0,0,1,0)) => {
                 let reg_val = self.regs.get_combined_register(v_r);
-                let memval = self.mem_read(reg_val);
-                self.regs.a = memval;
+                self.mem_write(reg_val, self.regs.a);
                 8
             }
 
             // LD A, (R)
             op if bitmatch!(op, (0,0,0,_,1,0,1,0)) => {
                 let reg_val = self.regs.get_combined_register(v_r);
-                self.mem_write(reg_val, self.regs.a);
+                let memval = self.mem_read(reg_val);
+                self.regs.a = memval;
                 8
             }
 
