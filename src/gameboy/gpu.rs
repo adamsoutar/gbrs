@@ -71,7 +71,8 @@ impl Gpu {
         Gpu {
             frame: [GreyShade::White; SCREEN_BUFFER_SIZE],
             scy: 0, scx: 0, ly: 0,
-            status: LcdStatus::new()
+            status: LcdStatus::new(),
+            control: LcdControl::new()
         }
     }
 }

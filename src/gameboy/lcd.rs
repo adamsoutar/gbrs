@@ -15,6 +15,11 @@ pub struct LcdControl {
     obj_enable: bool,
     bg_display: bool
 }
+impl LcdControl {
+    pub fn new () -> LcdControl {
+        LcdControl::from(0)
+    }
+}
 impl From<u8> for LcdControl {
     fn from(n: u8) -> LcdControl {
         LcdControl {
