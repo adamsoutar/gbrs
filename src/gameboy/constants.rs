@@ -1,6 +1,7 @@
 pub const WRAM_SIZE: usize = 8192;
 pub const VRAM_SIZE: usize = 8192;
-pub const HRAM_SIZE: usize = 126;
+pub const HRAM_SIZE: usize = 127;
+pub const OAM_SIZE: usize = 160;
 
 // Excluding invisible areas such as those above and to
 // the left of the screen
@@ -21,11 +22,11 @@ pub const ROM_END: u16 = 0x3FFF;
 pub const VRAM_START: u16 = 0x8000;
 pub const VRAM_END: u16 = 0x9FFF;
 
-pub const OAM_START: u16 = 0xFE00;
-pub const OAM_END: u16 = 0xFE9F;
-
 pub const WRAM_START: u16 = 0xC000;
 pub const WRAM_END: u16 = 0xDFFF;
+
+pub const OAM_START: u16 = 0xFE00;
+pub const OAM_END: u16 = 0xFE9F;
 
 pub const UNUSABLE_MEMORY_START: u16 = 0xFEA0;
 pub const UNUSABLE_MEMORY_END: u16 = 0xFEFF;

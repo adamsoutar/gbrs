@@ -1,5 +1,6 @@
 use crate::gameboy::constants::*;
 use crate::gameboy::lcd::*;
+use crate::gameboy::memory::ram::Ram;
 
 pub struct Gpu {
     // This is the WIP frame that the GPU draws to
@@ -24,12 +25,17 @@ pub struct Gpu {
     sprite_pallete_2: u8,
 
     status: LcdStatus,
-    control: LcdControl
+    control: LcdControl,
+
+    // "Object Attribute Memory" - Sprite properties
+    oam: Ram
 }
 
 impl Gpu {
     pub fn raw_write (&mut self, raw_address: u16, value: u8) {
         match raw_address {
+            OAM_START ..= OAM_END => self.oam.write(raw_address - OAM_START, value),
+
             0xFF40 => {
                 println!("{:08b} was written to the LCD Control register", value);
                 self.control = LcdControl::from(value)
@@ -46,6 +52,8 @@ impl Gpu {
     }
     pub fn raw_read (&self, raw_address: u16) -> u8 {
         match raw_address {
+            OAM_START ..= OAM_END => self.oam.read(raw_address - OAM_START),
+
             0xFF40 => u8::from(self.control),
             0xFF41 => u8::from(self.status),
             0xFF42 => self.scy,
@@ -164,7 +172,8 @@ impl Gpu {
             scy: 0, scx: 0, ly: 0, lx: 0, bg_pallette: 0,
             sprite_pallete_1: 0, sprite_pallete_2: 0,
             status: LcdStatus::new(),
-            control: LcdControl::new()
+            control: LcdControl::new(),
+            oam: Ram::new(OAM_SIZE)
         }
     }
 }

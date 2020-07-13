@@ -8,6 +8,7 @@ use crate::gameboy::helpers::*;
 pub struct Memory {
     // Public 'cause the GUI reads it for the game title
     pub rom: Rom,
+    // TODO: Move VRAM to GPU
     vram: Ram,
     wram: Ram,
     hram: Ram
@@ -19,11 +20,11 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
             ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
-
-            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0,
-
             VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
+            OAM_START ..= OAM_END => gpu.raw_read(address),
+
+            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0,
 
             // STUB: No real link cable support
             LINK_CABLE_SB | LINK_CABLE_SC => 0,
@@ -47,6 +48,7 @@ impl Memory {
             // TODO: Disable writing to VRAM if GPU is reading it
             VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
+            OAM_START ..= OAM_END => gpu.raw_write(address, value),
 
             // TETRIS writes here.. for some reason?
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
