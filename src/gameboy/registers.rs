@@ -61,7 +61,7 @@ impl Registers {
     }
     pub fn set_af (&mut self, value: u16) {
         let (b1, b2) = split_u16(value);
-        self.a = b2; self.f = b1;
+        self.a = b2; self.f = b1 & 0xF0;
     }
 
     pub fn get_bc (&self) -> u16 {
