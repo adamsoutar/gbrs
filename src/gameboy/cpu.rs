@@ -670,6 +670,14 @@ impl Cpu {
     fn execute_cb(&mut self, op: u8) -> usize {
         let v_d = op & 0b111;
         match op {
+            // SRL D
+            op if bitmatch!(op, (0,0,1,1,1,_,_,_)) => {
+                let reg_val = self.get_singular_register(v_d);
+                let result = self.alu_srl(reg_val);
+                self.set_singular_register(v_d, result);
+                8
+            }
+
             // SdA D
             op if bitmatch!(op, (0,0,1,0,_,_,_,_)) => {
                 let right = ((op & 0b0000100) >> 3) == 1;
