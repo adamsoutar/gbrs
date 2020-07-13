@@ -263,7 +263,7 @@ impl Cpu {
         let p = self.ime_on_pending;
 
         let op = self.read_next();
-        // println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
+        println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
 
         // for b in BREAKPOINTS.iter() {
         //     if self.regs.pc - 1 == *b {
@@ -398,9 +398,8 @@ impl Cpu {
                 let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
                 let mut hl = self.regs.get_hl();
 
-                // Load from mem into a
-                let val = self.mem_read(hl);
-                self.regs.a = val;
+                // Write a to mem
+                self.mem_write(hl, self.regs.a);
 
                 // Increment/decrement
                 if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
