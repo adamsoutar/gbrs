@@ -11,8 +11,8 @@ use sfml::system::*;
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
-    let window_width: u32 = 640;
-    let window_height: u32 = 480;
+    let window_width: u32 = 1280;
+    let window_height: u32 = 1024;
 
     let style = Style::RESIZE | Style::TITLEBAR | Style::CLOSE;
     let mut window = RenderWindow::new(

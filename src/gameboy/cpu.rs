@@ -233,6 +233,32 @@ impl Cpu {
         }
     }
 
+    fn process_interrupts (&mut self) {
+        // The master interrupt enable flag
+        if !self.ints.ime { return }
+
+        let pending_ints = self.ints.flag_read();
+        let mut enabled_ints = self.ints.enable_read();
+        for i in 0..8 {
+            let mask: u8 = 1 << i;
+            if mask & pending_ints != 0 {
+                // This interrupt is pending
+                // Is it enabled?
+                if mask & enabled_ints != 0 {
+                    // Yes, disable all interrupts
+                    self.ints.ime = false;
+                    // Disable that interrupt
+                    set_bit(&mut enabled_ints, i, 0);
+                    self.ints.enable_write(enabled_ints);
+                    // Call interrupt vector
+                    self.stack_push(self.regs.pc);
+                    self.regs.pc = INTERRUPT_VECTORS[i as usize];
+                    return;
+                }
+            }
+        }
+    }
+
     pub fn step (&mut self) -> usize {
         let p = self.ime_on_pending;
 
@@ -530,6 +556,8 @@ impl Cpu {
             self.ints.ime = true;
             self.ime_on_pending = false;
         }
+
+        self.process_interrupts();
 
         return cycles;
     }
