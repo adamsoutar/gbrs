@@ -1,4 +1,7 @@
 use crate::gameboy::helpers::*;
+use crate::gameboy::memory::memory::Memory;
+use crate::gameboy::interrupts::*;
+use crate::gameboy::gpu::Gpu;
 
 pub struct Registers {
     pub a: u8,
@@ -120,7 +123,7 @@ impl Registers {
     }
 
 
-    pub fn set_singular_register (&mut self, register: u8, value: u8) {
+    pub fn set_singular_register (&mut self, register: u8, value: u8, mem: &mut Memory, ints: &mut Interrupts, gpu: &mut Gpu) {
         match register {
             0b000 => self.b = value,
             0b001 => self.c = value,
@@ -128,13 +131,13 @@ impl Registers {
             0b011 => self.e = value,
             0b100 => self.h = value,
             0b101 => self.l = value,
-            0b110 => panic!("D to (HL) unsupported"), // TODO
+            0b110 => mem.write(ints, gpu, self.get_hl(), value),
             0b111 => self.a = value,
             _ => panic!("Invalid singular register set")
         }
     }
 
-    pub fn get_singular_register (&mut self, register: u8) -> u8 {
+    pub fn get_singular_register (&self, register: u8, mem: &Memory, ints: &Interrupts, gpu: &Gpu) -> u8 {
         match register {
             0b000 => self.b,
             0b001 => self.c,
@@ -142,7 +145,7 @@ impl Registers {
             0b011 => self.e,
             0b100 => self.h,
             0b101 => self.l,
-            0b110 => panic!("D to (HL) unsupported"), // TODO
+            0b110 => mem.read(ints, gpu, self.get_hl()),
             0b111 => self.a,
             _ => panic!("Invalid singular register get")
         }

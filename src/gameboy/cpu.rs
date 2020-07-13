@@ -57,6 +57,12 @@ impl Cpu {
     fn mem_read_16 (&mut self, address: u16) -> u16 {
         self.mem.read_16(&self.ints, &self.gpu, address)
     }
+    fn set_singular_register(&mut self, register: u8, value: u8) {
+        self.regs.set_singular_register(register, value, &mut self.mem, &mut self.ints, &mut self.gpu)
+    }
+    fn get_singular_register(&mut self, register: u8) -> u8 {
+        self.regs.get_singular_register(register, &self.mem, &self.ints, &self.gpu)
+    }
 
     // TODO: Cleanup
     fn alu(&mut self, operation: u8, n: u8) {
@@ -334,24 +340,24 @@ impl Cpu {
 
             // INC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,0)) => {
-                let mut val = self.regs.get_singular_register(v_d);
+                let mut val = self.get_singular_register(v_d);
                 val = self.alu_inc(val);
-                self.regs.set_singular_register(v_d, val);
+                self.set_singular_register(v_d, val);
                 4
             }
 
             // DEC D
             op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
-                let mut val = self.regs.get_singular_register(v_d);
+                let mut val = self.get_singular_register(v_d);
                 val = self.alu_dec(val);
-                self.regs.set_singular_register(v_d, val);
+                self.set_singular_register(v_d, val);
                 4
             }
 
             // LD D,N
             op if bitmatch!(op, (0,0,_,_,_,1,1,0)) => {
                 let val = self.read_next();
-                self.regs.set_singular_register(v_d, val);
+                self.set_singular_register(v_d, val);
                 8
             },
 
@@ -410,7 +416,7 @@ impl Cpu {
 
             // ALU A, D
             op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
-                let val = self.regs.get_singular_register(v_d_alt);
+                let val = self.get_singular_register(v_d_alt);
                 let operation = (op & 0b00111000) >> 3;
                 self.alu(operation, val);
                 if v_d_is_hl { 8 } else { 4 }
@@ -533,6 +539,45 @@ impl Cpu {
                 self.regs.a = val;
 
                 12
+            }
+
+            // LD (FF00+C), A
+            0b11100010 => {
+                self.mem_write(0xFF00 + self.regs.c as u16, self.regs.a);
+                8
+            }
+
+            // LD A, (FF00+C)
+            0b11110010 => {
+                self.regs.a = self.mem_read(0xFF00 + self.regs.c as u16);
+                8
+            }
+
+            // LD (N), A
+            0b11101010 => {
+                let imm = self.read_next_16();
+                self.mem_write(imm, self.regs.a);
+                16
+            }
+
+            // LD A, (N)
+            0b11111010 => {
+                let imm = self.read_next_16();
+                self.regs.a = self.mem_read(imm);
+                16
+            }
+
+            // JP HL
+            0b11101001 => {
+                // TODO: Check if this should contain a mem read
+                self.regs.pc = self.regs.get_hl();
+                4
+            }
+
+            // LD SP, HL
+            0b11111001 => {
+                self.regs.sp = self.regs.get_hl();
+                8
             }
 
             // DI
