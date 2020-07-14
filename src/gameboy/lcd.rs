@@ -51,10 +51,10 @@ impl From<LcdControl> for u8 {
 
 #[derive(PartialEq)]
 pub enum LcdMode {
-    VBlank,
-    HBlank,
-    OAMSearch,
-    Transfer
+    HBlank = 0,
+    VBlank = 1,
+    OAMSearch = 2,
+    Transfer = 3
 }
 
 #[derive(Clone, Copy)]
@@ -78,12 +78,7 @@ impl LcdStatus {
     }
 
     pub fn set_mode (&mut self, mode: LcdMode) {
-        self.mode_flag = match mode {
-            LcdMode::HBlank => 0,
-            LcdMode::VBlank => 1,
-            LcdMode::OAMSearch => 2,
-            LcdMode::Transfer => 3
-        }
+        self.mode_flag = mode as u8;
     }
 
     pub fn new () -> LcdStatus {
