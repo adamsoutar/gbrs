@@ -119,7 +119,7 @@ impl Memory {
             0xFF7F => {},
 
             // Timers
-            0xFF05 => self.timer_divider = 0,
+            0xFF04 => self.timer_divider = 0,
             // TODO: Does this go to 0 when written?
             0xFF05 => self.timer_counter = value,
             0xFF06 => self.timer_modulo = value,
