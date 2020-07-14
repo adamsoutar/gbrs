@@ -199,16 +199,55 @@ impl Gpu {
             // println!("Draw current line");
             // Draw the current line
             for x in 0..(SCREEN_WIDTH as u8) {
-                self.draw_pixel(x, self.ly);
+                self.draw_pixel(ints, mem, x, self.ly);
             }
         }
     }
 
-    fn draw_pixel (&mut self, x: u8, y: u8) {
+    fn draw_pixel (&mut self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) {
         let ux = x as usize; let uy = y as usize;
         let idx = uy * SCREEN_WIDTH + ux;
-        // println!("Setting {}, {} to black", x, y);
-        self.frame[idx] = GreyShade::Black;
+
+        // We just always assume the background's enabled,
+        // and there are no sprites or window
+        let bg = self.get_background_colour_at(ints, mem, x, y);
+        self.frame[idx] = bg;
+    }
+
+    fn get_background_colour_at (&mut self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> GreyShade {
+        let tilemap_base = if self.control.bg_tile_map_display_select {
+            0x9C00
+        } else { 0x9800 };
+
+        // This is which tile ID our pixel is in
+        let y16 = (y as u16) + (self.scx as u16); let x16 = (x as u16) + (self.scy as u16);
+        let tx = x16 / 8; let ty = y16 / 8;
+        let subx = (x16 % 8) as u8; let suby = y16 % 8;
+
+        let byte_offset = ty * 32 + tx;
+
+        let tile_id = mem.read(ints, self, tilemap_base + byte_offset) as u16;
+
+        if !self.control.bg_and_window_data_select {
+            println!("8800 addressing mode is unimplemented!");
+            return GreyShade::White;
+        }
+
+        let tile_byte_offset = tile_id * 16;
+        let tile_line_offset = tile_byte_offset + (suby * 2);
+
+        let tiledata_base = 0x8000;
+        // This is the line of the tile data that out pixel resides on
+        let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
+
+        let shift_amnt = (7 - subx) * 2;
+        let mask = 0b11 << shift_amnt;
+        let pixel_colour_id = ((tile_line & mask) >> shift_amnt) as u8;
+
+        let shift_2 = pixel_colour_id * 2;
+        let shade = (self.bg_pallette & (0b11 << shift_2)) >> shift_2;
+
+        GreyShade::from(shade)
     }
 
     pub fn get_sfml_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {

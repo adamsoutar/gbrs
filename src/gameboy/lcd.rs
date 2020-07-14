@@ -5,6 +5,17 @@ pub enum GreyShade {
     DarkGrey,
     Black
 }
+impl From<u8> for GreyShade {
+    fn from(n: u8) -> GreyShade {
+        match n {
+            0 => GreyShade::White,
+            1 => GreyShade::LightGrey,
+            2 => GreyShade::DarkGrey,
+            3 => GreyShade::Black,
+            _ => panic!("Invalid grey shade id {}", n)
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct LcdControl {
