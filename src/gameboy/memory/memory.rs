@@ -4,6 +4,7 @@ use crate::gameboy::memory::rom::Rom;
 use crate::gameboy::gpu::Gpu;
 use crate::gameboy::interrupts::*;
 use crate::gameboy::helpers::*;
+use crate::gameboy::joypad::Joypad;
 
 pub struct Memory {
     // Public 'cause the GUI reads it for the game title
@@ -21,7 +22,9 @@ pub struct Memory {
 
     timer_modulo: u8,
 
-    timer_control: u8
+    timer_control: u8,
+
+    pub joypad: Joypad
 }
 
 impl Memory {
@@ -80,6 +83,8 @@ impl Memory {
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
 
+            0xFF00 => self.joypad.read(),
+
             // Timers
             0xFF04 => self.timer_divider,
             0xFF05 => self.timer_counter,
@@ -115,8 +120,7 @@ impl Memory {
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
 
-            // TETRIS also writes here, Sameboy doesn't seem to care
-            0xFF7F => {},
+            0xFF00 => self.joypad.write(value),
 
             // Timers
             0xFF04 => self.timer_divider = 0,
@@ -124,6 +128,9 @@ impl Memory {
             0xFF05 => self.timer_counter = value,
             0xFF06 => self.timer_modulo = value,
             0xFF07 => self.timer_control = value,
+
+            // TETRIS also writes here, Sameboy doesn't seem to care
+            0xFF7F => {},
 
             _ => panic!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
@@ -150,6 +157,7 @@ impl Memory {
             timer_counter: 0,
             timer_control: 0,
             timer_modulo: 0,
+            joypad: Joypad::new()
         }
     }
 }

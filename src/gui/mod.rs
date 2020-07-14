@@ -44,6 +44,8 @@ pub fn run_gui (mut gameboy: Cpu) {
             }
         }
 
+        // TODO: Update Joypad state
+
         let mut cycles = 0;
         while cycles < CYCLES_PER_FRAME {
             cycles += gameboy.step();
