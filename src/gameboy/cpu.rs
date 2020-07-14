@@ -6,7 +6,7 @@ use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
 
 // const BREAKPOINTS: [u16; 0] = [];
-const CPU_DEBUG: bool = false;
+const CPU_DEBUG: bool = true;
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
