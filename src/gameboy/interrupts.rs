@@ -9,6 +9,23 @@ pub struct InterruptFields {
     pub joypad: bool
 }
 
+pub enum InterruptReason {
+    VBlank,
+    LCDStat,
+    Timer,
+    Serial,
+    Joypad
+}
+fn get_interrupt_reason_bitmask (reason: InterruptReason) -> u8 {
+    match reason {
+        InterruptReason::VBlank => 0b00000001,
+        InterruptReason::LCDStat => 0b00000010,
+        InterruptReason::Timer => 0b00000100,
+        InterruptReason::Serial => 0b00001000,
+        InterruptReason::Joypad => 0b00010000,
+    }
+}
+
 impl InterruptFields {
     // TODO: Check if these actually do all start false
     pub fn new () -> InterruptFields {
@@ -52,6 +69,12 @@ pub struct Interrupts {
 }
 
 impl Interrupts {
+    pub fn raise_interrupt (&mut self, reason: InterruptReason) {
+        let mut data = self.flag_read();
+        data |= get_interrupt_reason_bitmask(reason);
+        self.flag_write(data);
+    }
+
     // Called when GB writes to FFFF
     pub fn enable_write (&mut self, value: u8) {
         self.enable = InterruptFields::from(value)

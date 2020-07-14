@@ -662,7 +662,7 @@ impl Cpu {
             self.ime_on_pending = false;
         }
 
-        self.mem.step(cycles);
+        self.mem.step(cycles, &mut self.ints);
         self.gpu.step(cycles, &mut self.ints, &mut self.mem);
         self.process_interrupts();
 

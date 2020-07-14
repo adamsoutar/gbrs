@@ -39,7 +39,7 @@ impl Memory {
     }
 
     // Memory has a step command for timers
-    pub fn step (&mut self, cycles: usize) {
+    pub fn step (&mut self, cycles: usize, ints: &mut Interrupts) {
         for _ in 0..cycles {
             self.timer_divider_increase += 1;
             if self.timer_divider_increase == 256 {
@@ -55,7 +55,7 @@ impl Memory {
                 // If it overflowed
                 if self.timer_counter == 0 {
                     self.timer_counter = self.timer_modulo;
-                    // TODO: Raise timer interrupt
+                    ints.raise_interrupt(InterruptReason::Timer);
                 }
             }
         }

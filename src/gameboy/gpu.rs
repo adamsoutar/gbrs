@@ -2,7 +2,7 @@ use crate::gameboy::constants::*;
 use crate::gameboy::lcd::*;
 use crate::gameboy::memory::ram::Ram;
 use crate::gameboy::memory::memory::Memory;
-use crate::gameboy::interrupts::Interrupts;
+use crate::gameboy::interrupts::*;
 
 pub struct Gpu {
     // This is the WIP frame that the GPU draws to
@@ -112,8 +112,8 @@ impl Gpu {
         }
     }
 
-    fn enter_vblank (&mut self) {
-        // TODO: it_vblank = true
+    fn enter_vblank (&mut self, ints: &mut Interrupts) {
+        ints.raise_interrupt(InterruptReason::VBlank);
         self.finished_frame = self.frame.clone();
     }
 
@@ -147,7 +147,7 @@ impl Gpu {
                         self.ly += 1;
                         // Done with frame, enter VBlank
                         if self.ly == gpu_timing::VBLANK_ON {
-                            self.enter_vblank();
+                            self.enter_vblank(ints);
                             LcdMode::VBlank
                         } else { LcdMode::OAMSearch }
                     }
