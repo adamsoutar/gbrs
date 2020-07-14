@@ -460,6 +460,14 @@ impl Cpu {
                 8
             }
 
+            // CPL
+            0b00101111 => {
+                let value = self.regs.a;
+                self.regs.a = !value;
+
+                4
+            }
+
             // LD D, D
             op if bitmatch!(op, (0,1,_,_,_,_,_,_)) => {
                 let reg_val = self.get_singular_register(v_d_alt);
