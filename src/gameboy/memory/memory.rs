@@ -73,7 +73,7 @@ impl Memory {
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
             OAM_START ..= OAM_END => gpu.raw_read(address),
 
-            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0,
+            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0xFF,
 
             // STUB: No real link cable support
             LINK_CABLE_SB | LINK_CABLE_SC => 0,
@@ -108,7 +108,7 @@ impl Memory {
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
             OAM_START ..= OAM_END => gpu.raw_write(address, value),
 
-            // TETRIS writes here.. for some reason?
+            // TETRIS writes here.. due to a bug
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
 
             // STUB: No link cable support
@@ -132,7 +132,7 @@ impl Memory {
             // TETRIS also writes here, Sameboy doesn't seem to care
             0xFF7F => {},
 
-            _ => panic!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
+            _ => println!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 

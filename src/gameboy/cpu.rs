@@ -28,7 +28,7 @@ pub struct Cpu {
 
     pub gpu: Gpu,
 
-    ints: Interrupts,
+    pub ints: Interrupts,
     // When EI is executed, they're turned on after the instruction after the EI
     ime_on_pending: bool
 }
@@ -277,19 +277,21 @@ impl Cpu {
         // The master interrupt enable flag
         if !self.ints.ime { return }
 
-        let pending_ints = self.ints.flag_read();
-        let mut enabled_ints = self.ints.enable_read();
+        let mut pending_ints = self.ints.flag_read();
+        let enabled_ints = self.ints.enable_read();
+        // println!("Enabled: {:08b}", enabled_ints);
         for i in 0..8 {
             let mask: u8 = 1 << i;
             if mask & pending_ints != 0 {
                 // This interrupt is pending
                 // Is it enabled?
                 if mask & enabled_ints != 0 {
+                    println!("Handling {} interrupt", i);
                     // Yes, disable all interrupts
                     self.ints.ime = false;
                     // Disable that interrupt
-                    set_bit(&mut enabled_ints, i, 0);
-                    self.ints.enable_write(enabled_ints);
+                    set_bit(&mut pending_ints, i, 0);
+                    self.ints.flag_write(pending_ints);
                     // Call interrupt vector
                     self.stack_push(self.regs.pc);
                     self.regs.pc = INTERRUPT_VECTORS[i as usize];
