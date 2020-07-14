@@ -77,6 +77,7 @@ impl Interrupts {
 
     // Called when GB writes to FFFF
     pub fn enable_write (&mut self, value: u8) {
+        println!("{:08b} written to IE", value);
         self.enable = InterruptFields::from(value)
     }
 

@@ -6,6 +6,7 @@ use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
 
 // const BREAKPOINTS: [u16; 0] = [];
+const CPU_DEBUG: bool = false;
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
@@ -302,7 +303,10 @@ impl Cpu {
         let p = self.ime_on_pending;
 
         let op = self.read_next();
-        println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
+
+        if CPU_DEBUG {
+            println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
+        }
 
         // for b in BREAKPOINTS.iter() {
         //     if self.regs.pc - 1 == *b {
@@ -464,6 +468,9 @@ impl Cpu {
             0b00101111 => {
                 let value = self.regs.a;
                 self.regs.a = !value;
+
+                self.regs.set_half_carry_flag(1);
+                self.regs.set_operation_flag(1);
 
                 4
             }
@@ -679,6 +686,10 @@ impl Cpu {
 
     fn execute_cb(&mut self, op: u8) -> usize {
         let v_d = op & 0b111;
+        let v_d_is_hl = v_d == 0b110;
+        // Register operations take longer if D is HL
+        let v_d_hl_cycles = if v_d_is_hl { 16 } else { 8 };
+
         match op {
             // RdC D, Rd D
             op if bitmatch!(op, (0,0,0,_,_,_,_,_)) => {
@@ -687,7 +698,7 @@ impl Cpu {
                 let reg_val = self.get_singular_register(v_d);
                 let result = self.alu_rotate_val(!right, carry, reg_val);
                 self.set_singular_register(v_d, result);
-                8
+                v_d_hl_cycles
             }
 
             // SdA D
@@ -696,7 +707,23 @@ impl Cpu {
                 let reg_val = self.get_singular_register(v_d);
                 let result = self.alu_special_rotate(right, reg_val);
                 self.set_singular_register(v_d, result);
-                8 // TODO: THESE ARE 16 IF v_d is 110
+                v_d_hl_cycles
+            }
+
+            // SWAP D
+            op if bitmatch!(op, (0,0,1,1,0,_,_,_)) => {
+                let val = self.get_singular_register(v_d);
+                let lower = val & 0x0F;
+                let upper = (val & 0xF0) >> 4;
+                let new = (lower << 4) | upper;
+                self.set_singular_register(v_d, new);
+
+                self.regs.set_zero_flag((new == 0) as u8);
+                self.regs.set_half_carry_flag(0);
+                self.regs.set_carry_flag(0);
+                self.regs.set_operation_flag(0);
+
+                v_d_hl_cycles
             }
 
             // SRL D
@@ -704,7 +731,7 @@ impl Cpu {
                 let reg_val = self.get_singular_register(v_d);
                 let result = self.alu_srl(reg_val);
                 self.set_singular_register(v_d, result);
-                8
+                v_d_hl_cycles
             }
 
             _ => panic!("Unsupported CB_op {:08b} ({:#04x})", op, op)
