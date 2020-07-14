@@ -1,6 +1,8 @@
 use crate::gameboy::constants::*;
 use crate::gameboy::lcd::*;
 use crate::gameboy::memory::ram::Ram;
+use crate::gameboy::memory::memory::Memory;
+use crate::gameboy::interrupts::Interrupts;
 
 pub struct Gpu {
     // This is the WIP frame that the GPU draws to
@@ -12,6 +14,10 @@ pub struct Gpu {
     // X and Y of background position
     scy: u8,
     scx: u8,
+
+    // X and Y of the Window
+    wy: u8,
+    wx: u8,
 
     // The scan-line Y co-ordinate
     ly: u8,
@@ -28,7 +34,10 @@ pub struct Gpu {
     control: LcdControl,
 
     // "Object Attribute Memory" - Sprite properties
-    oam: Ram
+    oam: Ram,
+
+    dma_source: u8,
+    dma_cycles: u8
 }
 
 impl Gpu {
@@ -43,6 +52,11 @@ impl Gpu {
             0xFF41 => self.status = LcdStatus::from(value),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
+
+            0xFF46 => self.begin_dma(value),
+
+            0xFF4A => self.wy = value,
+            0xFF4B => self.wx = value,
 
             0xFF47 => self.bg_pallette = value,
             0xFF48 => self.sprite_pallete_1 = value,
@@ -63,10 +77,38 @@ impl Gpu {
             0xFF43 => self.scx,
             0xFF44 => self.ly,
 
+            0xFF46 => self.dma_source,
+
+            0xFF4A => self.wy,
+            0xFF4B => self.wx,
+
             0xFF47 => self.bg_pallette,
             0xFF48 => self.sprite_pallete_1,
             0xFF49 => self.sprite_pallete_2,
             _ => panic!("Unsupported GPU read at {:#06x}", raw_address)
+        }
+    }
+
+    fn begin_dma(&mut self, source: u8) {
+        // Really, we should be disabling access to anything but HRAM now,
+        // but if the rom is nice then there shouldn't be an issue.
+        self.dma_source = source;
+        self.dma_cycles = gpu_timing::DMA_CYCLES;
+    }
+
+    fn update_dma (&mut self, ints: &mut Interrupts, mem: &mut Memory) {
+        // There isn't one pending
+        if self.dma_cycles == 0 { return; }
+
+        self.dma_cycles -= 1;
+        // Ready to actually perform DMA?
+        if self.dma_cycles == 0 {
+            let source = (self.dma_source as u16) << 4;
+
+            for i in 0x00..=0x9F {
+                let data = mem.read(ints, self, source + i);
+                mem.write(ints, self, 0xFE00 + i, data);
+            }
         }
     }
 
@@ -75,7 +117,12 @@ impl Gpu {
         self.finished_frame = self.frame.clone();
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self, cycles: usize, ints: &mut Interrupts, mem: &mut Memory) {
+        // TODO: Check that a DMA is performed even with display off
+        for _ in 0..cycles {
+            self.update_dma(ints, mem);
+        }
+
         if !self.control.display_enable {
             return;
         }
@@ -172,11 +219,12 @@ impl Gpu {
         Gpu {
             frame: empty_frame,
             finished_frame: empty_frame.clone(),
-            scy: 0, scx: 0, ly: 0, lx: 0, bg_pallette: 0,
-            sprite_pallete_1: 0, sprite_pallete_2: 0,
+            scy: 0, scx: 0, ly: 0, lx: 0, wy: 0, wx: 0,
+            bg_pallette: 0, sprite_pallete_1: 0, sprite_pallete_2: 0,
             status: LcdStatus::new(),
             control: LcdControl::new(),
-            oam: Ram::new(OAM_SIZE)
+            oam: Ram::new(OAM_SIZE),
+            dma_source: 0, dma_cycles: 0
         }
     }
 }
