@@ -3,7 +3,6 @@ use std::thread;
 
 use crate::gameboy::cpu::Cpu;
 use crate::gameboy::constants::*;
-use crate::gameboy::interrupts::InterruptReason;
 
 use sfml::graphics::*;
 use sfml::window::*;

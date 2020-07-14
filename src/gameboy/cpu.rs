@@ -737,6 +737,18 @@ impl Cpu {
                 v_d_hl_cycles
             }
 
+            // BIT N, D
+            op if bitmatch!(op, (0,1,_,_,_,_,_,_)) => {
+                let val = self.get_singular_register(v_d);
+                let mask = 1 << v_n;
+
+                self.regs.set_zero_flag(((val & mask) == 0) as u8);
+                self.regs.set_operation_flag(0);
+                self.regs.set_half_carry_flag(1);
+
+                v_d_hl_cycles
+            }
+
             // RES N, D
             op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
                 let mut val = self.get_singular_register(v_d);
