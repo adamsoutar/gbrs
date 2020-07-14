@@ -757,6 +757,14 @@ impl Cpu {
                 v_d_hl_cycles
             }
 
+            // SET N, D
+            op if bitmatch!(op, (1,1,_,_,_,_,_,_)) => {
+                let mut val = self.get_singular_register(v_d);
+                set_bit(&mut val, v_n, 1);
+                self.set_singular_register(v_d, val);
+                v_d_hl_cycles
+            }
+
             _ => panic!("Unsupported CB_op {:08b} ({:#04x})", op, op)
         }
     }
