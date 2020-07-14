@@ -21,6 +21,9 @@ pub struct Gpu {
 
     // The scan-line Y co-ordinate
     ly: u8,
+    // If ly is lyc ("compare") and the interrupt is enabled,
+    // an LCD Status interrupt is flagged
+    lyc: u8,
 
     // Scan-line X co-ordinate
     // This isn't a real readable Gameboy address, it's just for internal tracking
@@ -52,6 +55,7 @@ impl Gpu {
             0xFF41 => self.status = LcdStatus::from(value),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
+            0xFF45 => self.lyc = value,
 
             0xFF46 => self.begin_dma(value),
 
@@ -76,6 +80,7 @@ impl Gpu {
             0xFF42 => self.scy,
             0xFF43 => self.scx,
             0xFF44 => self.ly,
+            0xFF45 => self.lyc,
 
             0xFF46 => self.dma_source,
 
@@ -114,7 +119,23 @@ impl Gpu {
 
     fn enter_vblank (&mut self, ints: &mut Interrupts) {
         ints.raise_interrupt(InterruptReason::VBlank);
+
+        // TODO: This seems like odd behaviour to me.
+        if self.status.vblank_interrupt {
+            ints.raise_interrupt(InterruptReason::LCDStat);
+        }
+
         self.finished_frame = self.frame.clone();
+    }
+
+    fn run_ly_compare (&mut self, ints: &mut Interrupts) {
+        if self.ly == self.lyc {
+            self.status.coincidence_flag = true;
+
+            if self.status.lyc {
+                ints.raise_interrupt(InterruptReason::LCDStat);
+            }
+        }
     }
 
     pub fn step(&mut self, cycles: usize, ints: &mut Interrupts, mem: &mut Memory) {
@@ -135,8 +156,12 @@ impl Gpu {
             LcdMode::VBlank => {
                 if self.lx == 0 {
                     self.ly = (self.ly + 1) % gpu_timing::VTOTAL;
+                    self.run_ly_compare(ints);
 
                     if self.ly == 0 {
+                        if self.status.oam_interrupt {
+                            ints.raise_interrupt(InterruptReason::LCDStat);
+                        }
                         LcdMode::OAMSearch
                     } else { mode }
                 } else { mode }
@@ -145,6 +170,7 @@ impl Gpu {
                 match self.lx {
                     0 => {
                         self.ly += 1;
+                        self.run_ly_compare(ints);
                         // Done with frame, enter VBlank
                         if self.ly == gpu_timing::VBLANK_ON {
                             self.enter_vblank(ints);
@@ -152,7 +178,12 @@ impl Gpu {
                         } else { LcdMode::OAMSearch }
                     }
                     gpu_timing::HTRANSFER_ON => LcdMode::Transfer,
-                    gpu_timing::HBLANK_ON => LcdMode::HBlank,
+                    gpu_timing::HBLANK_ON => {
+                        if self.status.hblank_interrupt {
+                            ints.raise_interrupt(InterruptReason::LCDStat)
+                        }
+                        LcdMode::HBlank
+                    },
                     _ => mode
                 }
             }
@@ -219,7 +250,7 @@ impl Gpu {
         Gpu {
             frame: empty_frame,
             finished_frame: empty_frame.clone(),
-            scy: 0, scx: 0, ly: 0, lx: 0, wy: 0, wx: 0,
+            scy: 0, scx: 0, ly: 0, lx: 0, lyc:0, wy: 0, wx: 0,
             bg_pallette: 0, sprite_pallete_1: 0, sprite_pallete_2: 0,
             status: LcdStatus::new(),
             control: LcdControl::new(),
