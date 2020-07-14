@@ -685,6 +685,7 @@ impl Cpu {
     }
 
     fn execute_cb(&mut self, op: u8) -> usize {
+        let v_n = (op & 0b111000) >> 3;
         let v_d = op & 0b111;
         let v_d_is_hl = v_d == 0b110;
         // Register operations take longer if D is HL
@@ -731,6 +732,14 @@ impl Cpu {
                 let reg_val = self.get_singular_register(v_d);
                 let result = self.alu_srl(reg_val);
                 self.set_singular_register(v_d, result);
+                v_d_hl_cycles
+            }
+
+            // RES N, D
+            op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
+                let mut val = self.get_singular_register(v_d);
+                set_bit(&mut val, v_n, 0);
+                self.set_singular_register(v_d, val);
                 v_d_hl_cycles
             }
 
