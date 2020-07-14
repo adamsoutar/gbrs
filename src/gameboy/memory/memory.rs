@@ -62,7 +62,10 @@ impl Memory {
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
 
-            _ => println!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
+            // TETRIS also writes here, Sameboy doesn't seem to care
+            0xFF7F => {},
+
+            _ => panic!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 
