@@ -11,10 +11,56 @@ pub struct Memory {
     // TODO: Move VRAM to GPU
     vram: Ram,
     wram: Ram,
-    hram: Ram
+    hram: Ram,
+
+    timer_divider_increase: u16,
+    timer_divider: u8,
+
+    timer_counter_increase: u32,
+    timer_counter: u8,
+
+    timer_modulo: u8,
+
+    timer_control: u8
 }
 
 impl Memory {
+    fn get_counter_increase (&self) -> u32 {
+        let enabled = (self.timer_control >> 2) == 1;
+        if !enabled { return 0 }
+
+        match self.timer_control & 0b11 {
+            0b00 => 64,
+            0b01 => 1,
+            0b10 => 4,
+            0b11 => 16,
+            _ => panic!()
+        }
+    }
+
+    // Memory has a step command for timers
+    pub fn step (&mut self, cycles: usize) {
+        for _ in 0..cycles {
+            self.timer_divider_increase += 1;
+            if self.timer_divider_increase == 256 {
+                self.timer_divider_increase = 0;
+                self.timer_divider = self.timer_divider.wrapping_add(1);
+            }
+
+            let inc = self.get_counter_increase();
+            self.timer_counter_increase += inc;
+            if self.timer_counter_increase == 262144 {
+                self.timer_counter_increase = 0;
+                self.timer_counter = self.timer_counter.wrapping_add(1);
+                // If it overflowed
+                if self.timer_counter == 0 {
+                    self.timer_counter = self.timer_modulo;
+                    // TODO: Raise timer interrupt
+                }
+            }
+        }
+    }
+
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
         match address {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
@@ -33,6 +79,13 @@ impl Memory {
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
+
+            // Timers
+            0xFF04 => self.timer_divider,
+            0xFF05 => self.timer_counter,
+            0xFF06 => self.timer_modulo,
+            0xFF07 => self.timer_control,
+
             _ => panic!("Unsupported memory read at {:#06x}", address)
         }
     }
@@ -65,6 +118,13 @@ impl Memory {
             // TETRIS also writes here, Sameboy doesn't seem to care
             0xFF7F => {},
 
+            // Timers
+            0xFF05 => self.timer_divider = 0,
+            // TODO: Does this go to 0 when written?
+            0xFF05 => self.timer_counter = value,
+            0xFF06 => self.timer_modulo = value,
+            0xFF07 => self.timer_control = value,
+
             _ => panic!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
     }
@@ -83,7 +143,13 @@ impl Memory {
             rom: Rom::from_file(rom_path),
             vram: Ram::new(VRAM_SIZE),
             wram: Ram::new(WRAM_SIZE),
-            hram: Ram::new(HRAM_SIZE)
+            hram: Ram::new(HRAM_SIZE),
+            timer_divider_increase: 0,
+            timer_divider: 0,
+            timer_counter_increase: 0,
+            timer_counter: 0,
+            timer_control: 0,
+            timer_modulo: 0,
         }
     }
 }
