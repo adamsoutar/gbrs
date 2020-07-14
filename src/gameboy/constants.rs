@@ -36,8 +36,8 @@ pub const UNUSABLE_MEMORY_END: u16 = 0xFEFF;
 pub const LINK_CABLE_SB: u16 = 0xFF01;
 pub const LINK_CABLE_SC: u16 = 0xFF02;
 
-pub const APU_START: u16 = 0xFF24;
-pub const APU_END: u16 = 0xFF26;
+pub const APU_START: u16 = 0xFF10;
+pub const APU_END: u16 = 0xFF3F;
 
 pub const HRAM_START: u16 = 0xFF80;
 pub const HRAM_END: u16 = 0xFFFE;
@@ -64,4 +64,7 @@ pub mod gpu_timing {
     pub const VTOTAL:   u8 = 154;
     // Start of VBlank
     pub const VBLANK_ON: u8 = 144;
+
+    // Number of CPU cycles it takes to do a DMA
+    pub const DMA_CYCLES: u8 = 160;
 }
