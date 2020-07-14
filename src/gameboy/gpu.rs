@@ -229,7 +229,7 @@ impl Gpu {
         let tile_id = mem.read(ints, self, tilemap_base + byte_offset) as u16;
 
         if !self.control.bg_and_window_data_select {
-            println!("8800 addressing mode is unimplemented!");
+            // println!("8800 addressing mode is unimplemented!");
             return GreyShade::White;
         }
 
@@ -240,7 +240,7 @@ impl Gpu {
         // This is the line of the tile data that out pixel resides on
         let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
 
-        let shift_amnt = (7 - subx) * 2;
+        let shift_amnt = 7 - subx;
         let mask = 0b11 << shift_amnt;
         let pixel_colour_id = ((tile_line & mask) >> shift_amnt) as u8;
 
