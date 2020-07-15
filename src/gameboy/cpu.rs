@@ -255,6 +255,37 @@ impl Cpu {
         self.regs.a = self.alu_rotate_val(right, carry, a);
     }
 
+    // DAA is proper weird. For this one, I had to look at:
+    // https://github.com/mohanson/gameboy/blob/master/src/cpu.rs#L325
+    fn alu_daa(&mut self) {
+        let mut a = self.regs.a;
+
+        let mut adjust =
+            if self.regs.get_carry_flag() == 1 { 0x60 } else { 0 };
+
+        if self.regs.get_half_carry_flag() == 1 {
+            adjust |= 0x06;
+        }
+
+        if self.regs.get_operation_flag() == 0 {
+            if a & 0x0f > 0x09 {
+                adjust |= 0x06;
+            };
+            if a > 0x99 {
+                adjust |= 0x60;
+            };
+            a = a.wrapping_add(adjust);
+        } else {
+            a = a.wrapping_sub(adjust);
+        }
+
+        self.regs.set_carry_flag((adjust >= 0x60) as u8);
+        self.regs.set_half_carry_flag(0);
+        self.regs.set_zero_flag((a == 0) as u8);
+
+        self.regs.a = a;
+    }
+
     fn stack_push (&mut self, value: u16) {
         self.regs.sp -= 2;
         self.mem_write_16(self.regs.sp, value);
@@ -469,6 +500,12 @@ impl Cpu {
                 self.regs.set_hl(hl);
 
                 8
+            }
+
+            // DAA
+            0b00100111 => {
+                self.alu_daa();
+                4
             }
 
             // CPL
