@@ -502,6 +502,26 @@ impl Cpu {
                 4
             }
 
+            // SCF
+            0b00110111 => {
+                self.regs.set_carry_flag(1);
+                self.regs.set_half_carry_flag(0);
+                self.regs.set_operation_flag(0);
+                4
+            }
+
+            // CCF
+            0b00111111 => {
+                if self.regs.get_carry_flag() == 0 {
+                    self.regs.set_carry_flag(1);
+                } else {
+                    self.regs.set_carry_flag(0);
+                }
+                self.regs.set_half_carry_flag(0);
+                self.regs.set_operation_flag(0);
+                4
+            }
+
             // CPL
             0b00101111 => {
                 let value = self.regs.a;

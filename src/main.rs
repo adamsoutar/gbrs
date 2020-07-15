@@ -4,7 +4,7 @@ use gameboy::cpu::Cpu;
 use gui::run_gui;
 
 fn main() {
-    let processor = Cpu::from_rom("roms/individual/03-op sp,hl.gb".to_string());
+    let processor = Cpu::from_rom("roms/individual/09-op r,r.gb".to_string());
     // let processor = Cpu::from_rom("roms/Tetris.gb".to_string());
     run_gui(processor);
 }
