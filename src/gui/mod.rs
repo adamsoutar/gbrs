@@ -1,6 +1,3 @@
-use std::time::{Instant, Duration};
-use std::thread;
-
 use crate::gameboy::cpu::Cpu;
 use crate::gameboy::constants::*;
 
@@ -8,6 +5,8 @@ use sfml::graphics::*;
 use sfml::window::*;
 use sfml::system::*;
 // TODO: Audio
+
+pub const FPS_CYCLES_DEBUG: bool = false;
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
@@ -21,6 +20,7 @@ pub fn run_gui (mut gameboy: Cpu) {
         style,
         &Default::default()
     );
+    window.set_framerate_limit(60);
 
     let mut screen_texture = Texture::new(sw, sh).unwrap();
     // Scale the 160x144 image to the appropriate resolution
@@ -29,10 +29,13 @@ pub fn run_gui (mut gameboy: Cpu) {
         window_height as f32 / sh as f32
     );
 
-    // 1000000000 is 1 second in nanoseconds
-    let frame_time = Duration::new(0, 1000000000 / FRAME_RATE as u32);
+    let mut clock = Clock::start();
+
     loop {
-        let start_time = Instant::now();
+        let secs = clock.restart().as_seconds();
+        if FPS_CYCLES_DEBUG {
+            println!("{} FPS", 1. / secs);
+        }
 
         while let Some(ev) = window.poll_event() {
             match ev {
@@ -58,6 +61,9 @@ pub fn run_gui (mut gameboy: Cpu) {
         while cycles < CYCLES_PER_FRAME {
             cycles += gameboy.step();
         }
+        if FPS_CYCLES_DEBUG {
+            println!("Ran {} cycles that frame", cycles);
+        }
 
         unsafe {
             screen_texture.update_from_pixels(&gameboy.gpu.get_sfml_frame(), sw, sh, 0, 0);
@@ -68,13 +74,5 @@ pub fn run_gui (mut gameboy: Cpu) {
         window.clear(Color::BLACK);
         window.draw(&screen_sprite);
         window.display();
-
-        // Ensure we run at 60FPS
-        let elapsed = start_time.elapsed();
-        if elapsed < frame_time {
-            thread::sleep(frame_time - elapsed);
-        } else {
-            println!("Running slower than 60FPS");
-        }
     }
 }
