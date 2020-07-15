@@ -6,6 +6,7 @@ use sfml::window::*;
 use sfml::system::*;
 // TODO: Audio
 
+pub const STEP_BY_STEP: bool = false;
 pub const FPS_CYCLES_DEBUG: bool = false;
 
 pub fn run_gui (mut gameboy: Cpu) {
@@ -30,6 +31,7 @@ pub fn run_gui (mut gameboy: Cpu) {
     );
 
     let mut clock = Clock::start();
+    let mut step_last_frame = false;
 
     loop {
         let secs = clock.restart().as_seconds();
@@ -57,12 +59,20 @@ pub fn run_gui (mut gameboy: Cpu) {
         gameboy.mem.joypad.left_pressed = Key::is_pressed(Key::Left);
         gameboy.mem.joypad.right_pressed = Key::is_pressed(Key::Right);
 
-        let mut cycles = 0;
-        while cycles < CYCLES_PER_FRAME {
-            cycles += gameboy.step();
-        }
-        if FPS_CYCLES_DEBUG {
-            println!("Ran {} cycles that frame", cycles);
+        if STEP_BY_STEP {
+            let pressing_step = Key::is_pressed(Key::S);
+            if pressing_step && !step_last_frame {
+                gameboy.step();
+            }
+            step_last_frame = pressing_step;
+        } else {
+            let mut cycles = 0;
+            while cycles < CYCLES_PER_FRAME {
+                cycles += gameboy.step();
+            }
+            if FPS_CYCLES_DEBUG {
+                println!("Ran {} cycles that frame", cycles);
+            }
         }
 
         unsafe {
