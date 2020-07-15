@@ -628,6 +628,22 @@ impl Cpu {
                 24
             }
 
+            // ADD SP, N
+            0b11101000 => {
+                let sp = self.regs.sp;
+                let imm_raw = self.read_next();
+                let imm = i16::from(imm_raw as i8) as u16;
+
+                self.regs.set_carry_flag(((sp & 0xFF) + (imm & 0xFF) > 0xFF) as u8);
+                self.regs.set_half_carry_flag(((sp & 0xF) + (imm & 0xF) > 0xF) as u8);
+                self.regs.set_operation_flag(0);
+                self.regs.set_zero_flag(0);
+
+                self.regs.sp = sp.wrapping_add(imm);
+
+                16
+            }
+
             // LD HL, SP+N
             0b11111000 => {
                 let sp = self.regs.sp;
