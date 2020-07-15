@@ -213,12 +213,12 @@ impl Gpu {
         } else { 0x9800 };
 
         // This is which tile ID our pixel is in
-        let y16 = (y as u16) + (self.scx as u16); let x16 = (x as u16) + (self.scy as u16);
+        let y16 = y.wrapping_add(self.scy) as u16; let x16 = x.wrapping_add(self.scx) as u16;
         let tx = x16 / 8; let ty = y16 / 8;
         let subx = (x16 % 8) as u8; let suby = y16 % 8;
 
         let byte_offset = ty * 32 + tx;
-
+        
         let tile_id_raw = mem.read(ints, self, tilemap_base + byte_offset);
         let tile_id: u16;
 

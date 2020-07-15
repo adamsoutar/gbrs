@@ -6,7 +6,7 @@ use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
 
 const BREAKPOINTS: [u16; 0] = [];
-const CPU_DEBUG: bool = true;
+const CPU_DEBUG: bool = false;
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
@@ -92,8 +92,6 @@ impl Cpu {
             ALU_SUB => {
                 // SUB
                 let res = a.wrapping_sub(n);
-                println!("SUB. a: {}, n: {}, Carry: {}", a, n, (a < n) as u8);
-                if a < n { println!(" -= -=- =-= -=-= =- =-=-=-=-=-=-=- =- =-=-=-= -= -") }
                 self.regs.set_carry_flag((a < n) as u8);
                 self.regs.set_half_carry_flag(((a & 0x0F) < (n & 0x0F)) as u8);
                 self.regs.set_operation_flag(1);
@@ -300,10 +298,7 @@ impl Cpu {
         match condition {
             COND_NZ => self.regs.get_zero_flag() == 0,
             COND_Z => self.regs.get_zero_flag() == 1,
-            COND_NC => {
-                println!("NC. Carry: {}", self.regs.get_carry_flag());
-                self.regs.get_carry_flag() == 0
-            },
+            COND_NC => self.regs.get_carry_flag() == 0,
             COND_C => self.regs.get_carry_flag() == 1,
             _ => panic!("Invalid jump condition {:#b}", condition)
         }
@@ -439,7 +434,6 @@ impl Cpu {
             op if bitmatch!(op, (0,0,0,_,_,1,1,1)) => {
                 let dir = ((op & 0b0000_1_000) >> 3) == 1;
                 let carry = ((op & 0b000_1_0000) >> 4) != 1;
-                println!("dir: {}, carry: {}", dir, carry);
                 self.alu_rotate(dir, carry);
                 4
             }
