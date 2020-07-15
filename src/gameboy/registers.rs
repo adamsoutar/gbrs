@@ -110,16 +110,16 @@ impl Registers {
     }
 
     pub fn get_combined_register (&self, register: u8) -> u16 {
-        self.get_combined_register_base(register, false)
-    }
-    pub fn set_combined_register(&mut self, register: u8, value: u16) {
-        self.set_combined_register_base(register, value, false)
-    }
-    pub fn get_combined_register_alt (&self, register: u8) -> u16 {
         self.get_combined_register_base(register, true)
     }
-    pub fn set_combined_register_alt (&mut self, register: u8, value: u16) {
+    pub fn set_combined_register(&mut self, register: u8, value: u16) {
         self.set_combined_register_base(register, value, true)
+    }
+    pub fn get_combined_register_alt (&self, register: u8) -> u16 {
+        self.get_combined_register_base(register, false)
+    }
+    pub fn set_combined_register_alt (&mut self, register: u8, value: u16) {
+        self.set_combined_register_base(register, value, false)
     }
 
 
