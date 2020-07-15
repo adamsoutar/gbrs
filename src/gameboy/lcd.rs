@@ -60,7 +60,7 @@ impl From<LcdControl> for u8 {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum LcdMode {
     HBlank = 0,
     VBlank = 1,
@@ -86,6 +86,16 @@ impl LcdStatus {
             3 => LcdMode::Transfer,
             _ => panic!("Invalid LCD mode")
         }
+    }
+
+    pub fn set_data (&mut self, data: u8) {
+        let new_stat = LcdStatus::from(data);
+        self.lyc = new_stat.lyc;
+        self.oam_interrupt = new_stat.oam_interrupt;
+        self.vblank_interrupt = new_stat.vblank_interrupt;
+        self.hblank_interrupt = new_stat.hblank_interrupt;
+        // NOTE: We *don't* set the coincidence_flag or mode_flag,
+        //       they're read only
     }
 
     pub fn set_mode (&mut self, mode: LcdMode) {
