@@ -4,6 +4,43 @@ use crate::gameboy::memory::ram::Ram;
 use crate::gameboy::memory::memory::Memory;
 use crate::gameboy::interrupts::*;
 
+pub struct Sprite {
+    pub y_pos: u8,
+    pub x_pos: u8,
+    pub pattern_id: u8,
+
+    pub above_bg: bool,
+    pub y_flip: bool,
+    pub x_flip: bool,
+    pub use_palette_0: bool
+}
+
+fn get_all_sprites (gpu: &Gpu, ints: &Interrupts, mem: &Memory) -> Vec<Sprite> {
+    let mut out = vec![];
+
+    // There's room for 40 sprites in the OAM table
+    for i in 0..40 {
+        let address: u16 = 0xFE00 + i * 4;
+
+        let y_pos = mem.read(ints, gpu, address);
+        let x_pos = mem.read(ints, gpu, address + 1);
+        let pattern_id = mem.read(ints, gpu, address + 2);
+        let attribs = mem.read(ints, gpu, address + 3);
+
+        let above_bg = (attribs & 0b1000_0000) != 0b1000_0000;
+        let y_flip = (attribs & 0b0100_0000) == 0b0100_0000;
+        let x_flip = (attribs & 0b0010_0000) == 0b0010_0000;
+        let use_palette_0 = (attribs & 0b0001_0000) != 0b0001_0000;
+
+        out.push(Sprite {
+            y_pos, x_pos, pattern_id,
+            above_bg, y_flip, x_flip, use_palette_0
+        })
+    }
+
+    out
+}
+
 pub struct Gpu {
     // This is the WIP frame that the GPU draws to
     frame: [GreyShade; SCREEN_BUFFER_SIZE],
@@ -191,6 +228,8 @@ impl Gpu {
 
         if self.lx == line_start && self.status.get_mode() != LcdMode::VBlank {
             // Draw the current line
+            // TODO: Move these draw_pixel calls into the mode switch above
+            //       to allow mid-scanline visual effects
             for x in 0..(SCREEN_WIDTH as u8) {
                 self.draw_pixel(ints, mem, x, self.ly);
             }
@@ -207,7 +246,7 @@ impl Gpu {
         self.frame[idx] = bg;
     }
 
-    fn get_background_colour_at (&mut self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> GreyShade {
+    fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> GreyShade {
         let tilemap_base = if self.control.bg_tile_map_display_select {
             0x9C00
         } else { 0x9800 };
@@ -218,7 +257,7 @@ impl Gpu {
         let subx = (x16 % 8) as u8; let suby = y16 % 8;
 
         let byte_offset = ty * 32 + tx;
-        
+
         let tile_id_raw = mem.read(ints, self, tilemap_base + byte_offset);
         let tile_id: u16;
 
@@ -252,6 +291,22 @@ impl Gpu {
         let shade = (self.bg_pallette & (0b11 << shift_2)) >> shift_2;
 
         GreyShade::from(shade)
+    }
+
+    // Will be used later for get_sprite_pixel
+    fn get_sprites_on_line (&self, ints: &Interrupts, mem: &Memory, y: u8) -> Vec<Sprite> {
+        let sprites = get_all_sprites(self, ints, mem);
+
+        if self.control.obj_size {
+            panic!("8x16 sprites are not supported!")
+        }
+
+        let on_line = vec![];
+        for s in &sprites {
+            
+        }
+
+        sprites
     }
 
     pub fn get_sfml_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {
