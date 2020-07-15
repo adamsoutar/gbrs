@@ -5,8 +5,8 @@ use crate::gameboy::registers::Registers;
 use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
 
-// const BREAKPOINTS: [u16; 0] = [];
-const CPU_DEBUG: bool = false;
+const BREAKPOINTS: [u16; 0] = [];
+const CPU_DEBUG: bool = true;
 
 const ALU_ADD: u8 = 0b000;
 const ALU_ADC: u8 = 0b001;
@@ -92,6 +92,8 @@ impl Cpu {
             ALU_SUB => {
                 // SUB
                 let res = a.wrapping_sub(n);
+                println!("SUB. a: {}, n: {}, Carry: {}", a, n, (a < n) as u8);
+                if a < n { println!(" -= -=- =-= -=-= =- =-=-=-=-=-=-=- =- =-=-=-= -= -") }
                 self.regs.set_carry_flag((a < n) as u8);
                 self.regs.set_half_carry_flag(((a & 0x0F) < (n & 0x0F)) as u8);
                 self.regs.set_operation_flag(1);
@@ -239,8 +241,8 @@ impl Cpu {
         r
     }
 
-    fn alu_rotate_val (&mut self, left: bool, carry: bool, a: u8) -> u8 {
-        if left {
+    fn alu_rotate_val (&mut self, right: bool, carry: bool, a: u8) -> u8 {
+        if !right {
             if carry { self.alu_rlc(a) }
             else { self.alu_rl(a) }
         } else {
@@ -248,9 +250,9 @@ impl Cpu {
             else { self.alu_rr(a) }
         }
     }
-    fn alu_rotate (&mut self, left: bool, carry: bool) {
+    fn alu_rotate (&mut self, right: bool, carry: bool) {
         let a = self.regs.a;
-        self.regs.a = self.alu_rotate_val(left, carry, a);
+        self.regs.a = self.alu_rotate_val(right, carry, a);
     }
 
     fn stack_push (&mut self, value: u16) {
@@ -267,7 +269,10 @@ impl Cpu {
         match condition {
             COND_NZ => self.regs.get_zero_flag() == 0,
             COND_Z => self.regs.get_zero_flag() == 1,
-            COND_NC => self.regs.get_carry_flag() == 0,
+            COND_NC => {
+                println!("NC. Carry: {}", self.regs.get_carry_flag());
+                self.regs.get_carry_flag() == 0
+            },
             COND_C => self.regs.get_carry_flag() == 1,
             _ => panic!("Invalid jump condition {:#b}", condition)
         }
@@ -309,11 +314,11 @@ impl Cpu {
             println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
         }
 
-        // for b in BREAKPOINTS.iter() {
-        //     if self.regs.pc - 1 == *b {
-        //         panic!("BREAK");
-        //     }
-        // }
+        for b in BREAKPOINTS.iter() {
+            if self.regs.pc - 1 == *b {
+                panic!("BREAK");
+            }
+        }
 
         let v_r = (op & 0b00_11_0000) >> 4;
         let v_d = (op & 0b00_111_000) >> 3;
@@ -402,7 +407,8 @@ impl Cpu {
             // RdCA and RdA
             op if bitmatch!(op, (0,0,0,_,_,1,1,1)) => {
                 let dir = ((op & 0b0000_1_000) >> 3) == 1;
-                let carry = ((op & 0b000_1_0000) >> 4) == 1;
+                let carry = ((op & 0b000_1_0000) >> 4) != 1;
+                println!("dir: {}, carry: {}", dir, carry);
                 self.alu_rotate(dir, carry);
                 4
             }
@@ -702,7 +708,7 @@ impl Cpu {
                 let carry = op & 0b00010000 == 0;
                 let right = ((op & 0b00001000) >> 3) == 1;
                 let reg_val = self.get_singular_register(v_d);
-                let result = self.alu_rotate_val(!right, carry, reg_val);
+                let result = self.alu_rotate_val(right, carry, reg_val);
                 self.set_singular_register(v_d, result);
                 v_d_hl_cycles
             }
