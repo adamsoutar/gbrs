@@ -115,7 +115,7 @@ impl Memory {
             LINK_CABLE_SB => println!("{:#04x} was written to the link cable", value),
             LINK_CABLE_SC => println!("{:#04x} was written to the link cable control field", value),
             // STUB: No sound support yet
-            APU_START ..= APU_END => println!("{:#04x} was written to the APU at {:#06x}", value, address),
+            APU_START ..= APU_END => {},//println!("{:#04x} was written to the APU at {:#06x}", value, address),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
