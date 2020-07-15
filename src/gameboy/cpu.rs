@@ -83,7 +83,7 @@ impl Cpu {
             ALU_ADC => {
                 // ADC
                 let res = a.wrapping_add(n).wrapping_add(c);
-                self.regs.set_carry_flag((a as u16 + n as u16 > 0xFF) as u8);
+                self.regs.set_carry_flag((a as u16 + n as u16 + c as u16 > 0xFF) as u8);
                 self.regs.set_half_carry_flag(((a & 0x0F) + (n & 0x0F) + c > 0x0F) as u8);
                 self.regs.set_zero_flag((res == 0) as u8);
                 self.regs.set_operation_flag(0);
