@@ -48,11 +48,8 @@ impl Gpu {
         match raw_address {
             OAM_START ..= OAM_END => self.oam.write(raw_address - OAM_START, value),
 
-            0xFF40 => {
-                println!("{:08b} was written to the LCD Control register", value);
-                self.control = LcdControl::from(value)
-            },
-            0xFF41 => self.status = LcdStatus::from(value),
+            0xFF40 => self.control = LcdControl::from(value),
+            0xFF41 => self.status.set_data(value),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
             0xFF45 => self.lyc = value,
@@ -138,11 +135,9 @@ impl Gpu {
         }
     }
 
-    pub fn step(&mut self, cycles: usize, ints: &mut Interrupts, mem: &mut Memory) {
+    pub fn step(&mut self, ints: &mut Interrupts, mem: &mut Memory) {
         // TODO: Check that a DMA is performed even with display off
-        for _ in 0..cycles {
-            self.update_dma(ints, mem);
-        }
+        self.update_dma(ints, mem);
 
         if !self.control.display_enable {
             return;
@@ -194,9 +189,7 @@ impl Gpu {
         let line_start = gpu_timing::HTRANSFER_ON +
             if self.ly == 0 { 160 } else { 48 };
 
-        // println!("[{}, {}], mode: {}", self.lx, self.ly, self.status.mode_flag);
         if self.lx == line_start && self.status.get_mode() != LcdMode::VBlank {
-            // println!("Draw current line");
             // Draw the current line
             for x in 0..(SCREEN_WIDTH as u8) {
                 self.draw_pixel(ints, mem, x, self.ly);
@@ -230,6 +223,7 @@ impl Gpu {
 
         if !self.control.bg_and_window_data_select {
             // println!("8800 addressing mode is unimplemented!");
+            // panic!();
             return GreyShade::White;
         }
 
