@@ -219,24 +219,34 @@ impl Gpu {
 
         let byte_offset = ty * 32 + tx;
 
-        let tile_id = mem.read(ints, self, tilemap_base + byte_offset) as u16;
+        let tile_id_raw = mem.read(ints, self, tilemap_base + byte_offset);
+        let tile_id: u16;
 
-        if !self.control.bg_and_window_data_select {
-            // println!("8800 addressing mode is unimplemented!");
-            // panic!();
-            return GreyShade::White;
+        if self.control.bg_and_window_data_select {
+            // 8000 addressing mode
+            tile_id = tile_id_raw as u16;
+        } else {
+            // 8800 addressing mode
+            // TODO: This might not be right
+            if tile_id_raw < 128 {
+                tile_id = (tile_id_raw as u16) + 255;
+            } else { tile_id = tile_id_raw as u16 }
         }
 
         let tile_byte_offset = tile_id * 16;
         let tile_line_offset = tile_byte_offset + (suby * 2);
 
-        let tiledata_base = 0x8000;
         // This is the line of the tile data that out pixel resides on
-        let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
+        let tiledata_base = 0x8000;
+
+        let lower = mem.read(ints, self, tiledata_base + tile_line_offset);
+        let upper = mem.read(ints, self, tiledata_base + tile_line_offset + 1);
 
         let shift_amnt = 7 - subx;
-        let mask = 0b11 << shift_amnt;
-        let pixel_colour_id = ((tile_line & mask) >> shift_amnt) as u8;
+        let mask = 1 << shift_amnt;
+        let u = (upper & mask) >> shift_amnt;
+        let l = (lower & mask) >> shift_amnt;
+        let pixel_colour_id = (u << 1) | l;
 
         let shift_2 = pixel_colour_id * 2;
         let shade = (self.bg_pallette & (0b11 << shift_2)) >> shift_2;
