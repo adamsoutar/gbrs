@@ -286,7 +286,6 @@ impl Cpu {
                 // This interrupt is pending
                 // Is it enabled?
                 if mask & enabled_ints != 0 {
-                    println!("Handling {} interrupt", i);
                     // Yes, disable all interrupts
                     self.ints.ime = false;
                     // Disable that interrupt
@@ -680,7 +679,11 @@ impl Cpu {
         }
 
         self.mem.step(cycles, &mut self.ints);
-        self.gpu.step(cycles, &mut self.ints, &mut self.mem);
+
+        for _ in 0..cycles {
+            self.gpu.step(&mut self.ints, &mut self.mem);
+        }
+
         self.process_interrupts();
 
         return cycles;
