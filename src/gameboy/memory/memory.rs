@@ -39,6 +39,14 @@ impl Memory {
             0b11 => 16,
             _ => panic!()
         }
+        //
+        // match self.timer_control & 0b11 {
+        //     0b00 => 1,
+        //     0b01 => 64,
+        //     0b10 => 16,
+        //     0b11 => 4,
+        //     _ => panic!()
+        // }
     }
 
     // Memory has a step command for timers
