@@ -317,12 +317,14 @@ impl Gpu {
     }
 
     fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, x: u8, y: u8) -> GreyShade {
+        let sprite_height = if self.control.obj_size { 16 } else { 8 };
+
         let ix = x as i32; let iy = y as i32;
 
         let mut maybe_sprite: Option<&Sprite> = None;
         for s in sprites {
             // TODO: Proper z-fighting resolution
-            if s.x_pos <= ix && (s.x_pos + 8) > ix {
+            if s.x_pos <= ix && (s.x_pos + sprite_height) > ix {
                 maybe_sprite = Some(s);
                 break;
             }
@@ -334,12 +336,24 @@ impl Gpu {
             None => { return bg_col }
         };
 
-        // return GreyShade::Black;
-
-        let subx = (ix - (sprite.x_pos - 8)) as u8; let suby = iy - (sprite.y_pos - 16);
+        let subx = (ix - (sprite.x_pos - 8)) as u8;
+        let mut suby = iy - (sprite.y_pos - 16);
         // if subx < 0 || suby < 0 { panic!() }
 
-        let tile_address = 0x8000 + (sprite.pattern_id as u16) * 16;
+        // Tile address for 8x8 mode
+        let mut pattern = sprite.pattern_id;
+
+        // TODO: Might not be right
+        if sprite_height == 16 {
+            if suby > 7 {
+                suby -= 7;
+                pattern = sprite.pattern_id | 0x01;
+            } else {
+                pattern = sprite.pattern_id & 0xFE;
+            }
+        }
+
+        let tile_address = 0x8000 + (pattern as u16) * 16;
         let line_we_need = suby as u16 * 2;
         let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
 
@@ -351,10 +365,6 @@ impl Gpu {
 
     // Will be used later for get_sprite_pixel
     fn get_sprites_on_line (&self, y: u8) -> Vec<Sprite> {
-        if self.control.obj_size {
-            panic!("8x16 sprites are not supported!")
-        }
-
         let iy = y as i32;
         let mut on_line = vec![];
         for s in &self.sprite_cache {
