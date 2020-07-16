@@ -256,10 +256,18 @@ impl Gpu {
 
         // We just always assume the background's enabled,
         // and there is no window
-        let bg_col = self.get_background_colour_at(ints, mem, x, y);
+        let bg_col: GreyShade;
+        let bg_col_id = if self.control.bg_display {
+            let id = self.get_background_colour_at(ints, mem, x, y);
+            bg_col = self.get_shade_from_colour_id(id, self.bg_pallette);
+            id
+        } else {
+            bg_col = GreyShade::White;
+            0
+        };
 
         // If there's a non-transparent sprite here, use its colour
-        let s_col = self.get_sprite_colour_at(ints, mem, sprites_on_line, bg_col, x, y);
+        let s_col = self.get_sprite_colour_at(ints, mem, sprites_on_line, bg_col, bg_col_id, x, y);
 
         self.frame[idx] = s_col;
     }
@@ -284,11 +292,7 @@ impl Gpu {
         GreyShade::from(shade)
     }
 
-    fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> GreyShade {
-        if !self.control.bg_display {
-            return GreyShade::White;
-        }
-
+    fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> u16 {
         let tilemap_base = if self.control.bg_tile_map_display_select {
             0x9C00
         } else { 0x9800 };
@@ -322,10 +326,10 @@ impl Gpu {
 
         let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
         let col_id = self.get_colour_id_in_line(tile_line, subx);
-        self.get_shade_from_colour_id(col_id, self.bg_pallette)
+        col_id
     }
 
-    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, x: u8, y: u8) -> GreyShade {
+    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, bg_col_id: u16, x: u8, y: u8) -> GreyShade {
         // Sprites are hidden for this scanline
         if !self.control.obj_enable {
             return bg_col
@@ -349,6 +353,10 @@ impl Gpu {
             // If there's no sprite, so use the background
             None => { return bg_col }
         };
+
+        if !sprite.above_bg && bg_col_id != 0 {
+            return bg_col;
+        }
 
         let mut subx = (ix - sprite.x_pos) as u8;
         let mut suby = iy - sprite.y_pos;
