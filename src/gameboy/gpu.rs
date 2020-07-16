@@ -285,6 +285,10 @@ impl Gpu {
     }
 
     fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> GreyShade {
+        if !self.control.bg_display {
+            return GreyShade::White;
+        }
+
         let tilemap_base = if self.control.bg_tile_map_display_select {
             0x9C00
         } else { 0x9800 };
@@ -322,7 +326,10 @@ impl Gpu {
     }
 
     fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, x: u8, y: u8) -> GreyShade {
-        // return bg_col;
+        // Sprites are hidden for this scanline
+        if !self.control.obj_enable {
+            return bg_col
+        }
 
         let sprite_height = if self.control.obj_size { 16 } else { 8 };
 
@@ -343,11 +350,8 @@ impl Gpu {
             None => { return bg_col }
         };
 
-        println!("ix: {} sprite_x: {}", ix, sprite.x_pos);
         let mut subx = (ix - sprite.x_pos) as u8;
         let mut suby = iy - sprite.y_pos;
-        println!("subx: {}, suby: {}", subx, suby);
-        // if subx < 0 || suby < 0 { panic!() }
 
         // Tile address for 8x8 mode
         let mut pattern = sprite.pattern_id;
@@ -356,13 +360,23 @@ impl Gpu {
         if sprite_height == 16 {
             if suby > 7 {
                 suby -= 7;
-                pattern = sprite.pattern_id | 0x01;
+
+                if sprite.y_flip {
+                    pattern = sprite.pattern_id & 0xFE;
+                } else {
+                    pattern = sprite.pattern_id | 0x01;
+                }
             } else {
-                pattern = sprite.pattern_id & 0xFE;
+                if sprite.y_flip {
+                    pattern = sprite.pattern_id | 0x01;
+                } else {
+                    pattern = sprite.pattern_id & 0xFE;
+                }
             }
         }
 
         if sprite.x_flip { subx = 7 - subx }
+        // TODO: Not sure if this applies to vertically flipped 8x16 mode sprites
         if sprite.y_flip { suby = 7 - suby }
 
         let tile_address = 0x8000 + (pattern as u16) * 16;
@@ -377,7 +391,7 @@ impl Gpu {
         } else {
             let palette = if sprite.use_palette_0
                 { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
-                
+
             self.get_shade_from_colour_id(col_id, palette)
         }
     }
