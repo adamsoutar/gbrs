@@ -4,41 +4,16 @@ use crate::gameboy::memory::ram::Ram;
 use crate::gameboy::memory::memory::Memory;
 use crate::gameboy::interrupts::*;
 
+#[derive(Clone)]
 pub struct Sprite {
-    pub y_pos: u8,
-    pub x_pos: u8,
+    pub y_pos: i32,
+    pub x_pos: i32,
     pub pattern_id: u8,
 
     pub above_bg: bool,
     pub y_flip: bool,
     pub x_flip: bool,
     pub use_palette_0: bool
-}
-
-fn get_all_sprites (gpu: &Gpu, ints: &Interrupts, mem: &Memory) -> Vec<Sprite> {
-    let mut out = vec![];
-
-    // There's room for 40 sprites in the OAM table
-    for i in 0..40 {
-        let address: u16 = 0xFE00 + i * 4;
-
-        let y_pos = mem.read(ints, gpu, address);
-        let x_pos = mem.read(ints, gpu, address + 1);
-        let pattern_id = mem.read(ints, gpu, address + 2);
-        let attribs = mem.read(ints, gpu, address + 3);
-
-        let above_bg = (attribs & 0b1000_0000) != 0b1000_0000;
-        let y_flip = (attribs & 0b0100_0000) == 0b0100_0000;
-        let x_flip = (attribs & 0b0010_0000) == 0b0010_0000;
-        let use_palette_0 = (attribs & 0b0001_0000) != 0b0001_0000;
-
-        out.push(Sprite {
-            y_pos, x_pos, pattern_id,
-            above_bg, y_flip, x_flip, use_palette_0
-        })
-    }
-
-    out
 }
 
 pub struct Gpu {
@@ -77,7 +52,9 @@ pub struct Gpu {
     oam: Ram,
 
     dma_source: u8,
-    dma_cycles: u8
+    dma_cycles: u8,
+
+    sprite_cache: Vec<Sprite>
 }
 
 impl Gpu {
@@ -128,6 +105,36 @@ impl Gpu {
         }
     }
 
+    fn get_all_sprites (&self) -> Vec<Sprite> {
+        let mut out = vec![];
+
+        // There's room for 40 sprites in the OAM table
+        for i in 0..40 {
+            let address: u16 = i * 4;
+
+            let y_pos = self.oam.read(address) as i32 - 16;
+            let x_pos = self.oam.read(address + 1) as i32 - 8;
+            let pattern_id = self.oam.read(address + 2);
+            let attribs = self.oam.read(address + 3);
+
+            if i == 0 {
+                println!("x: {}, y: {}, pattern_address: {:#06x}", x_pos, y_pos, 0x8000 + (pattern_id as u16) * 16);
+            }
+
+            let above_bg = (attribs & 0b1000_0000) != 0b1000_0000;
+            let y_flip = (attribs & 0b0100_0000) == 0b0100_0000;
+            let x_flip = (attribs & 0b0010_0000) == 0b0010_0000;
+            let use_palette_0 = (attribs & 0b0001_0000) != 0b0001_0000;
+
+            out.push(Sprite {
+                y_pos, x_pos, pattern_id,
+                above_bg, y_flip, x_flip, use_palette_0
+            })
+        }
+
+        out
+    }
+
     fn begin_dma(&mut self, source: u8) {
         // Really, we should be disabling access to anything but HRAM now,
         // but if the rom is nice then there shouldn't be an issue.
@@ -146,7 +153,7 @@ impl Gpu {
 
             for i in 0x00..=0x9F {
                 let data = mem.read(ints, self, source + i);
-                mem.write(ints, self, 0xFE00 + i, data);
+                self.oam.write(i, data);
             }
         }
     }
@@ -220,6 +227,12 @@ impl Gpu {
                 }
             }
         };
+
+        if new_mode == LcdMode::OAMSearch && new_mode != self.status.get_mode() {
+            // We've just entered OAMSearch, here we get the sprites
+            self.sprite_cache = self.get_all_sprites();
+        }
+
         self.status.set_mode(new_mode);
 
         // The first line takes longer to draw
@@ -230,20 +243,41 @@ impl Gpu {
             // Draw the current line
             // TODO: Move these draw_pixel calls into the mode switch above
             //       to allow mid-scanline visual effects
+            let sprites = self.get_sprites_on_line(self.ly);
             for x in 0..(SCREEN_WIDTH as u8) {
-                self.draw_pixel(ints, mem, x, self.ly);
+                self.draw_pixel(ints, mem, &sprites, x, self.ly);
             }
         }
     }
 
-    fn draw_pixel (&mut self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) {
+    fn draw_pixel (&mut self, ints: &Interrupts, mem: &Memory, sprites_on_line: &Vec<Sprite>, x: u8, y: u8) {
         let ux = x as usize; let uy = y as usize;
         let idx = uy * SCREEN_WIDTH + ux;
 
         // We just always assume the background's enabled,
-        // and there are no sprites or window
-        let bg = self.get_background_colour_at(ints, mem, x, y);
-        self.frame[idx] = bg;
+        // and there is no window
+        let bg_col = self.get_background_colour_at(ints, mem, x, y);
+
+        // If there's a non-transparent sprite here, use its colour
+        let s_col = self.get_sprite_colour_at(ints, mem, sprites_on_line, bg_col, x, y);
+
+        self.frame[idx] = s_col;
+    }
+
+    fn get_colour_in_line (&self, tile_line: u16, palette: u8, subx: u8) -> GreyShade {
+        let lower = tile_line & 0xFF;
+        let upper = (tile_line & 0xFF00) >> 8;
+
+        let shift_amnt = 7 - subx;
+        let mask = 1 << shift_amnt;
+        let u = (upper & mask) >> shift_amnt;
+        let l = (lower & mask) >> shift_amnt;
+        let pixel_colour_id = (u << 1) | l;
+
+        let shift_2 = pixel_colour_id * 2;
+        let shade = (palette & (0b11 << shift_2)) >> shift_2;
+
+        GreyShade::from(shade)
     }
 
     fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> GreyShade {
@@ -278,35 +312,58 @@ impl Gpu {
         // This is the line of the tile data that out pixel resides on
         let tiledata_base = 0x8000;
 
-        let lower = mem.read(ints, self, tiledata_base + tile_line_offset);
-        let upper = mem.read(ints, self, tiledata_base + tile_line_offset + 1);
+        let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
+        self.get_colour_in_line(tile_line, self.bg_pallette, subx)
+    }
 
-        let shift_amnt = 7 - subx;
-        let mask = 1 << shift_amnt;
-        let u = (upper & mask) >> shift_amnt;
-        let l = (lower & mask) >> shift_amnt;
-        let pixel_colour_id = (u << 1) | l;
+    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, x: u8, y: u8) -> GreyShade {
+        let ix = x as i32; let iy = y as i32;
 
-        let shift_2 = pixel_colour_id * 2;
-        let shade = (self.bg_pallette & (0b11 << shift_2)) >> shift_2;
+        let mut maybe_sprite: Option<&Sprite> = None;
+        for s in sprites {
+            // TODO: Proper z-fighting resolution
+            if s.x_pos <= ix && (s.x_pos + 8) > ix {
+                maybe_sprite = Some(s);
+                break;
+            }
+        }
 
-        GreyShade::from(shade)
+        let sprite = match maybe_sprite {
+            Some(s) => s,
+            // If there's no sprite, so use the background
+            None => { return bg_col }
+        };
+
+        // return GreyShade::Black;
+
+        let subx = (ix - (sprite.x_pos - 8)) as u8; let suby = iy - (sprite.y_pos - 16);
+        // if subx < 0 || suby < 0 { panic!() }
+
+        let tile_address = 0x8000 + (sprite.pattern_id as u16) * 16;
+        let line_we_need = suby as u16 * 2;
+        let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
+
+        let palette = if sprite.use_palette_0
+            { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
+
+        self.get_colour_in_line(tile_line, palette, subx)
     }
 
     // Will be used later for get_sprite_pixel
-    fn get_sprites_on_line (&self, ints: &Interrupts, mem: &Memory, y: u8) -> Vec<Sprite> {
-        let sprites = get_all_sprites(self, ints, mem);
-
+    fn get_sprites_on_line (&self, y: u8) -> Vec<Sprite> {
         if self.control.obj_size {
             panic!("8x16 sprites are not supported!")
         }
 
-        let on_line = vec![];
-        for s in &sprites {
-            
+        let iy = y as i32;
+        let mut on_line = vec![];
+        for s in &self.sprite_cache {
+            if s.y_pos <= iy && (s.y_pos + 8) > iy {
+                on_line.push(s.clone());
+            }
         }
 
-        sprites
+        on_line
     }
 
     pub fn get_sfml_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {
@@ -353,7 +410,8 @@ impl Gpu {
             status: LcdStatus::new(),
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
-            dma_source: 0, dma_cycles: 0
+            dma_source: 0, dma_cycles: 0,
+            sprite_cache: vec![]
         }
     }
 }
