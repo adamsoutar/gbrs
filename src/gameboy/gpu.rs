@@ -264,7 +264,7 @@ impl Gpu {
         self.frame[idx] = s_col;
     }
 
-    fn get_colour_in_line (&self, tile_line: u16, palette: u8, subx: u8) -> GreyShade {
+    fn get_colour_id_in_line (&self, tile_line: u16, subx: u8) -> u16 {
         let lower = tile_line & 0xFF;
         let upper = (tile_line & 0xFF00) >> 8;
 
@@ -274,6 +274,10 @@ impl Gpu {
         let l = (lower & mask) >> shift_amnt;
         let pixel_colour_id = (u << 1) | l;
 
+        pixel_colour_id
+    }
+
+    fn get_shade_from_colour_id (&self, pixel_colour_id: u16, palette: u8) -> GreyShade {
         let shift_2 = pixel_colour_id * 2;
         let shade = (palette & (0b11 << shift_2)) >> shift_2;
 
@@ -313,7 +317,8 @@ impl Gpu {
         let tiledata_base = 0x8000;
 
         let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
-        self.get_colour_in_line(tile_line, self.bg_pallette, subx)
+        let col_id = self.get_colour_id_in_line(tile_line, subx);
+        self.get_shade_from_colour_id(col_id, self.bg_pallette)
     }
 
     fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, x: u8, y: u8) -> GreyShade {
@@ -364,10 +369,17 @@ impl Gpu {
         let line_we_need = suby as u16 * 2;
         let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
 
-        let palette = if sprite.use_palette_0
-            { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
+        let col_id = self.get_colour_id_in_line(tile_line, subx);
 
-        self.get_colour_in_line(tile_line, palette, subx)
+        if col_id == 0 {
+            // This pixel is transparent
+            bg_col
+        } else {
+            let palette = if sprite.use_palette_0
+                { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
+                
+            self.get_shade_from_colour_id(col_id, palette)
+        }
     }
 
     // Will be used later for get_sprite_pixel
