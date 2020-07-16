@@ -117,10 +117,6 @@ impl Gpu {
             let pattern_id = self.oam.read(address + 2);
             let attribs = self.oam.read(address + 3);
 
-            if address == 0x20 {
-                println!("x: {}, y: {}, pattern_address: {:#06x}", x_pos, y_pos, 0x8000 + (pattern_id as u16) * 16);
-            }
-
             let above_bg = (attribs & 0b1000_0000) != 0b1000_0000;
             let y_flip = (attribs & 0b0100_0000) == 0b0100_0000;
             let x_flip = (attribs & 0b0010_0000) == 0b0010_0000;
@@ -138,6 +134,9 @@ impl Gpu {
     fn begin_dma(&mut self, source: u8) {
         // Really, we should be disabling access to anything but HRAM now,
         // but if the rom is nice then there shouldn't be an issue.
+        if self.dma_cycles != 0 {
+            println!("INTERRUPTING DMA!")
+        }
         self.dma_source = source;
         self.dma_cycles = gpu_timing::DMA_CYCLES;
     }
@@ -149,7 +148,7 @@ impl Gpu {
         self.dma_cycles -= 1;
         // Ready to actually perform DMA?
         if self.dma_cycles == 0 {
-            let source = (self.dma_source as u16) << 4;
+            let source = (self.dma_source as u16) * 0x100;
 
             for i in 0x00..=0x9F {
                 let data = mem.read(ints, self, source + i);
@@ -268,6 +267,8 @@ impl Gpu {
 
         // If there's a non-transparent sprite here, use its colour
         let s_col = self.get_sprite_colour_at(ints, mem, sprites_on_line, bg_col, bg_col_id, x, y);
+
+        // TODO: Support WINDOW
 
         self.frame[idx] = s_col;
     }
