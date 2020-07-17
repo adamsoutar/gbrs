@@ -15,7 +15,11 @@ pub const CLOCK_SPEED: usize = 4194304;
 pub const FRAME_RATE: usize = 60;
 pub const CYCLES_PER_FRAME: usize = CLOCK_SPEED / FRAME_RATE;
 
-pub const MBC_END: u16 = 0x7FFF;
+// MBC_ROM_START is 0
+pub const MBC_ROM_END: u16 = 0x7FFF;
+
+pub const MBC_RAM_START: u16 = 0xA000;
+pub const MBC_RAM_END: u16 = 0xBFFF;
 
 pub const VRAM_START: u16 = 0x8000;
 pub const VRAM_END: u16 = 0x9FFF;

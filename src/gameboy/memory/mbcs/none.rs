@@ -13,6 +13,15 @@ impl MBC for MBCNone {
     fn write(&mut self, _: u16, _: u8) {
         // No MBC ignores writes
     }
+
+    fn ram_read(&self, _: u16) -> u8 {
+        // Unused Gameboy RAM reads as 0xFF
+        0xFF
+    }
+
+    fn ram_write(&mut self, _: u16, _: u8) {
+        // We don't have RAM
+    }
 }
 
 impl MBCNone {

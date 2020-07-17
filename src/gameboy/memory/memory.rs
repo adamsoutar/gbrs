@@ -77,11 +77,12 @@ impl Memory {
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
         match address {
             // Cartridge memory starts at the 0 address
-            0 ..= MBC_END => self.mbc.read(address),
+            0 ..= MBC_ROM_END => self.mbc.read(address),
 
-            INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
-            INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
             VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
+
+            MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
+
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
             OAM_START ..= OAM_END => gpu.raw_read(address),
 
@@ -103,19 +104,22 @@ impl Memory {
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
 
+            INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
+            INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
+
             _ => panic!("Unsupported memory read at {:#06x}", address)
         }
     }
 
     pub fn write (&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u8) {
         match address {
-            0 ..= MBC_END => self.mbc.write(address, value),
-
-            INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
-            INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
+            0 ..= MBC_ROM_END => self.mbc.write(address, value),
 
             // TODO: Disable writing to VRAM if GPU is reading it
             VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
+
+            MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
+
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
             OAM_START ..= OAM_END => gpu.raw_write(address, value),
 
@@ -142,6 +146,9 @@ impl Memory {
 
             // TETRIS also writes here, Sameboy doesn't seem to care
             0xFF7F => {},
+
+            INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
+            INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
 
             _ => println!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
