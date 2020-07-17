@@ -4,6 +4,8 @@ use crate::{bitmatch, compute_mask, compute_equal};
 use crate::gameboy::registers::Registers;
 use crate::gameboy::interrupts::*;
 use crate::gameboy::gpu::Gpu;
+use crate::gameboy::cartridge::Cartridge;
+use crate::gameboy::memory::rom::Rom;
 
 const BREAKPOINTS: [u16; 0] = [];
 const CPU_DEBUG: bool = false;
@@ -23,7 +25,9 @@ const COND_NC: u8 = 0b10;
 const COND_C: u8 = 0b11;
 
 pub struct Cpu {
+    pub cart_info: Cartridge,
     pub mem: Memory,
+
     regs: Registers,
 
     pub gpu: Gpu,
@@ -861,8 +865,12 @@ impl Cpu {
     }
 
     pub fn from_rom (rom_path: String) -> Cpu {
+        let rom = Rom::from_file(rom_path);
+        let cart_info = Cartridge::parse(&rom.bytes);
+
         Cpu {
-            mem: Memory::from_rom(rom_path),
+            mem: Memory::from_info(cart_info.clone(), rom),
+            cart_info,
             regs: Registers::new(),
 
             gpu: Gpu::new(),

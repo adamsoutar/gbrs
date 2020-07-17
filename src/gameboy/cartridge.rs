@@ -1,4 +1,5 @@
 // Parses the cartridge header
+#[derive(Clone)]
 pub struct Cartridge {
     pub title: String,
     pub cart_type: u8,
@@ -12,15 +13,6 @@ impl Cartridge {
         let cart_type = buffer[0x0147];
         let rom_size = buffer[0x0148];
         let ram_size = buffer[0x0149];
-
-        println!("Loading game \"{}\"", title);
-        println!("Cart type: {:#04x}", cart_type);
-        println!("ROM size: {:#04x}", rom_size);
-        println!("RAM size: {:#04x}", ram_size);
-
-        if /*cart_type != 0 ||*/ rom_size != 0 || ram_size != 0 {
-            panic!("gbrs doesn't support switchable banked memory!");
-        }
 
         Cartridge {
             title, cart_type, rom_size, ram_size

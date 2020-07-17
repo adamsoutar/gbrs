@@ -15,11 +15,7 @@ pub const CLOCK_SPEED: usize = 4194304;
 pub const FRAME_RATE: usize = 60;
 pub const CYCLES_PER_FRAME: usize = CLOCK_SPEED / FRAME_RATE;
 
-// TODO: Switchable ROM
-pub const ROM_START: u16 = 0x0000;
-// The first switchable bank ends at 0x3FFF
-// pub const ROM_END: u16 = 0x3FFF;
-pub const ROM_END: u16 = 0x7FFF;
+pub const MBC_END: u16 = 0x7FFF;
 
 pub const VRAM_START: u16 = 0x8000;
 pub const VRAM_END: u16 = 0x9FFF;

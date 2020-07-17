@@ -5,10 +5,12 @@ use crate::gameboy::gpu::Gpu;
 use crate::gameboy::interrupts::*;
 use crate::gameboy::helpers::*;
 use crate::gameboy::joypad::Joypad;
+use crate::gameboy::cartridge::Cartridge;
+use crate::gameboy::memory::mbcs::*;
 
 pub struct Memory {
-    // Public 'cause the GUI reads it for the game title
-    pub rom: Rom,
+    mbc: Box<dyn MBC>,
+
     // TODO: Move VRAM to GPU
     vram: Ram,
     wram: Ram,
@@ -74,9 +76,11 @@ impl Memory {
 
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
         match address {
+            // Cartridge memory starts at the 0 address
+            0 ..= MBC_END => self.mbc.read(address),
+
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
-            ROM_START ..= ROM_END => self.rom.read(address - ROM_START),
             VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
             OAM_START ..= OAM_END => gpu.raw_read(address),
@@ -105,11 +109,10 @@ impl Memory {
 
     pub fn write (&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u8) {
         match address {
+            0 ..= MBC_END => self.mbc.write(address, value),
+
             INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
             INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
-
-            // Games without a MBC (the only ones we support at the moment) ignore writes
-            ROM_START ..= ROM_END => {},
 
             // TODO: Disable writing to VRAM if GPU is reading it
             VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
@@ -153,9 +156,9 @@ impl Memory {
         self.write(ints, gpu, address + 1, b2);
     }
 
-    pub fn from_rom (rom_path: String) -> Memory {
+    pub fn from_info (cart_info: Cartridge, rom: Rom) -> Memory {
         Memory {
-            rom: Rom::from_file(rom_path),
+            mbc: mbc_from_info(cart_info, rom),
             vram: Ram::new(VRAM_SIZE),
             wram: Ram::new(WRAM_SIZE),
             hram: Ram::new(HRAM_SIZE),
