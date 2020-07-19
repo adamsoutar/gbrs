@@ -1,11 +1,13 @@
 pub mod gameboy;
 pub mod gui;
+
+use std::env;
+
 use gameboy::cpu::Cpu;
 use gui::run_gui;
 
 fn main() {
-    // let processor = Cpu::from_rom("roms/individual/02-interrupts.gb".to_string());
-    // let processor = Cpu::from_rom("roms/dmg-acid2.gb".to_string());
-    let processor = Cpu::from_rom("roms/tetris.gb".to_string());
+    let rom_path = env::args().nth(1).expect("Pass a ROM path as an argument");
+    let processor = Cpu::from_rom(rom_path);
     run_gui(processor);
 }
