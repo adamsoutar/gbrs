@@ -7,7 +7,10 @@ use crate::gameboy::helpers::*;
 use crate::gameboy::joypad::Joypad;
 use crate::gameboy::cartridge::Cartridge;
 use crate::gameboy::memory::mbcs::*;
+use crate::gameboy::apu::APU;
 
+// TODO: Rename this to something more appropriate
+//       (I've seen an emu call a similar struct 'Interconnect')
 pub struct Memory {
     mbc: Box<dyn MBC>,
 
@@ -26,7 +29,9 @@ pub struct Memory {
 
     timer_control: u8,
 
-    pub joypad: Joypad
+    pub joypad: Joypad,
+
+    pub apu: APU
 }
 
 impl Memory {
@@ -90,8 +95,8 @@ impl Memory {
 
             // STUB: No real link cable support
             LINK_CABLE_SB | LINK_CABLE_SC => 0,
-            // STUB: No sound support yet
-            APU_START ..= APU_END => 0,
+
+            APU_START ..= APU_END => self.apu.read(address),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
@@ -127,10 +132,10 @@ impl Memory {
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
 
             // STUB: No link cable support
-            LINK_CABLE_SB => println!("{:#04x} was written to the link cable", value),
-            LINK_CABLE_SC => println!("{:#04x} was written to the link cable control field", value),
-            // STUB: No sound support yet
-            APU_START ..= APU_END => {},//println!("{:#04x} was written to the APU at {:#06x}", value, address),
+            LINK_CABLE_SB => {}, //println!("{:#04x} was written to the link cable", value),
+            LINK_CABLE_SC => {}, //println!("{:#04x} was written to the link cable control field", value),
+
+            APU_START ..= APU_END => self.apu.write(address, value),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
@@ -175,7 +180,8 @@ impl Memory {
             timer_counter: 0,
             timer_control: 0,
             timer_modulo: 0,
-            joypad: Joypad::new()
+            joypad: Joypad::new(),
+            apu: APU::new()
         }
     }
 }

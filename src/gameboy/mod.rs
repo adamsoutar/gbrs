@@ -8,3 +8,4 @@ pub mod gpu;
 pub mod lcd;
 pub mod cartridge;
 pub mod joypad;
+pub mod apu;

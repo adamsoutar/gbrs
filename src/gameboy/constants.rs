@@ -1,7 +1,9 @@
+// "WRAM" is Work RAM, not Wave RAM
 pub const WRAM_SIZE: usize = 8192;
 pub const VRAM_SIZE: usize = 8192;
 pub const HRAM_SIZE: usize = 127;
 pub const OAM_SIZE: usize = 160;
+pub const WAVE_RAM_SIZE: usize = 16;
 
 // Excluding invisible areas such as those above and to
 // the left of the screen
@@ -38,6 +40,9 @@ pub const LINK_CABLE_SC: u16 = 0xFF02;
 
 pub const APU_START: u16 = 0xFF10;
 pub const APU_END: u16 = 0xFF3F;
+
+pub const WAVE_RAM_START: u16 = 0xFF30;
+pub const WAVE_RAM_END: u16 = 0xFF3F;
 
 pub const HRAM_START: u16 = 0xFF80;
 pub const HRAM_END: u16 = 0xFFFE;
