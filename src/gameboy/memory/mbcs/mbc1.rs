@@ -32,16 +32,17 @@ impl MBC for MBC1 {
                 if n == 0 { n = 1 }
                 self.rom_bank = n
             },
-            _ => panic!("Unsupported MBC1 write at {:#06x}", address)
+            _ => println!("Unsupported MBC1 write at {:#06x}", address)
         }
     }
 
     fn ram_read(&self, address: u16) -> u8 {
-        self.ram.read(address)
+        // TODO
+        0
     }
 
     fn ram_write(&mut self, address: u16, value: u8) {
-        self.ram.write(address, value)
+        // TODO
     }
 }
 

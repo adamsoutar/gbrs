@@ -30,7 +30,12 @@ pub struct LcdControl {
 }
 impl LcdControl {
     pub fn new () -> LcdControl {
-        LcdControl::from(0b01001000)
+        // TODO: Check
+        // PAC-MAN doesn't boot unless LCDC is initialised
+        // with display_enable on, but
+        // https://github.com/mohanson/gameboy/blob/master/src/gpu.rs#L100
+        // seems to init without it, and manages to boot PAC-MAN
+        LcdControl::from(0b11001000)
     }
 }
 impl From<u8> for LcdControl {
