@@ -35,7 +35,7 @@ impl APU {
             0xFF1E => self.ch3_nr34,
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.read(address - WAVE_RAM_START),
-            _ => panic!("Unknown read {:#06x} in APU", address)
+            _ => 0 //panic!("Unknown read {:#06x} in APU", address)
         }
     }
 
@@ -53,7 +53,7 @@ impl APU {
             0xFF1E => self.ch3_nr34 = value,
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.write(address - WAVE_RAM_START, value),
-            _ => println!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
+            _ => {} //println!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
         }
     }
 
@@ -74,10 +74,6 @@ impl APU {
         let left_vol = (self.stereo_left_volume * 7.) as u8;
 
         (left_vol << 4) & right_vol
-    }
-
-    fn get_channel_3_output (&self) -> u8 {
-        0 // TODO
     }
 
     pub fn new () -> APU {

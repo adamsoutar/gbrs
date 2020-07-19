@@ -253,6 +253,7 @@ impl Cpu {
         }
     }
     fn alu_rotate (&mut self, right: bool, carry: bool) {
+        println!("[WARN] ROM makes use of known incorrect rotate instructions");
         let a = self.regs.a;
         self.regs.a = self.alu_rotate_val(right, carry, a);
     }
