@@ -24,7 +24,7 @@ Afterwards, in a terminal, you can execute these commands, assuming you have a
 ```
 git clone https://github.com/adamsoutar/gbrs
 cd gbrs
-cargo run --release
+cargo run --release ROM_PATH
 ```
 
-(Right now, loading ROMs is done by changing the string in `main.rs`)
+(Replace ROM_PATH with the path to a .gb file)
