@@ -22,6 +22,10 @@ impl MBC for MBCNone {
     fn ram_write(&mut self, _: u16, _: u8) {
         // We don't have RAM
     }
+
+    fn step (&mut self) {
+        // We don't need to do anything here
+    }
 }
 
 impl MBCNone {

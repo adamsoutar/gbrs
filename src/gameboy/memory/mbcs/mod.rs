@@ -7,6 +7,9 @@ pub trait MBC {
 
     fn ram_read(&self, address: u16) -> u8;
     fn ram_write(&mut self, address: u16, value: u8);
+
+    // Mostly used to debounce battery-backed RAM saves
+    fn step(&mut self);
 }
 
 mod none;

@@ -10,7 +10,7 @@ impl Rom {
         self.bytes[address as usize]
     }
 
-    pub fn from_file (path: String) -> Rom {
+    pub fn from_file (path: &str) -> Rom {
         let mut buffer = vec![];
         let mut file = File::open(path).expect("Invalid ROM path");
         file.read_to_end(&mut buffer).expect("Unable to read ROM file");

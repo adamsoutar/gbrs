@@ -56,7 +56,7 @@ impl Memory {
         // }
     }
 
-    // Memory has a step command for timers
+    // Memory has a step command for timers & MBCs
     pub fn step (&mut self, cycles: usize, ints: &mut Interrupts) {
         for _ in 0..cycles {
             self.timer_divider_increase += 1;
@@ -77,6 +77,7 @@ impl Memory {
                 }
             }
         }
+        self.mbc.step();
     }
 
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {

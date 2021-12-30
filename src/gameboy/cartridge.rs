@@ -2,6 +2,7 @@
 #[derive(Clone)]
 pub struct Cartridge {
     pub title: String,
+    pub rom_path: String,
     pub cart_type: u8,
 
     pub rom_size: usize,
@@ -9,7 +10,7 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
-    pub fn parse(buffer: &Vec<u8>) -> Cartridge {
+    pub fn parse(buffer: &Vec<u8>, rom_path: String) -> Cartridge {
         let title = get_title(buffer);
 
         let cart_type = buffer[0x0147];
@@ -32,7 +33,7 @@ impl Cartridge {
         };
 
         Cartridge {
-            title, cart_type, rom_size, ram_size
+            title, rom_path, cart_type, rom_size, ram_size
         }
     }
 }

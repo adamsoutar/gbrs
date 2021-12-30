@@ -865,8 +865,8 @@ impl Cpu {
     }
 
     pub fn from_rom (rom_path: String) -> Cpu {
-        let rom = Rom::from_file(rom_path);
-        let cart_info = Cartridge::parse(&rom.bytes);
+        let rom = Rom::from_file(&rom_path);
+        let cart_info = Cartridge::parse(&rom.bytes, rom_path);
 
         Cpu {
             mem: Memory::from_info(cart_info.clone(), rom),

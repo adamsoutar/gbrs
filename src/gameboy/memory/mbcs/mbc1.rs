@@ -1,6 +1,6 @@
 use crate::gameboy::memory::mbcs::MBC;
 use crate::gameboy::memory::rom::Rom;
-use crate::gameboy::memory::ram::Ram;
+use crate::gameboy::memory::battery_backed_ram::BatteryBackedRam;
 use crate::gameboy::cartridge::Cartridge;
 
 // 16KB (one bank size) in bytes
@@ -10,11 +10,8 @@ pub struct MBC1 {
     pub rom: Rom,
     pub rom_bank: u8,
 
-    // Not really supported yet
-    pub ram: Ram,
+    pub ram: BatteryBackedRam,
     pub ram_enabled: bool,
-
-    pub battery: bool
 }
 
 impl MBC for MBC1 {
@@ -46,6 +43,7 @@ impl MBC for MBC1 {
             println!("[WARN] MBC1 RAM read while disabled");
             return 0
         }
+
         self.ram.read(address)
     }
 
@@ -53,8 +51,13 @@ impl MBC for MBC1 {
         if !self.ram_enabled { 
             println!("[WARN] MBC1 RAM write while disabled");
             return
-         }
+        }
+
         self.ram.write(address, value)
+    }
+
+    fn step(&mut self) {
+        self.ram.step()
     }
 }
 
@@ -66,18 +69,21 @@ impl MBC1 {
     }
 
     pub fn new (cart_info: Cartridge, rom: Rom) -> Self {
-        // TODO: Support the battery
         // TODO: Banked RAM
         if cart_info.ram_size > 8_192 { 
             panic!("gbrs doesn't support banked (>=32K) MBC1 RAM");
         }
 
+        let has_battery = cart_info.cart_type == 0x03;
         MBC1 {
             rom,
             ram_enabled: false,
             rom_bank: 1,
-            ram: Ram::new(cart_info.ram_size),
-            battery: cart_info.cart_type == 0x03
+            ram: BatteryBackedRam::new(
+                cart_info.ram_size, 
+                has_battery, 
+                &cart_info.rom_path[..]
+            )
         }
     }
 }

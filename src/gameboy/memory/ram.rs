@@ -1,5 +1,8 @@
+use std::io::Read;
+use std::fs::File;
+
 pub struct Ram {
-    bytes: Vec<u8>
+    pub bytes: Vec<u8>
 }
 
 impl Ram {
@@ -14,6 +17,20 @@ impl Ram {
     pub fn new (size: usize) -> Ram {
         Ram {
             bytes: vec![0; size]
+        }
+    }
+
+    pub fn from_file (path: &str, expected_size: usize) -> Ram {
+        let mut buffer = vec![];
+        let mut file = File::open(path).expect("Invalid save file path");
+        file.read_to_end(&mut buffer).expect("Unable to read save file");
+
+        if buffer.len() != expected_size {
+            panic!("Save file was not the expected length")
+        }
+
+        Ram {
+            bytes: buffer
         }
     }
 }
