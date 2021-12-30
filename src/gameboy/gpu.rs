@@ -350,7 +350,7 @@ impl Gpu {
 
         let sprite = match maybe_sprite {
             Some(s) => s,
-            // If there's no sprite, so use the background
+            // If there's no sprite, use the background
             None => { return bg_col }
         };
 
