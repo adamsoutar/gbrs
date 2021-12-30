@@ -339,68 +339,65 @@ impl Gpu {
 
         let ix = x as i32; let iy = y as i32;
 
-        let mut maybe_sprite: Option<&Sprite> = None;
-        for s in sprites {
-            // TODO: Proper z-fighting resolution
-            if s.x_pos <= ix && (s.x_pos + 8) > ix {
-                maybe_sprite = Some(s);
-                break;
+        let mut maybe_colour: Option<GreyShade> = None;
+        let mut min_x: i32 = SCREEN_WIDTH as i32 + 8;
+        for sprite in sprites {
+            if sprite.x_pos <= ix && (sprite.x_pos + 8) > ix && sprite.x_pos < min_x {
+                if !sprite.above_bg && bg_col_id != 0 {
+                    continue;
+                }
+        
+                let mut subx = (ix - sprite.x_pos) as u8;
+                let mut suby = iy - sprite.y_pos;
+        
+                // Tile address for 8x8 mode
+                let mut pattern = sprite.pattern_id;
+        
+                // TODO: Might not be right
+                if sprite_height == 16 {
+                    if suby > 7 {
+                        suby -= 7;
+        
+                        if sprite.y_flip {
+                            pattern = sprite.pattern_id & 0xFE;
+                        } else {
+                            pattern = sprite.pattern_id | 0x01;
+                        }
+                    } else {
+                        if sprite.y_flip {
+                            pattern = sprite.pattern_id | 0x01;
+                        } else {
+                            pattern = sprite.pattern_id & 0xFE;
+                        }
+                    }
+                }
+        
+                if sprite.x_flip { subx = 7 - subx }
+                // TODO: Not sure if this applies to vertically flipped 8x16 mode sprites
+                if sprite.y_flip { suby = 7 - suby }
+        
+                let tile_address = 0x8000 + (pattern as u16) * 16;
+                let line_we_need = suby as u16 * 2;
+                let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
+        
+                let col_id = self.get_colour_id_in_line(tile_line, subx);
+        
+                if col_id == 0 {
+                    // This pixel is transparent
+                    continue
+                } else {
+                    let palette = if sprite.use_palette_0
+                        { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
+                    
+                    min_x = sprite.x_pos;
+                    maybe_colour = Some(self.get_shade_from_colour_id(col_id, palette))
+                }
             }
         }
 
-        let sprite = match maybe_sprite {
-            Some(s) => s,
-            // If there's no sprite, use the background
-            None => { return bg_col }
-        };
-
-        if !sprite.above_bg && bg_col_id != 0 {
-            return bg_col;
-        }
-
-        let mut subx = (ix - sprite.x_pos) as u8;
-        let mut suby = iy - sprite.y_pos;
-
-        // Tile address for 8x8 mode
-        let mut pattern = sprite.pattern_id;
-
-        // TODO: Might not be right
-        if sprite_height == 16 {
-            if suby > 7 {
-                suby -= 7;
-
-                if sprite.y_flip {
-                    pattern = sprite.pattern_id & 0xFE;
-                } else {
-                    pattern = sprite.pattern_id | 0x01;
-                }
-            } else {
-                if sprite.y_flip {
-                    pattern = sprite.pattern_id | 0x01;
-                } else {
-                    pattern = sprite.pattern_id & 0xFE;
-                }
-            }
-        }
-
-        if sprite.x_flip { subx = 7 - subx }
-        // TODO: Not sure if this applies to vertically flipped 8x16 mode sprites
-        if sprite.y_flip { suby = 7 - suby }
-
-        let tile_address = 0x8000 + (pattern as u16) * 16;
-        let line_we_need = suby as u16 * 2;
-        let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
-
-        let col_id = self.get_colour_id_in_line(tile_line, subx);
-
-        if col_id == 0 {
-            // This pixel is transparent
-            bg_col
-        } else {
-            let palette = if sprite.use_palette_0
-                { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
-
-            self.get_shade_from_colour_id(col_id, palette)
+        match maybe_colour {
+            Some(col) => col,
+            None => bg_col
         }
     }
 
