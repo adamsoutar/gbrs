@@ -50,8 +50,8 @@ pub fn run_gui (mut gameboy: Cpu) {
         }
 
         // TODO: Raise the joypad interrupt
-        gameboy.mem.joypad.a_pressed = Key::is_pressed(Key::Z);
-        gameboy.mem.joypad.b_pressed = Key::is_pressed(Key::X);
+        gameboy.mem.joypad.a_pressed = Key::is_pressed(Key::X);
+        gameboy.mem.joypad.b_pressed = Key::is_pressed(Key::Z);
         gameboy.mem.joypad.start_pressed = Key::is_pressed(Key::Return);
         gameboy.mem.joypad.select_pressed = Key::is_pressed(Key::BackSpace);
         gameboy.mem.joypad.up_pressed = Key::is_pressed(Key::Up);
