@@ -20,7 +20,10 @@ impl Cartridge {
         let rom_size = 32768 << (rom_size_id as usize);
         let ram_size = match ram_size_id {
             0 => 0,
-            1 => 2_048,
+            1 => {
+                println!("[WARN] Unofficial 2KB RAM size not used by any officially published game.");
+                2_048
+            },
             2 => 8_192,
             3 => 32_768,
             4 => 131_072,
