@@ -41,13 +41,15 @@ impl MBC for MBC1 {
         }
     }
 
-    fn ram_read(&self, _: u16) -> u8 {
+    fn ram_read(&self, address: u16) -> u8 {
         // TODO
+        println!("Unsupported MBC1 RAM read at {:#06x}", address);
         0
     }
 
-    fn ram_write(&mut self, _: u16, _: u8) {
+    fn ram_write(&mut self, address: u16, value: u8) {
         // TODO
+        println!("Unsupported MBC1 RAM write at {:#06x} (value: {:#04x})", address, value);
     }
 }
 
