@@ -34,7 +34,9 @@ impl MBC for MBC1 {
                 if n == 0 { n = 1 }
                 self.rom_bank = n
             },
-            _ => println!("Unsupported MBC1 write at {:#06x} (value: {:#04x})", address, value)
+            // Frogger writes 0 to 0x408e constantly (so much that the below
+            //   println slows down the game). Maybe a bug in that game?
+            _ => {} //println!("Unsupported MBC1 write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 
