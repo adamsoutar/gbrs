@@ -42,14 +42,19 @@ impl MBC for MBC1 {
     }
 
     fn ram_read(&self, address: u16) -> u8 {
-        // TODO
-        println!("Unsupported MBC1 RAM read at {:#06x}", address);
-        0
+        if !self.ram_enabled {
+            println!("[WARN] MBC1 RAM read while disabled");
+            return 0
+        }
+        self.ram.read(address)
     }
 
     fn ram_write(&mut self, address: u16, value: u8) {
-        // TODO
-        println!("Unsupported MBC1 RAM write at {:#06x} (value: {:#04x})", address, value);
+        if !self.ram_enabled { 
+            println!("[WARN] MBC1 RAM write while disabled");
+            return
+         }
+        self.ram.write(address, value)
     }
 }
 
@@ -62,7 +67,11 @@ impl MBC1 {
 
     pub fn new (cart_info: Cartridge, rom: Rom) -> Self {
         // TODO: Support the battery
-        // TODO: Support the RAM
+        // TODO: Banked RAM
+        if cart_info.ram_size > 8_192 { 
+            panic!("gbrs doesn't support banked (>=32K) MBC1 RAM");
+        }
+
         MBC1 {
             rom,
             ram_enabled: false,
