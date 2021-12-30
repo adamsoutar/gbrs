@@ -309,13 +309,12 @@ impl Gpu {
         let tile_id: u16;
 
         if self.control.bg_and_window_data_select {
-            // 8000 addressing mode
+            // 0x8000 addressing mode
             tile_id = tile_id_raw as u16;
         } else {
-            // 8800 addressing mode
-            // TODO: This might not be right
+            // 0x8800 addressing mode
             if tile_id_raw < 128 {
-                tile_id = (tile_id_raw as u16) + 255;
+                tile_id = (tile_id_raw as u16) + 256;
             } else { tile_id = tile_id_raw as u16 }
         }
 
