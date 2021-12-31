@@ -90,6 +90,8 @@ impl Memory {
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
 
             WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
+            ECHO_RAM_START ..= ECHO_RAM_END => self.read(ints, gpu, address - (ECHO_RAM_START - WRAM_START)),
+
             OAM_START ..= OAM_END => gpu.raw_read(address),
 
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0xFF,

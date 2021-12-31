@@ -29,6 +29,9 @@ pub const VRAM_END: u16 = 0x9FFF;
 pub const WRAM_START: u16 = 0xC000;
 pub const WRAM_END: u16 = 0xDFFF;
 
+pub const ECHO_RAM_START: u16 = 0xE000;
+pub const ECHO_RAM_END: u16 = 0xFDFF;
+
 pub const OAM_START: u16 = 0xFE00;
 pub const OAM_END: u16 = 0xFE9F;
 
