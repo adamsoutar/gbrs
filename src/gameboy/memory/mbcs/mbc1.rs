@@ -12,6 +12,8 @@ pub struct MBC1 {
 
     pub ram: BatteryBackedRam,
     pub ram_enabled: bool,
+
+    has_shown_ram_warning: bool
 }
 
 impl MBC for MBC1 {
@@ -41,18 +43,20 @@ impl MBC for MBC1 {
     }
 
     fn ram_read(&self, address: u16) -> u8 {
-        if !self.ram_enabled {
+        if !self.ram_enabled && !self.has_shown_ram_warning {
             println!("[WARN] MBC1 RAM read while disabled");
-            return 0
+            // return 0
         }
 
         self.ram.read(address)
     }
 
     fn ram_write(&mut self, address: u16, value: u8) {
-        if !self.ram_enabled { 
+        if !self.ram_enabled && !self.has_shown_ram_warning { 
             println!("[WARN] MBC1 RAM write while disabled");
-            return
+            // Otherwise the game is slowed down by constant debug printing
+            self.has_shown_ram_warning = true;
+            // return
         }
 
         self.ram.write(address, value)
@@ -85,7 +89,8 @@ impl MBC1 {
                 cart_info.ram_size, 
                 has_battery, 
                 &cart_info.rom_path[..]
-            )
+            ),
+            has_shown_ram_warning: false
         }
     }
 }
