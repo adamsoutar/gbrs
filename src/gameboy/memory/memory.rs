@@ -129,6 +129,8 @@ impl Memory {
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
 
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
+            ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_START), value),
+
             OAM_START ..= OAM_END => gpu.raw_write(address, value),
 
             // TETRIS writes here.. due to a bug
