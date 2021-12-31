@@ -24,7 +24,7 @@ pub fn mbc_from_info(cart_info: Cartridge, rom: Rom) -> Box<dyn MBC> {
     match cart_info.cart_type {
         0x00 => Box::new(none::MBCNone::new(rom)),
         0x01 ..= 0x03 => Box::new(mbc1::MBC1::new(cart_info, rom)),
-        _ => panic!("gbrs doesn't support this cartridge's memory controller.")
+        _ => panic!("gbrs doesn't support this cartridge's memory controller ({:#04x}).", cart_info.cart_type)
     }
 }
 
@@ -34,6 +34,23 @@ fn get_cart_type_string (cart_info: &Cartridge) -> &str {
         0x01 => "MBC1",
         0x02 => "MBC1 + RAM",
         0x03 => "MBC1 + RAM + BATTERY",
-        _ => panic!("gbrs doesn't support this cartridge's memory controller.")
+        // There are some gaps where Pan Docs doesn't define what they are
+        0x05 => "MBC2",
+        0x06 => "MBC2 + BATTERY",
+
+        0x08 => "ROM + RAM (Unofficial)", // No gameboy game uses these
+        0x09 => "ROM + RAM + BATTERY (Unofficial)",
+
+        0x0B => "MMM01",
+        0x0C => "MMM01 + RAM",
+        0x0D => "MMM01 + RAM + BATTERY",
+
+        0x0F => "MBC3 + TIMER + BATTERY",
+        0x10 => "MBC3 + TIMER + RAM + BATTERY",
+        0x11 => "MBC3",
+        0x12 => "MBC3 + RAM",
+        0x13 => "MBC3 + RAM + BATTERY",
+
+        _ => panic!("gbrs doesn't know the name of this cartridge's memory controller ({:#04x}).", cart_info.cart_type)
     }
 }
