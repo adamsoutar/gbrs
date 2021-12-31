@@ -253,8 +253,6 @@ impl Gpu {
         let ux = x as usize; let uy = y as usize;
         let idx = uy * SCREEN_WIDTH + ux;
 
-        // We just always assume the background's enabled,
-        // and there is no window
         let bg_col: GreyShade;
         let bg_col_id = if self.control.bg_display {
             let id = self.get_background_colour_at(ints, mem, x, y);
@@ -294,12 +292,33 @@ impl Gpu {
     }
 
     fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> u16 {
-        let tilemap_base = if self.control.bg_tile_map_display_select {
+        let is_window = self.control.window_enable &&
+            x as isize > self.wx as isize - 7 && y >= self.wy;
+
+        let tilemap_select = if is_window { 
+            self.control.window_tile_map_display_select 
+        } else {
+            self.control.bg_tile_map_display_select
+        };
+
+        let tilemap_base = if tilemap_select {
             0x9C00
         } else { 0x9800 };
 
         // This is which tile ID our pixel is in
-        let y16 = y.wrapping_add(self.scy) as u16; let x16 = x.wrapping_add(self.scx) as u16;
+        let x16: u16;
+        let y16: u16;
+
+        if is_window {
+            // TODO: This is a bit guessed but seems to work
+            //       Try more games with windows
+            x16 = x.wrapping_sub(self.wx - 7) as u16;
+            y16 = y.wrapping_sub(self.wy) as u16;
+        } else {
+            x16 = x.wrapping_add(self.scx) as u16;
+            y16 = y.wrapping_add(self.scy) as u16;
+        }
+
         let tx = x16 / 8; let ty = y16 / 8;
         let subx = (x16 % 8) as u8; let suby = y16 % 8;
 
