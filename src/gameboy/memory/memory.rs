@@ -8,6 +8,7 @@ use crate::gameboy::joypad::Joypad;
 use crate::gameboy::cartridge::Cartridge;
 use crate::gameboy::memory::mbcs::*;
 use crate::gameboy::apu::APU;
+use crate::gameboy::serial_cable::SerialCable;
 
 // TODO: Rename this to something more appropriate
 //       (I've seen an emu call a similar struct 'Interconnect')
@@ -18,6 +19,8 @@ pub struct Memory {
     vram: Ram,
     wram: Ram,
     hram: Ram,
+
+    serial_cable: SerialCable,
 
     timer_divider_increase: u16,
     timer_divider: u8,
@@ -76,6 +79,8 @@ impl Memory {
                     ints.raise_interrupt(InterruptReason::Timer);
                 }
             }
+
+            self.serial_cable.step(ints);   
         }
         self.mbc.step();
     }
@@ -96,8 +101,7 @@ impl Memory {
 
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0xFF,
 
-            // STUB: No real link cable support
-            LINK_CABLE_SB | LINK_CABLE_SC => 0,
+            LINK_CABLE_SB | LINK_CABLE_SC => self.serial_cable.read(address),
 
             APU_START ..= APU_END => self.apu.read(address),
 
@@ -136,9 +140,7 @@ impl Memory {
             // TETRIS writes here.. due to a bug
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
 
-            // STUB: No link cable support
-            LINK_CABLE_SB => {}, //println!("{:#04x} was written to the link cable", value),
-            LINK_CABLE_SC => {}, //println!("{:#04x} was written to the link cable control field", value),
+            LINK_CABLE_SB | LINK_CABLE_SC => self.serial_cable.write(address, value),
 
             APU_START ..= APU_END => self.apu.write(address, value),
 
@@ -179,6 +181,7 @@ impl Memory {
             vram: Ram::new(VRAM_SIZE),
             wram: Ram::new(WRAM_SIZE),
             hram: Ram::new(HRAM_SIZE),
+            serial_cable: SerialCable::new(),
             timer_divider_increase: 0,
             timer_divider: 0,
             timer_counter_increase: 0,
