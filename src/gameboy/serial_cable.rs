@@ -35,13 +35,13 @@ impl SerialCable {
   }
 
   pub fn step (&mut self, ints: &mut Interrupts) {
-    self.transfer_data_byte = self.transfer_data_byte << 1;
+    // self.transfer_data_byte = self.transfer_data_byte << 1;
 
-    if self.transfer_control_byte & 0b1000_0000 > 0 {
-      // Game requested a serial transfer. We will acknowledge.
-      self.transfer_control_byte &= 0b0111_1111;
-      ints.raise_interrupt(InterruptReason::Serial);
-    }
+    // if self.transfer_control_byte & 0b1000_0000 > 0 {
+    //   // Game requested a serial transfer. We will acknowledge.
+    //   self.transfer_control_byte &= 0b0111_1111;
+    //   ints.raise_interrupt(InterruptReason::Serial);
+    // }
   }
 
   pub fn new () -> SerialCable {
