@@ -58,12 +58,12 @@ pub struct Gpu {
 }
 
 impl Gpu {
-    pub fn raw_write (&mut self, raw_address: u16, value: u8) {
+    pub fn raw_write (&mut self, raw_address: u16, value: u8, ints: &mut Interrupts) {
         match raw_address {
             OAM_START ..= OAM_END => self.oam.write(raw_address - OAM_START, value),
 
             0xFF40 => self.control = LcdControl::from(value),
-            0xFF41 => self.status.set_data(value),
+            0xFF41 => self.status.set_data(value, ints),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
             0xFF45 => self.lyc = value,

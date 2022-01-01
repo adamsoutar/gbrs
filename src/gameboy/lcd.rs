@@ -1,3 +1,5 @@
+use crate::gameboy::interrupts::{Interrupts, InterruptReason};
+
 #[derive(Clone, Copy)]
 pub enum GreyShade {
     White,
@@ -93,7 +95,19 @@ impl LcdStatus {
         }
     }
 
-    pub fn set_data (&mut self, data: u8) {
+    pub fn set_data (&mut self, data: u8, ints: &mut Interrupts) {
+        // There's actually a DMG GPU bug when writing to LCDStat
+        // where sometimes it fires off an interrupt at the wrong time
+        // https://robertovaccari.com/blog/2020_09_26_gameboy/
+        match self.get_mode() {
+            LcdMode::HBlank | LcdMode::VBlank => {
+                if self.lyc {
+                    ints.raise_interrupt(InterruptReason::LCDStat)
+                }
+            },
+            _ => {}
+        }
+
         let new_stat = LcdStatus::from(data);
         self.lyc = new_stat.lyc;
         self.oam_interrupt = new_stat.oam_interrupt;

@@ -135,7 +135,7 @@ impl Memory {
             WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
             ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_START), value),
 
-            OAM_START ..= OAM_END => gpu.raw_write(address, value),
+            OAM_START ..= OAM_END => gpu.raw_write(address, value, ints),
 
             // TETRIS writes here.. due to a bug
             UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
@@ -144,7 +144,7 @@ impl Memory {
 
             APU_START ..= APU_END => self.apu.write(address, value),
 
-            LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value),
+            LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value, ints),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
 
             0xFF00 => self.joypad.write(value),
