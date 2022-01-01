@@ -12,7 +12,9 @@ pub struct SerialCable {
 impl SerialCable {
   pub fn read (&self, address: u16) -> u8 {
     match address {
-      LINK_CABLE_SB => self.transfer_data_byte,
+      // When there's no gameboy on the other end, this apparently
+      // just always reads 0xFF
+      LINK_CABLE_SB => 0xFF,//self.transfer_data_byte,
       LINK_CABLE_SC => self.transfer_control_byte,
       _ => unreachable!()
     }
