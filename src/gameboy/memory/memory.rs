@@ -110,16 +110,22 @@ impl Memory {
 
             0xFF00 => self.joypad.read(),
 
+            // 0xFF03 => 0xFF,
+
             // Timers
             0xFF04 => self.timer_divider,
             0xFF05 => self.timer_counter,
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
 
+            // 0xFF08 => 0xFF,
+            // 0xFF09 => 0xFF,
+            // 0xFF0A => 0xFF,
+
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
 
-            _ => panic!("Unsupported memory read at {:#06x}", address)
+            _ => { println!("Unsupported memory read at {:#06x}", address); 0xFF }
         }
     }
 

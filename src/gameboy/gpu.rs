@@ -101,7 +101,7 @@ impl Gpu {
             0xFF47 => self.bg_pallette,
             0xFF48 => self.sprite_pallete_1,
             0xFF49 => self.sprite_pallete_2,
-            _ => panic!("Unsupported GPU read at {:#06x}", raw_address)
+            _ => { println!("Unsupported GPU read at {:#06x}", raw_address); 0xFF }
         }
     }
 
