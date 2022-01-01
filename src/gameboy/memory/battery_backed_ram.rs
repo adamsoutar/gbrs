@@ -20,6 +20,7 @@ fn get_save_file_path (rom_path: &str) -> String {
 
 pub struct BatteryBackedRam {
   ram: Ram,
+  pub size: usize,
 
   save_file_path: String,
   battery_enabled: bool,
@@ -73,6 +74,7 @@ impl BatteryBackedRam {
 
     BatteryBackedRam {
       ram,
+      size,
 
       save_file_path,
       battery_enabled,

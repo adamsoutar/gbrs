@@ -2,7 +2,8 @@ use std::io::Read;
 use std::fs::File;
 
 pub struct Ram {
-    pub bytes: Vec<u8>
+    pub bytes: Vec<u8>,
+    pub size: usize
 }
 
 impl Ram {
@@ -16,7 +17,8 @@ impl Ram {
 
     pub fn new (size: usize) -> Ram {
         Ram {
-            bytes: vec![0; size]
+            bytes: vec![0; size],
+            size
         }
     }
 
@@ -30,7 +32,8 @@ impl Ram {
         }
 
         Ram {
-            bytes: buffer
+            bytes: buffer,
+            size: expected_size
         }
     }
 }
