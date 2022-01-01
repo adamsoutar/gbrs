@@ -266,8 +266,6 @@ impl Gpu {
         // If there's a non-transparent sprite here, use its colour
         let s_col = self.get_sprite_colour_at(ints, mem, sprites_on_line, bg_col, bg_col_id, x, y);
 
-        // TODO: Support WINDOW
-
         self.frame[idx] = s_col;
     }
 
