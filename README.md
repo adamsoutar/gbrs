@@ -2,15 +2,69 @@
 
 A Rust GameBoy emulator!
 
-![Tetris Gameplay](assets/gameplay.gif)
+<table>
+  <tr>
+    <th>Tetris</th><th>Zelda: Link's Awakening</th>
+  </tr>
+  <tr>
+    <td><img src="assets/tetris.gif" /></td>
+    <td><img src="assets/zelda.gif" /></td>
+  </tr>
+  <tr>
+    <th>Super Mario Land</th><th>Super Mario Land 2</th>
+  </tr>
+  <tr>
+    <td><img src="assets/mario.gif" /></td>
+    <td><img src="assets/mario2.gif" /></td>
+  </tr>
+  <tr>
+    <th>Zelda: Link's Awakening</th><th>Mortal Kombat</th>
+  </tr>
+  <tr>
+    <td><img src="assets/zelda.gif" /></td>
+    <td><img src="assets/mortalkombat.gif" /></td>
+  </tr>
+  <tr>
+    <th>Pac-Man</th><th>Alleyway</th>
+  </tr>
+  <tr>
+    <td><img src="assets/pacman.gif" /></td>
+    <td><img src="assets/alleyway.gif" /></td>
+  </tr>
+  <tr>
+    <th>Space Invaders</th><th>Road Rash</th>
+  </tr>
+  <tr>
+    <td><img src="assets/spaceinvaders.gif" /></td>
+    <td><img src="assets/roadrash.gif" /></td>
+  </tr>
+  <tr>
+    <th>Donkey Kong</th><th>Frogger</th>
+  </tr>
+  <tr>
+    <td><img src="assets/donkeykong.gif" /></td>
+    <td><img src="assets/frogger.gif" /></td>
+  </tr>
+</table>
+
+## Support
+
+gbrs supports:
+
+ - Mid-scanline effects (required for games like Road Rash)
+ - "The Window" - a GPU feature required for Pac Man and Zelda
+ - Cycle-accurate CPU & counters
+ - Save files & saved games (Zelda & Super Mario Land 2 use these)
+ - Memory Board Controller 1 (required for some complex games)
+ - & more!
 
 ## Progress so far
 
-gbrs is still in development, but running Tetris felt like a big enough
-milestone to publish the source so far.
+I'm still working on gbrs (and having a ***tonne*** of fun doing it!).
 
-Currently, I'm working toward supporting Pokemon Red or Super Mario Land as
-the next working game. I will also be working on sound support.
+Some main things I'm working on
+ - Pokémon requires Memory Controller Board 3 support
+ - There's no support for sound right now
 
 ## Building from source
 
