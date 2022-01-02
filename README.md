@@ -18,10 +18,10 @@ A Rust GameBoy emulator!
     <td><img src="assets/mario2.gif" /></td>
   </tr>
   <tr>
-    <th>Zelda: Link's Awakening</th><th>Mortal Kombat</th>
+    <th>Galaga & Galaxian</th><th>Mortal Kombat</th>
   </tr>
   <tr>
-    <td><img src="assets/zelda.gif" /></td>
+    <td><img src="assets/galaga.gif" /></td>
     <td><img src="assets/mortalkombat.gif" /></td>
   </tr>
   <tr>
