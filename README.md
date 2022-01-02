@@ -56,7 +56,8 @@ gbrs supports:
  - Cycle-accurate CPU & counters
  - Save files & saved games (Zelda & Super Mario Land 2 use these)
  - Memory Board Controller 1 (required for some complex games)
- - & more!
+
+& more!
 
 ## Progress so far
 
