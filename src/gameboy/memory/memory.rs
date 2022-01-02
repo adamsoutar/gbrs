@@ -157,8 +157,8 @@ impl Memory {
 
             // Timers
             0xFF04 => self.timer_divider = 0,
-            // TODO: Does this go to 0 when written?
-            0xFF05 => self.timer_counter = value,
+            // NOTE: This goes to 0 when written to, not to value
+            0xFF05 => self.timer_counter = 0,
             0xFF06 => self.timer_modulo = value,
             0xFF07 => self.timer_control = value,
 
