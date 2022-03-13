@@ -14,8 +14,7 @@ pub const SCREEN_BUFFER_SIZE: usize = SCREEN_WIDTH * SCREEN_HEIGHT;
 pub const SCREEN_RGBA_SLICE_SIZE: usize = SCREEN_BUFFER_SIZE * 4;
 
 pub const CLOCK_SPEED: usize = 4194304;
-pub const FRAME_RATE: usize = 60;
-pub const CYCLES_PER_FRAME: usize = CLOCK_SPEED / FRAME_RATE;
+pub const DEFAULT_FRAME_RATE: usize = 60;
 
 // MBC_ROM_START is 0
 pub const MBC_ROM_END: u16 = 0x7FFF;

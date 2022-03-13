@@ -1,5 +1,6 @@
 use crate::memory::memory::Memory;
 use crate::helpers::*;
+use crate::constants::*;
 use crate::{bitmatch, compute_mask, compute_equal};
 use crate::registers::Registers;
 use crate::interrupts::*;
@@ -38,6 +39,7 @@ pub struct Cpu {
     regs: Registers,
 
     pub gpu: Gpu,
+    pub frame_rate: usize,
 
     pub ints: Interrupts,
     // When EI is executed, they're turned on after the instruction after the EI
@@ -340,6 +342,19 @@ impl Cpu {
                 }
             }
         }
+    }
+
+    // Runs enough steps to be ready to render one frame
+    // (GUI implementations should get the frame from gpu.finished_frame)
+    pub fn step_one_frame (&mut self) -> usize {
+        let cycles_per_frame = CLOCK_SPEED / self.frame_rate;
+
+        let mut cycles = 0;
+        while cycles < cycles_per_frame {
+            cycles += self.step()
+        }
+
+        cycles
     }
 
     pub fn step (&mut self) -> usize {
@@ -882,6 +897,7 @@ impl Cpu {
             regs: Registers::new(),
 
             gpu: Gpu::new(),
+            frame_rate: DEFAULT_FRAME_RATE,
 
             ints: Interrupts::new(),
             ime_on_pending: false
@@ -898,6 +914,7 @@ impl Cpu {
             regs: Registers::new(),
 
             gpu: Gpu::new(),
+            frame_rate: DEFAULT_FRAME_RATE,
 
             ints: Interrupts::new(),
             ime_on_pending: false

@@ -22,7 +22,7 @@ pub fn run_gui (mut gameboy: Cpu) {
         style,
         &Default::default()
     );
-    window.set_framerate_limit(60);
+    window.set_framerate_limit(gameboy.frame_rate as u32);
 
     let mut screen_texture = Texture::new(sw, sh).unwrap();
     // Scale the 160x144 image to the appropriate resolution
@@ -67,10 +67,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             }
             step_last_frame = pressing_step;
         } else {
-            let mut cycles = 0;
-            while cycles < CYCLES_PER_FRAME {
-                cycles += gameboy.step();
-            }
+            let cycles = gameboy.step_one_frame();
             if FPS_CYCLES_DEBUG {
                 log!("Ran {} cycles that frame", cycles);
             }
