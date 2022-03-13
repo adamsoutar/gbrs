@@ -15,23 +15,42 @@ pub fn set_bit (number: &mut u8, bit_index: u8, bit: u8) {
     *number |= bit << bit_index;
 }
 
+// Frontends can give us their own logging method
+// This is especially handy when using no_std due to being without println
+pub type LogCallback = fn(&str);
+
 #[cfg(feature = "std")]
-#[macro_export]
-macro_rules! log {
-    ($($a:expr),*) => {                                              
-        println!($($a,)*)
-    };  
+fn default_log_callback (log_string: &str) {
+    println!("{}", log_string);
 }
-// When running in no_std, we do not log
-// TODO: Use extern c printf in no_std
+// NOTE: By default we do not actually log in no_std mode. The consumer may
+//   modify the LOG_CALLBACK lazy static to change this fact
 #[cfg(not(feature = "std"))]
+fn default_log_callback (_log_string: &str) {
+
+}
+
+pub static mut LOG_CALLBACK: LogCallback = default_log_callback;
+
+// This is by no means thread-safe, but gbrs does not multithread,
+// so it only ever talks to the log callback from the main thread.
+// In addition, the callback is likely only modified once, at the start
+// of the program, if at all.
+// Also, the main gbrs-core crate never modifies this. A port MAY choose to.
+pub unsafe fn set_log_callback (new_cb: LogCallback) {
+    LOG_CALLBACK = new_cb;
+}
+
 #[macro_export]
 macro_rules! log {
-    ($($a:expr),*) => {                                              
-        ()
+    ($($a:expr),*) => {
+        {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+            unsafe { crate::helpers::LOG_CALLBACK(&format!($($a,)*)[..]) }
+        }
     };  
 }
-  
 
 // Macro for bit-matching
 // https://www.reddit.com/r/rust/comments/2d7rrj/comment/cjo2c7t/?context=3
