@@ -84,3 +84,30 @@ cargo run --release ROM_PATH
 ```
 
 (Replace ROM_PATH with the path to a .gb file)
+
+## Ports
+
+gbrs is written to be ported to other platforms. Its default GUI for Windows,
+macOS and Linux is just a module that it doesn't _have_ to use.
+
+You can port [gbrs-core](./core) to almost anything - especially since it
+supports running _without_ the Rust StdLib.
+
+All a port needs to do is:
+
+```rust
+use gbrs_core::cpu::Cpu;
+
+let mut gameboy = Cpu::from_rom_bytes(
+  include_bytes!("./tetris.gb").to_vec()
+);
+
+// Each frame:
+gameboy.step_one_frame();
+draw_screen(&gameboy.gpu.finished_frame);
+// (where draw_screen is a platform-specific function left to the reader)
+```
+
+---
+
+<h6 align="center">By Adam Soutar</h6>
