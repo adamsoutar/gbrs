@@ -51,21 +51,22 @@ A Rust GameBoy emulator!
 
 gbrs supports:
 
- - Mid-scanline effects (required for games like Road Rash)
- - "The Window" - a GPU feature required for Pac Man and Zelda
- - Cycle-accurate CPU & counters
- - Save files & saved games (Zelda & Super Mario Land 2 use these)
- - Memory Board Controller 1 (required for some complex games)
+- Mid-scanline effects (required for games like Road Rash)
+- "The Window" - a GPU feature required for Pac Man and Zelda
+- Cycle-accurate CPU & counters
+- Save files & saved games (Zelda & Super Mario Land 2 use these)
+- Memory Board Controller 1 (required for some complex games)
 
 & more!
 
 ## Progress so far
 
-I'm still working on gbrs (and having a ***tonne*** of fun doing it!).
+I'm still working on gbrs (and having a **_tonne_** of fun doing it!).
 
 Some main things I'm working on
- - Pokémon requires Memory Controller Board 3 support
- - There's no support for sound right now
+
+- Pokémon requires Memory Controller Board 3 support
+- There's no support for sound right now
 
 ## Building from source
 
@@ -78,7 +79,7 @@ Afterwards, in a terminal, you can execute these commands, assuming you have a
 
 ```
 git clone https://github.com/adamsoutar/gbrs
-cd gbrs
+cd gbrs/sfml-gui
 cargo run --release ROM_PATH
 ```
 
