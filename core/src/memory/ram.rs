@@ -1,5 +1,14 @@
-use std::io::Read;
-use std::fs::File;
+#[cfg(feature = "std")]
+use std::{
+    io::Read,
+    fs::File
+};
+
+#[cfg(not(feature = "std"))]
+use alloc::{
+    vec::Vec,
+    vec
+};
 
 pub struct Ram {
     pub bytes: Vec<u8>,
@@ -22,6 +31,7 @@ impl Ram {
         }
     }
 
+    #[cfg(feature = "std")]
     pub fn from_file (path: &str, expected_size: usize) -> Ram {
         let mut buffer = vec![];
         let mut file = File::open(path).expect("Invalid save file path");
@@ -35,5 +45,10 @@ impl Ram {
             bytes: buffer,
             size: expected_size
         }
+    }
+
+    #[cfg(not(feature = "std"))]
+    pub fn from_file(path: &str, expected_size: usize) -> Ram {
+        unreachable!()
     }
 }

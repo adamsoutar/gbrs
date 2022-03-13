@@ -2,6 +2,9 @@ use crate::memory::rom::Rom;
 use crate::cartridge::Cartridge;
 use crate::log;
 
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
+
 pub trait MBC {
     fn read(&self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);

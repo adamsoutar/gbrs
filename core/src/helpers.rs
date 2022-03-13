@@ -15,10 +15,20 @@ pub fn set_bit (number: &mut u8, bit_index: u8, bit: u8) {
     *number |= bit << bit_index;
 }
 
+#[cfg(feature = "std")]
 #[macro_export]
 macro_rules! log {
     ($($a:expr),*) => {                                              
         println!($($a,)*)
+    };  
+}
+// When running in no_std, we do not log
+// TODO: Use extern c printf in no_std
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! log {
+    ($($a:expr),*) => {                                              
+        ()
     };  
 }
   

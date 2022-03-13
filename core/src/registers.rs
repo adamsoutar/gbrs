@@ -3,6 +3,12 @@ use crate::memory::memory::Memory;
 use crate::interrupts::*;
 use crate::gpu::Gpu;
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::String,
+    format
+};
+
 pub struct Registers {
     pub a: u8,
     pub b: u8,

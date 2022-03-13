@@ -5,6 +5,12 @@ use crate::memory::memory::Memory;
 use crate::interrupts::*;
 use crate::log;
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    vec::Vec,
+    vec
+};
+
 #[derive(Clone)]
 pub struct Sprite {
     pub y_pos: i32,

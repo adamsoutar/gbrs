@@ -1,5 +1,11 @@
-use std::io::Read;
-use std::fs::File;
+#[cfg(feature = "std")]
+use std::{
+    io::Read,
+    fs::File
+};
+
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 
 pub struct Rom {
     pub bytes: Vec<u8>
@@ -10,6 +16,7 @@ impl Rom {
         self.bytes[address as usize]
     }
 
+    #[cfg(feature = "std")]
     pub fn from_file (path: &str) -> Rom {
         let mut buffer = vec![];
         let mut file = File::open(path).expect("Invalid ROM path");
@@ -17,6 +24,12 @@ impl Rom {
 
         Rom {
             bytes: buffer
+        }
+    }
+
+    pub fn from_bytes (bytes: Vec<u8>) -> Rom {
+        Rom {
+            bytes
         }
     }
 }

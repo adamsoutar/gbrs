@@ -11,6 +11,9 @@ use crate::apu::APU;
 use crate::serial_cable::SerialCable;
 use crate::log;
 
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
+
 // TODO: Rename this to something more appropriate
 //       (I've seen an emu call a similar struct 'Interconnect')
 pub struct Memory {

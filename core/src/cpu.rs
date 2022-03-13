@@ -8,6 +8,12 @@ use crate::cartridge::Cartridge;
 use crate::memory::rom::Rom;
 use crate::log;
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::String,
+    vec::Vec
+};
+
 const BREAKPOINTS: [u16; 0] = [];
 const CPU_DEBUG: bool = false;
 
@@ -865,9 +871,26 @@ impl Cpu {
         }
     }
 
-    pub fn from_rom (rom_path: String) -> Cpu {
+    #[cfg(feature = "std")]
+    pub fn from_rom_file (rom_path: String) -> Cpu {
         let rom = Rom::from_file(&rom_path);
         let cart_info = Cartridge::parse(&rom.bytes, rom_path);
+
+        Cpu {
+            mem: Memory::from_info(cart_info.clone(), rom),
+            cart_info,
+            regs: Registers::new(),
+
+            gpu: Gpu::new(),
+
+            ints: Interrupts::new(),
+            ime_on_pending: false
+        }
+    }
+
+    pub fn from_rom_bytes (bytes: Vec<u8>) -> Cpu {
+        let rom = Rom::from_bytes(bytes);
+        let cart_info = Cartridge::parse(&rom.bytes, String::from("bytes.gb"));
 
         Cpu {
             mem: Memory::from_info(cart_info.clone(), rom),

@@ -1,6 +1,13 @@
 // Parses the cartridge header
 use crate::log;
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::String,
+    vec::Vec,
+    vec
+};
+
 #[derive(Clone)]
 pub struct Cartridge {
     pub title: String,
