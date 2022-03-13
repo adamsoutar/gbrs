@@ -1,5 +1,5 @@
-use crate::gameboy::memory::rom::Rom;
-use crate::gameboy::cartridge::Cartridge;
+use crate::memory::rom::Rom;
+use crate::cartridge::Cartridge;
 
 pub trait MBC {
     fn read(&self, address: u16) -> u8;

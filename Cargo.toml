@@ -1,8 +1,0 @@
-[package]
-name = "gbrs"
-version = "0.1.0"
-authors = ["Adam <adam@overflo.me>"]
-edition = "2018"
-
-[dependencies]
-sfml = "0.15.1"

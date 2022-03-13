@@ -2,7 +2,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use crate::gameboy::memory::ram::Ram;
+use crate::memory::ram::Ram;
 
 // The amount of seconds we wait before saving our save file
 // (otherwise eg. Link's Awakening would write 2,700 save files 

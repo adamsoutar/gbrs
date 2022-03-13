@@ -1,4 +1,4 @@
-use crate::gameboy::interrupts::{Interrupts, InterruptReason};
+use crate::interrupts::{Interrupts, InterruptReason};
 
 #[derive(Clone, Copy)]
 pub enum GreyShade {

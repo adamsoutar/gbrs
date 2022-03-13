@@ -1,14 +1,14 @@
-use crate::gameboy::constants::*;
-use crate::gameboy::memory::ram::Ram;
-use crate::gameboy::memory::rom::Rom;
-use crate::gameboy::gpu::Gpu;
-use crate::gameboy::interrupts::*;
-use crate::gameboy::helpers::*;
-use crate::gameboy::joypad::Joypad;
-use crate::gameboy::cartridge::Cartridge;
-use crate::gameboy::memory::mbcs::*;
-use crate::gameboy::apu::APU;
-use crate::gameboy::serial_cable::SerialCable;
+use crate::constants::*;
+use crate::memory::ram::Ram;
+use crate::memory::rom::Rom;
+use crate::gpu::Gpu;
+use crate::interrupts::*;
+use crate::helpers::*;
+use crate::joypad::Joypad;
+use crate::cartridge::Cartridge;
+use crate::memory::mbcs::*;
+use crate::apu::APU;
+use crate::serial_cable::SerialCable;
 
 // TODO: Rename this to something more appropriate
 //       (I've seen an emu call a similar struct 'Interconnect')

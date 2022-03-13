@@ -1,8 +1,8 @@
 // Gameboy Link Cable
 // Mostly a stub, although some parts have to be emulated *somewhat* accurately
 // to emulate fussy games like Alleyway
-use crate::gameboy::constants::*;
-use crate::gameboy::interrupts::{Interrupts, InterruptReason};
+use crate::constants::*;
+use crate::interrupts::{Interrupts, InterruptReason};
 
 // Unusual serial code inspired by
 // https://github.com/rvaccarim/FrozenBoy/blob/master/FrozenBoyCore/Serial/SerialLink.cs

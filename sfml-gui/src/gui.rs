@@ -1,5 +1,5 @@
-use crate::gameboy::cpu::Cpu;
-use crate::gameboy::constants::*;
+use gbrs_core::cpu::Cpu;
+use gbrs_core::constants::*;
 
 use sfml::graphics::*;
 use sfml::window::*;

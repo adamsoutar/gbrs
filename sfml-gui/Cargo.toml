@@ -1,0 +1,9 @@
+[package]
+name = "gbrs-sfml-gui"
+version = "0.2.0"
+authors = ["Adam <adam@overflo.me>"]
+edition = "2021"
+
+[dependencies]
+gbrs-core = { path = "../core" }
+sfml = "0.15.1"

@@ -1,7 +1,7 @@
-use crate::gameboy::helpers::*;
-use crate::gameboy::memory::memory::Memory;
-use crate::gameboy::interrupts::*;
-use crate::gameboy::gpu::Gpu;
+use crate::helpers::*;
+use crate::memory::memory::Memory;
+use crate::interrupts::*;
+use crate::gpu::Gpu;
 
 pub struct Registers {
     pub a: u8,

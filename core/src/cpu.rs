@@ -1,11 +1,11 @@
-use crate::gameboy::memory::memory::Memory;
-use crate::gameboy::helpers::*;
+use crate::memory::memory::Memory;
+use crate::helpers::*;
 use crate::{bitmatch, compute_mask, compute_equal};
-use crate::gameboy::registers::Registers;
-use crate::gameboy::interrupts::*;
-use crate::gameboy::gpu::Gpu;
-use crate::gameboy::cartridge::Cartridge;
-use crate::gameboy::memory::rom::Rom;
+use crate::registers::Registers;
+use crate::interrupts::*;
+use crate::gpu::Gpu;
+use crate::cartridge::Cartridge;
+use crate::memory::rom::Rom;
 
 const BREAKPOINTS: [u16; 0] = [];
 const CPU_DEBUG: bool = false;

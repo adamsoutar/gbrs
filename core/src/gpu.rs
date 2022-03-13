@@ -1,8 +1,8 @@
-use crate::gameboy::constants::*;
-use crate::gameboy::lcd::*;
-use crate::gameboy::memory::ram::Ram;
-use crate::gameboy::memory::memory::Memory;
-use crate::gameboy::interrupts::*;
+use crate::constants::*;
+use crate::lcd::*;
+use crate::memory::ram::Ram;
+use crate::memory::memory::Memory;
+use crate::interrupts::*;
 
 #[derive(Clone)]
 pub struct Sprite {

@@ -1,9 +1,8 @@
-pub mod gameboy;
 pub mod gui;
 
 use std::env;
 
-use gameboy::cpu::Cpu;
+use gbrs_core::cpu::Cpu;
 use gui::run_gui;
 
 fn main() {

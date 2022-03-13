@@ -1,7 +1,7 @@
-use crate::gameboy::memory::mbcs::MBC;
-use crate::gameboy::memory::rom::Rom;
-use crate::gameboy::memory::battery_backed_ram::BatteryBackedRam;
-use crate::gameboy::cartridge::Cartridge;
+use crate::memory::mbcs::MBC;
+use crate::memory::rom::Rom;
+use crate::memory::battery_backed_ram::BatteryBackedRam;
+use crate::cartridge::Cartridge;
 
 // 16KB (one bank size) in bytes
 pub const KB_16: usize = 16_384;

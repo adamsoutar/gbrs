@@ -1,5 +1,5 @@
-use crate::gameboy::constants::*;
-use crate::gameboy::memory::ram::Ram;
+use crate::constants::*;
+use crate::memory::ram::Ram;
 
 // Audio processing unit
 // NOTE: Max APU frequency seems to be 131072 Hz
@@ -13,11 +13,11 @@ pub struct APU {
 
     pub wave_ram: Ram,
 
-    ch3_on: u8,
-    ch3_len: u8,
-    ch3_out_level: u8,
-    ch3_nr33: u8,
-    ch3_nr34: u8,
+    // ch3_on: u8,
+    // ch3_len: u8,
+    // ch3_out_level: u8,
+    // ch3_freq_low: u8,
+    // ch3_freq_high: u8,
 }
 
 impl APU {
@@ -28,11 +28,11 @@ impl APU {
             0xFF26 => self.sound_on_register,
 
             // Sound Channel 3
-            0xFF1A => self.ch3_on,
-            0xFF1B => self.ch3_len,
-            0xFF1C => self.ch3_out_level,
-            0xFF1D => self.ch3_nr33,
-            0xFF1E => self.ch3_nr34,
+            // 0xFF1A => self.ch3_on,
+            // 0xFF1B => self.ch3_len,
+            // 0xFF1C => self.ch3_out_level,
+            // 0xFF1D => self.ch3_freq_low,
+            // 0xFF1E => self.ch3_freq_high,
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.read(address - WAVE_RAM_START),
             _ => 0 //panic!("Unknown read {:#06x} in APU", address)
@@ -45,12 +45,30 @@ impl APU {
             0xFF25 => self.stereo_channel_control = value,
             0xFF26 => self.sound_on_register = value,
 
+            // Sound Channel 1
+            0xFF10..=0xFF14 => {
+                // println!("Wrote to Sound Channel 1")
+            },
+
+            // Sound Channel 2
+            0xFF16..=0xFF19 => {
+                // println!("Wrote to Sound Channel 2")
+            },
+
             // Sound Channel 3
-            0xFF1A => self.ch3_on = value,
-            0xFF1B => self.ch3_len = value,
-            0xFF1C => self.ch3_out_level = value,
-            0xFF1D => self.ch3_nr33 = value,
-            0xFF1E => self.ch3_nr34 = value,
+            0xFF1A..=0xFF1E => {
+                // println!("Wrote to Sound Channel 3")
+            },
+            // 0xFF1A => self.ch3_on = value,
+            // 0xFF1B => self.ch3_len = value,
+            // 0xFF1C => self.ch3_out_level = value,
+            // 0xFF1D => self.ch3_freq_low = value,
+            // 0xFF1E => self.ch3_freq_high = value,
+
+            // Sound Channel 4
+            0xFF20..=0xFF23 => {
+                // println!("Wrote to Sound Channel 4")
+            },
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.write(address - WAVE_RAM_START, value),
             _ => {} //println!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
@@ -86,11 +104,11 @@ impl APU {
 
             wave_ram: Ram::new(WAVE_RAM_SIZE),
 
-            ch3_on: 0,
-            ch3_len: 0,
-            ch3_nr33: 0,
-            ch3_nr34: 0,
-            ch3_out_level: 0
+            // ch3_on: 0,
+            // ch3_len: 0,
+            // ch3_nr33: 0,
+            // ch3_nr34: 0,
+            // ch3_out_level: 0
         }
     }
 }

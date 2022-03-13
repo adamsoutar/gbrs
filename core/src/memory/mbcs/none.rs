@@ -1,5 +1,5 @@
-use crate::gameboy::memory::mbcs::MBC;
-use crate::gameboy::memory::rom::Rom;
+use crate::memory::mbcs::MBC;
+use crate::memory::rom::Rom;
 
 pub struct MBCNone {
     pub rom: Rom
