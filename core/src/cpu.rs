@@ -6,6 +6,7 @@ use crate::interrupts::*;
 use crate::gpu::Gpu;
 use crate::cartridge::Cartridge;
 use crate::memory::rom::Rom;
+use crate::log;
 
 const BREAKPOINTS: [u16; 0] = [];
 const CPU_DEBUG: bool = false;
@@ -40,7 +41,7 @@ pub struct Cpu {
 impl Cpu {
     fn read_next (&mut self) -> u8 {
         let byte = self.mem_read(self.regs.pc);
-        // println!("Read address {:#x}, value: {:#x}", self.regs.pc, byte);
+        // log!("Read address {:#x}, value: {:#x}", self.regs.pc, byte);
         self.regs.pc += 1;
         byte
     }
@@ -314,7 +315,7 @@ impl Cpu {
 
         let mut pending_ints = self.ints.flag_read();
         let enabled_ints = self.ints.enable_read();
-        // println!("Enabled: {:08b}", enabled_ints);
+        // log!("Enabled: {:08b}", enabled_ints);
         for i in 0..8 {
             let mask: u8 = 1 << i;
             if mask & pending_ints != 0 {
@@ -341,7 +342,7 @@ impl Cpu {
         let op = self.read_next();
 
         if CPU_DEBUG {
-            println!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
+            log!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
         }
 
         for b in BREAKPOINTS.iter() {

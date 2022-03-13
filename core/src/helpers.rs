@@ -15,6 +15,14 @@ pub fn set_bit (number: &mut u8, bit_index: u8, bit: u8) {
     *number |= bit << bit_index;
 }
 
+#[macro_export]
+macro_rules! log {
+    ($($a:expr),*) => {                                              
+        println!($($a,)*)
+    };  
+}
+  
+
 // Macro for bit-matching
 // https://www.reddit.com/r/rust/comments/2d7rrj/comment/cjo2c7t/?context=3
 #[macro_export]

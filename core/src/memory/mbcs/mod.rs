@@ -1,5 +1,6 @@
 use crate::memory::rom::Rom;
 use crate::cartridge::Cartridge;
+use crate::log;
 
 pub trait MBC {
     fn read(&self, address: u16) -> u8;
@@ -16,10 +17,10 @@ mod none;
 mod mbc1;
 
 pub fn mbc_from_info(cart_info: Cartridge, rom: Rom) -> Box<dyn MBC> {
-    println!("Loading game \"{}\"", cart_info.title);
-    println!("Extra chips: {}", get_cart_type_string(&cart_info));
-    println!("ROM size: {}KB", cart_info.rom_size / 1024);
-    println!("RAM size: {}KB", cart_info.ram_size / 1024);
+    log!("Loading game \"{}\"", cart_info.title);
+    log!("Extra chips: {}", get_cart_type_string(&cart_info));
+    log!("ROM size: {}KB", cart_info.rom_size / 1024);
+    log!("RAM size: {}KB", cart_info.ram_size / 1024);
 
     match cart_info.cart_type {
         0x00 => Box::new(none::MBCNone::new(rom)),

@@ -9,6 +9,7 @@ use crate::cartridge::Cartridge;
 use crate::memory::mbcs::*;
 use crate::apu::APU;
 use crate::serial_cable::SerialCable;
+use crate::log;
 
 // TODO: Rename this to something more appropriate
 //       (I've seen an emu call a similar struct 'Interconnect')
@@ -125,7 +126,7 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
 
-            _ => { println!("Unsupported memory read at {:#06x}", address); 0xFF }
+            _ => { log!("Unsupported memory read at {:#06x}", address); 0xFF }
         }
     }
 
@@ -168,7 +169,7 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
             INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
 
-            _ => println!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
+            _ => log!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 

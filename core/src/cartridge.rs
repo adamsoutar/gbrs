@@ -1,4 +1,6 @@
 // Parses the cartridge header
+use crate::log;
+
 #[derive(Clone)]
 pub struct Cartridge {
     pub title: String,
@@ -22,7 +24,7 @@ impl Cartridge {
         let ram_size = match ram_size_id {
             0 => 0,
             1 => {
-                println!("[WARN] Unofficial 2KB RAM size not used by any officially published game.");
+                log!("[WARN] Unofficial 2KB RAM size not used by any officially published game.");
                 2_048
             },
             2 => 8_192,

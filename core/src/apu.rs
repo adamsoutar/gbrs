@@ -47,17 +47,17 @@ impl APU {
 
             // Sound Channel 1
             0xFF10..=0xFF14 => {
-                // println!("Wrote to Sound Channel 1")
+                // log!("Wrote to Sound Channel 1")
             },
 
             // Sound Channel 2
             0xFF16..=0xFF19 => {
-                // println!("Wrote to Sound Channel 2")
+                // log!("Wrote to Sound Channel 2")
             },
 
             // Sound Channel 3
             0xFF1A..=0xFF1E => {
-                // println!("Wrote to Sound Channel 3")
+                // log!("Wrote to Sound Channel 3")
             },
             // 0xFF1A => self.ch3_on = value,
             // 0xFF1B => self.ch3_len = value,
@@ -67,11 +67,11 @@ impl APU {
 
             // Sound Channel 4
             0xFF20..=0xFF23 => {
-                // println!("Wrote to Sound Channel 4")
+                // log!("Wrote to Sound Channel 4")
             },
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.write(address - WAVE_RAM_START, value),
-            _ => {} //println!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
+            _ => {} //log!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
         }
     }
 

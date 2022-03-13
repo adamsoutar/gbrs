@@ -3,6 +3,7 @@ use crate::lcd::*;
 use crate::memory::ram::Ram;
 use crate::memory::memory::Memory;
 use crate::interrupts::*;
+use crate::log;
 
 #[derive(Clone)]
 pub struct Sprite {
@@ -106,7 +107,7 @@ impl Gpu {
             0xFF47 => self.bg_pallette,
             0xFF48 => self.sprite_pallete_1,
             0xFF49 => self.sprite_pallete_2,
-            _ => { println!("Unsupported GPU read at {:#06x}", raw_address); 0xFF }
+            _ => { log!("Unsupported GPU read at {:#06x}", raw_address); 0xFF }
         }
     }
 
@@ -140,7 +141,7 @@ impl Gpu {
         // Really, we should be disabling access to anything but HRAM now,
         // but if the rom is nice then there shouldn't be an issue.
         if self.dma_cycles != 0 {
-            println!("INTERRUPTING DMA!")
+            log!("INTERRUPTING DMA!")
         }
         self.dma_source = source;
         self.dma_cycles = gpu_timing::DMA_CYCLES;

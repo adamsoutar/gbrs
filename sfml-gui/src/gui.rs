@@ -1,5 +1,6 @@
 use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
+use gbrs_core::log;
 
 use sfml::graphics::*;
 use sfml::window::*;
@@ -36,7 +37,7 @@ pub fn run_gui (mut gameboy: Cpu) {
     loop {
         let secs = clock.restart().as_seconds();
         if FPS_CYCLES_DEBUG {
-            println!("{} FPS", 1. / secs);
+            log!("{} FPS", 1. / secs);
         }
 
         while let Some(ev) = window.poll_event() {
@@ -71,7 +72,7 @@ pub fn run_gui (mut gameboy: Cpu) {
                 cycles += gameboy.step();
             }
             if FPS_CYCLES_DEBUG {
-                println!("Ran {} cycles that frame", cycles);
+                log!("Ran {} cycles that frame", cycles);
             }
         }
 

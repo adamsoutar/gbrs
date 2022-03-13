@@ -2,6 +2,7 @@ use crate::memory::mbcs::MBC;
 use crate::memory::rom::Rom;
 use crate::memory::battery_backed_ram::BatteryBackedRam;
 use crate::cartridge::Cartridge;
+use crate::log;
 
 // 16KB (one bank size) in bytes
 pub const KB_16: usize = 16_384;
@@ -49,7 +50,7 @@ impl MBC for MBC1 {
 
     fn ram_read(&self, address: u16) -> u8 {
         if !self.ram_enabled && !self.has_shown_ram_warning {
-            println!("[WARN] MBC1 RAM read while disabled");
+            log!("[WARN] MBC1 RAM read while disabled");
         }
 
         // When an address outside of RAM space is read, the gameboy
@@ -63,7 +64,7 @@ impl MBC for MBC1 {
 
     fn ram_write(&mut self, address: u16, value: u8) {
         if !self.ram_enabled && !self.has_shown_ram_warning { 
-            println!("[WARN] MBC1 RAM write while disabled");
+            log!("[WARN] MBC1 RAM write while disabled");
             // Otherwise the game is slowed down by constant debug printing
             self.has_shown_ram_warning = true;
         }
