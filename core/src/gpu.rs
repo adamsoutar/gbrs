@@ -26,9 +26,9 @@ pub struct Sprite {
 pub struct Gpu {
     // This is the WIP frame that the GPU draws to
     frame: [GreyShade; SCREEN_BUFFER_SIZE],
-    // This is the frame read by the GUI,
-    // it's only updated in VBlank
-    finished_frame: [GreyShade; SCREEN_BUFFER_SIZE],
+    // This is the last rendered frame displayed on the LCD, only updated
+    // in VBlank. GUI implementations can read it to show the display.
+    pub finished_frame: [GreyShade; SCREEN_BUFFER_SIZE],
 
     // X and Y of background position
     scy: u8,
