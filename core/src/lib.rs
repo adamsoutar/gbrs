@@ -15,3 +15,4 @@ pub mod cartridge;
 pub mod joypad;
 pub mod apu;
 pub mod serial_cable;
+pub mod callbacks;
