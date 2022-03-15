@@ -3,16 +3,20 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-pub mod memory;
+#[cfg(feature = "std")]
+#[macro_use]
+extern crate lazy_static;
+
+pub mod apu;
+pub mod callbacks;
+pub mod cartridge;
 pub mod constants;
 pub mod cpu;
-pub mod helpers;
-pub mod registers;
-pub mod interrupts;
 pub mod gpu;
-pub mod lcd;
-pub mod cartridge;
+pub mod helpers;
+pub mod interrupts;
 pub mod joypad;
-pub mod apu;
+pub mod lcd;
+pub mod memory;
+pub mod registers;
 pub mod serial_cable;
-pub mod callbacks;

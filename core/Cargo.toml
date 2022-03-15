@@ -3,8 +3,9 @@ name = "gbrs-core"
 version = "0.2.0"
 edition = "2018"
 
+[dependencies]
+lazy_static = { version =  "1.4.0", optional = true }
+
 [features]
 default = ["std"]
-std = []
-
-[dependencies]
+std = ["lazy_static"]
