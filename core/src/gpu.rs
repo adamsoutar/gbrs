@@ -381,11 +381,10 @@ impl Gpu {
         
                 // Tile address for 8x8 mode
                 let mut pattern = sprite.pattern_id;
-        
-                // TODO: Might not be right
+
                 if sprite_height == 16 {
                     if suby > 7 {
-                        suby -= 7;
+                        suby -= 8;
         
                         if sprite.y_flip {
                             pattern = sprite.pattern_id & 0xFE;
