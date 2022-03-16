@@ -18,6 +18,7 @@ pub trait MBC {
 
 mod none;
 mod mbc1;
+mod mbc2;
 
 pub fn mbc_from_info(cart_info: Cartridge, rom: Rom) -> Box<dyn MBC> {
     log!("Loading game \"{}\"", cart_info.title);
@@ -28,6 +29,7 @@ pub fn mbc_from_info(cart_info: Cartridge, rom: Rom) -> Box<dyn MBC> {
     match cart_info.cart_type {
         0x00 => Box::new(none::MBCNone::new(rom)),
         0x01 ..= 0x03 => Box::new(mbc1::MBC1::new(cart_info, rom)),
+        0x05 ..= 0x06 => Box::new(mbc2::MBC2::new(cart_info, rom)),
         _ => panic!("gbrs doesn't support this cartridge's memory controller ({:#04x}).", cart_info.cart_type)
     }
 }
