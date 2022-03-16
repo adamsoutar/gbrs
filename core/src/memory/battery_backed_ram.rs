@@ -7,7 +7,7 @@ use crate::{callbacks::CALLBACKS, cartridge::Cartridge, memory::ram::Ram};
 const DEBOUNCE_MILLIS: usize = 1000;
 
 pub struct BatteryBackedRam {
-    ram: Ram,
+    pub ram: Ram,
     pub size: usize,
 
     cart: Cartridge,
