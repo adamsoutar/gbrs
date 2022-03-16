@@ -77,15 +77,17 @@ impl Gpu {
 
             0xFF46 => self.begin_dma(value),
 
-            0xFF4A => self.wy = value,
-            0xFF4B => self.wx = value,
-
             0xFF47 => self.bg_pallette = value,
             0xFF48 => self.sprite_pallete_1 = value,
             0xFF49 => self.sprite_pallete_2 = value,
 
-            // CGB only
-            0xFF4C ..= 0xFF4F => {},
+            0xFF4A => self.wy = value,
+            0xFF4B => self.wx = value,
+
+            0xFF4C ..= 0xFF4E => log!("[WARN] Unknown LCD register write at {:#06x}", raw_address),
+
+            // CGB only ("VRAM Bank Select")
+            0xFF4F => {}
 
             // The Y Scanline is read only.
             // Space Invaders writes here. As a bug?
