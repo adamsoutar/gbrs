@@ -85,7 +85,7 @@ impl Gpu {
             0xFF49 => self.sprite_pallete_2 = value,
 
             // CGB only
-            0xFF4F => {},
+            0xFF4C ..= 0xFF4F => {},
 
             // The Y Scanline is read only.
             // Space Invaders writes here. As a bug?

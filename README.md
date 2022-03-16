@@ -55,7 +55,8 @@ gbrs supports:
 - "The Window" - a GPU feature required for Pac Man and Zelda
 - Cycle-accurate CPU & counters
 - Save files & saved games (Zelda & Super Mario Land 2 use these)
-- Memory Board Controller 1 (required for some complex games)
+- Memory Board Controller 1 (MBCs are required for some more complex games)
+- Memory Board Controller 2
 
 & more!
 
