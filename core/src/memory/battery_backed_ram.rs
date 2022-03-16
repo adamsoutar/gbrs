@@ -53,17 +53,21 @@ impl BatteryBackedRam {
         }
     }
 
-    pub fn new(cart: Cartridge, battery_enabled: bool) -> BatteryBackedRam {
+    pub fn new(cart: Cartridge, additional_ram_size: usize, battery_enabled: bool) -> BatteryBackedRam {
+        // Some MBCs, like MBC2, always have a few bytes of RAM installed.
+        // The cartridge header only tells us about additional external RAM.
+        let ram_size = cart.ram_size + additional_ram_size;
+
         let save_contents = unsafe {
-            (CALLBACKS.load)(&cart.title[..], &cart.rom_path[..], cart.ram_size)
+            (CALLBACKS.load)(&cart.title[..], &cart.rom_path[..], ram_size)
         };
         let current_timestamp = unsafe { (CALLBACKS.get_ms_timestamp)() };
 
-        let ram = Ram::from_bytes(save_contents, cart.ram_size);
+        let ram = Ram::from_bytes(save_contents, ram_size);
 
         BatteryBackedRam {
             ram,
-            size: cart.ram_size,
+            size: ram_size,
 
             cart,
             battery_enabled,

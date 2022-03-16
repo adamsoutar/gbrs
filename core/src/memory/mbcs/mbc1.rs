@@ -104,7 +104,7 @@ impl MBC1 {
             rom,
             ram_enabled: false,
             rom_bank: 1,
-            ram: BatteryBackedRam::new(cart_info, has_battery),
+            ram: BatteryBackedRam::new(cart_info, 0, has_battery),
             has_shown_ram_warning: false
         }
     }
