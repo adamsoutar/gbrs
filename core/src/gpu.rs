@@ -305,7 +305,7 @@ impl Gpu {
 
     fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> u16 {
         let is_window = self.control.window_enable &&
-            x as isize > self.wx as isize - 7 && y >= self.wy;
+            x as isize > self.wx as isize - 8 && y >= self.wy;
 
         let tilemap_select = if is_window { 
             self.control.window_tile_map_display_select 
