@@ -1,5 +1,9 @@
+use crate::callbacks::CALLBACKS;
 use crate::constants::*;
 use crate::memory::ram::Ram;
+
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 
 // Audio processing unit
 // NOTE: Max APU frequency seems to be 131072 Hz
@@ -18,9 +22,40 @@ pub struct APU {
     // ch3_out_level: u8,
     // ch3_freq_low: u8,
     // ch3_freq_high: u8,
+    pub sin_counter: f64,
+    pub sample_counter: usize,
+    // This could be a Vec that we check len() against, but we can save the 
+    // allocation because we know the size it's always going to be.
+    pub buffer: [i16; SOUND_BUFFER_SIZE],
+    pub buffer_idx: usize
 }
 
 impl APU {
+    pub fn step (&mut self) {
+        self.sample_counter += 1;
+        self.sin_counter += 0.0006;
+
+        if self.sample_counter == APU_SAMPLE_CLOCKS {
+            self.sample_counter = 0;
+            self.sample();
+        }
+    }
+
+    pub fn sample (&mut self) {
+        let made_up_sample = ((self.sin_counter).sin() * 1000.).floor() as i16;
+        // println!("{}Hz", made_up_sample);
+        self.buffer[self.buffer_idx] = made_up_sample;
+        self.buffer_idx += 1;
+
+        if self.buffer_idx == SOUND_BUFFER_SIZE {
+            self.buffer_idx = 0;
+            // println!("[{}, {}, {}, {}...", self.buffer[0], self.buffer[1], self.buffer[2], self.buffer[3]);
+            unsafe {
+                (CALLBACKS.play_sound)(&self.buffer)
+            }  
+        }
+    }
+
     pub fn read (&self, address: u16) -> u8 {
         match address {
             0xFF24 => self.serialise_nr50(),
@@ -109,6 +144,11 @@ impl APU {
             // ch3_nr33: 0,
             // ch3_nr34: 0,
             // ch3_out_level: 0
+
+            sin_counter: 0.0,
+            sample_counter: 0,
+            buffer: [0; SOUND_BUFFER_SIZE],
+            buffer_idx: 0
         }
     }
 }

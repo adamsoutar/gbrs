@@ -84,7 +84,8 @@ impl Memory {
                 }
             }
 
-            self.serial_cable.step(ints);   
+            self.serial_cable.step(ints);
+            self.apu.step();
         }
         self.mbc.step();
     }

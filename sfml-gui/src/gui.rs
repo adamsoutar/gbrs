@@ -1,13 +1,18 @@
+use gbrs_core::callbacks::{Callbacks, CALLBACKS};
+use gbrs_core::callbacks::set_callbacks;
 use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
 use sfml::graphics::*;
 use sfml::window::*;
 use sfml::system::*;
-// TODO: Audio
+use sfml::audio::{Sound, SoundBuffer};
 
 pub const STEP_BY_STEP: bool = false;
 pub const FPS_CYCLES_DEBUG: bool = false;
+
+pub static mut SOUND_BUFFER: Option<SfBox<SoundBuffer>> = None;
+pub static mut SOUND: Option<Sound> = None;
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
@@ -32,6 +37,31 @@ pub fn run_gui (mut gameboy: Cpu) {
 
     let mut clock = Clock::start();
     let mut step_last_frame = false;
+
+    unsafe {
+        set_callbacks(Callbacks {
+            log: CALLBACKS.log,
+            save: CALLBACKS.save,
+            load: CALLBACKS.load,
+            get_ms_timestamp: CALLBACKS.get_ms_timestamp,
+            play_sound: |sound_buffer| {
+                // HACK: *Horrible* unsafe crimes to make SOUND outlive its
+                //   block and not get Dropped. When a Sound Drops out of a
+                //   scope, it stops playing.
+                // TODO: Is this leaking memory? Does Rust still call Drop
+                //   when a mutable static is reassigned?
+                SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 1, SOUND_SAMPLE_RATE as u32).unwrap());
+                SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
+                    Some(buff) => buff,
+                    None => unreachable!()
+                }));
+                match &mut SOUND {
+                    Some(sound) => sound.play(),
+                    None => unreachable!()
+                }
+            }
+        })
+    }
 
     loop {
         let secs = clock.restart().as_seconds();
