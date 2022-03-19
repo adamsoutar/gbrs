@@ -357,6 +357,21 @@ impl Cpu {
         cycles
     }
 
+    // Runs the CPU until the APU has filled its buffer defined by the
+    // SOUND_BUFFER_SIZE constant
+    pub fn step_until_full_audio_buffer (&mut self) -> usize {
+        let mut cycles = 0;
+        
+        loop {
+            cycles += self.step();
+            if self.mem.apu.buffer_idx == 0 {
+                break;
+            }
+        }
+
+        cycles
+    }
+
     pub fn step (&mut self) -> usize {
         let p = self.ime_on_pending;
 

@@ -6,7 +6,7 @@ use gbrs_core::constants::*;
 use sfml::graphics::*;
 use sfml::window::*;
 use sfml::system::*;
-use sfml::audio::{Sound, SoundBuffer};
+use sfml::audio::{Sound, SoundBuffer, SoundStatus};
 
 pub const STEP_BY_STEP: bool = false;
 pub const FPS_CYCLES_DEBUG: bool = false;
@@ -26,7 +26,7 @@ pub fn run_gui (mut gameboy: Cpu) {
         style,
         &Default::default()
     );
-    window.set_framerate_limit(gameboy.frame_rate as u32);
+    // window.set_framerate_limit(gameboy.frame_rate as u32);
 
     let mut screen_texture = Texture::new(sw, sh).unwrap();
     // Scale the 160x144 image to the appropriate resolution
@@ -96,7 +96,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             }
             step_last_frame = pressing_step;
         } else {
-            let cycles = gameboy.step_one_frame();
+            let cycles = gameboy.step_until_full_audio_buffer();
             if FPS_CYCLES_DEBUG {
                 println!("Ran {} cycles that frame", cycles);
             }
@@ -111,5 +111,15 @@ pub fn run_gui (mut gameboy: Cpu) {
         window.clear(Color::BLACK);
         window.draw(&screen_sprite);
         window.display();
+
+
+        unsafe {
+            if let Some(sound) = &SOUND {
+                // Wait until we drain the audio buffer
+                while sound.status() == SoundStatus::Playing {
+                    std::hint::spin_loop()
+                }
+            }
+        }
     }
 }

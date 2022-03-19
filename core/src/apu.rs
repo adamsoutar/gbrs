@@ -43,13 +43,11 @@ impl APU {
 
     pub fn sample (&mut self) {
         let made_up_sample = ((self.sin_counter).sin() * 1000.).floor() as i16;
-        // println!("{}Hz", made_up_sample);
         self.buffer[self.buffer_idx] = made_up_sample;
         self.buffer_idx += 1;
 
         if self.buffer_idx == SOUND_BUFFER_SIZE {
             self.buffer_idx = 0;
-            // println!("[{}, {}, {}, {}...", self.buffer[0], self.buffer[1], self.buffer[2], self.buffer[3]);
             unsafe {
                 (CALLBACKS.play_sound)(&self.buffer)
             }  
