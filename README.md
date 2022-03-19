@@ -45,16 +45,24 @@ A Rust GameBoy emulator!
     <td><img src="assets/donkeykong.gif" /></td>
     <td><img src="assets/frogger.gif" /></td>
   </tr>
+  <tr>
+    <th><a href="https://github.com/mattcurrie/dmg-acid2">dmg-acid2</a></th>
+  </tr>
+  <tr>
+    <td><img src="assets/dmg-acid2.jpg" /></td>
+  </tr>
 </table>
 
 ## Support
 
 gbrs supports:
 
-- Mid-scanline effects (required for games like Road Rash)
-- "The Window" - a GPU feature required for Pac Man and Zelda
+- Mid-frame scanline effects (required for games like Road Rash)
+- The Window (a GPU feature required for Pac Man and Zelda)
 - Cycle-accurate CPU & counters
 - Save files & saved games (Zelda & Super Mario Land 2 use these)
+- The Window internal line counter (an unusual quirk required for perfect DMG-ACID2 rendering)
+- LCD Stat interrupt bug (a bug present on the real Gameboy hardware required for Road Rash)
 - Memory Board Controller 1 (MBCs are required for some more complex games)
 - Memory Board Controller 2
 
@@ -66,7 +74,7 @@ I'm still working on gbrs (and having a **_tonne_** of fun doing it!).
 
 Some main things I'm working on
 
-- Pokémon requires Memory Controller Board 3 support
+- Memory Board Controller 3 for Pokémon
 - There's no support for sound right now
 
 ## Building from source
