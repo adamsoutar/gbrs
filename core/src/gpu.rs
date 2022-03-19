@@ -441,6 +441,7 @@ impl Gpu {
             if s.y_pos <= iy && (s.y_pos + sprite_height) > iy {
                 on_line.push(s.clone());
             }
+            if on_line.len() == 10 { break }
         }
 
         on_line
