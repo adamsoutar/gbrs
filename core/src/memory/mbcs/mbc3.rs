@@ -4,8 +4,10 @@ use crate::memory::battery_backed_ram::BatteryBackedRam;
 use crate::memory::mbcs::MBC;
 use crate::memory::rom::Rom;
 
-// 16KB (one bank size) in bytes
-pub const KB_16: usize = 16_384;
+// 8KB (one RAM bank size) in bytes
+pub const KB_8: usize = 8_192;
+// 16KB (one ROM bank size) in bytes
+pub const KB_16: usize = KB_8 * 2;
 
 pub struct MBC3 {
     pub rom: Rom,
@@ -37,22 +39,28 @@ impl MBC for MBC3 {
                 self.ram_enabled = (value & 0x0A) == 0x0A;
             },
             0x2000..=0x3FFF => {
-                let mut n = value & 0b01111111;
-                let max_bank = (self.rom.bytes.len() / KB_16 - 1) as u8;
-                if n > max_bank {
-                    log!("n was {}, which is bigger than max_bank ({})!", n, max_bank);
-                    n = max_bank;
-                }
+                let mut n = value & 0b00111111;
+                // let max_bank = (self.rom.bytes.len() / KB_16) as u8;
+                // if n > max_bank {
+                //     n = max_bank;
+                // }
                 if n == 0 {
                     n = 1
                 }
+                // log!("Selecting ROM bank {}", n);
                 self.rom_bank = n
             },
             0x4000..=0x5FFF => {
                 match value {
-                    0x00..=0x03 => self.ram_bank = value,
+                    0x00..=0x03 => {
+                        // log!("Selecting RAM bank {}", value);
+                        self.ram_bank = value;
+                        self.rtc_select = false;
+                    },
                     // TODO: This maps Real Time Clock stuff
-                    0x08..=0x0C => {},
+                    0x08..=0x0C => {
+                        self.rtc_select = true;
+                    },
                     // This is a noop
                     _ => {}
                 }
@@ -72,6 +80,7 @@ impl MBC for MBC3 {
         if self.rtc_select {
             // The game has opted to replace RAM with the value of the RTC.
             // TODO: Properly emulate the Real Time Clock
+            // log!("Reading the RTC");
             return 0;
         }
 
@@ -109,11 +118,11 @@ impl MBC3 {
     fn read_ram_bank(&self, bank: u8, address: u16) -> u8 {
         let ub = bank as usize;
         let ua = address as usize;
-        let final_addr = KB_16 * ub + ua;
+        let final_addr = KB_8 * ub + ua;
 
-        if final_addr >= self.ram.size {
-            return 0xFF;
-        }
+        // if final_addr >= self.ram.size {
+        //     return 0xFF;
+        // }
 
         self.ram.ram.bytes[final_addr]
     }
@@ -121,7 +130,7 @@ impl MBC3 {
     fn write_ram_bank(&mut self, bank: u8, address: u16, value: u8) {
         let ub = bank as usize;
         let ua = address as usize;
-        let final_addr = KB_16 * ub + ua;
+        let final_addr = KB_8 * ub + ua;
 
         if final_addr >= self.ram.size {
             return;
