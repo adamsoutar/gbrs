@@ -50,7 +50,7 @@ pub fn run_gui (mut gameboy: Cpu) {
                 //   scope, it stops playing.
                 // TODO: Is this leaking memory? Does Rust still call Drop
                 //   when a mutable static is reassigned?
-                SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 1, SOUND_SAMPLE_RATE as u32).unwrap());
+                SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap());
                 SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
                     Some(buff) => buff,
                     None => unreachable!()

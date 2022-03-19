@@ -7,7 +7,7 @@ extern crate alloc;
 #[macro_use]
 extern crate lazy_static;
 
-pub mod apu;
+pub mod sound;
 pub mod callbacks;
 pub mod cartridge;
 pub mod constants;

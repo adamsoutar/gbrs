@@ -1,9 +1,18 @@
 use crate::callbacks::CALLBACKS;
 use crate::constants::*;
 use crate::memory::ram::Ram;
+use crate::log;
+use crate::sound::channel2::APUChannel2;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+
+pub trait APUChannel {
+    fn step(&mut self);
+    fn sample(&self) -> i16;
+    fn read(&self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
+}
 
 // Audio processing unit
 // NOTE: Max APU frequency seems to be 131072 Hz
@@ -17,11 +26,8 @@ pub struct APU {
 
     pub wave_ram: Ram,
 
-    // ch3_on: u8,
-    // ch3_len: u8,
-    // ch3_out_level: u8,
-    // ch3_freq_low: u8,
-    // ch3_freq_high: u8,
+    pub channel2: APUChannel2,
+
     pub sin_counter: f64,
     pub sample_counter: usize,
     // This could be a Vec that we check len() against, but we can save the 
@@ -32,6 +38,8 @@ pub struct APU {
 
 impl APU {
     pub fn step (&mut self) {
+        self.channel2.step();
+
         self.sample_counter += 1;
         self.sin_counter += 0.0006;
 
@@ -42,8 +50,17 @@ impl APU {
     }
 
     pub fn sample (&mut self) {
-        let made_up_sample = ((self.sin_counter).sin() * 1000.).floor() as i16;
-        self.buffer[self.buffer_idx] = made_up_sample;
+        let mut mixed_sample: i16 = 0;
+        mixed_sample += self.channel2.sample();
+
+        // TODO: Audio panning.
+        //   Right now we essentially play mono down two channels.
+        let left_sample = mixed_sample;
+        let right_sample = mixed_sample;
+
+        self.buffer[self.buffer_idx] = left_sample;
+        self.buffer_idx += 1;
+        self.buffer[self.buffer_idx] = right_sample;
         self.buffer_idx += 1;
 
         if self.buffer_idx == SOUND_BUFFER_SIZE {
@@ -60,12 +77,7 @@ impl APU {
             0xFF25 => self.stereo_channel_control,
             0xFF26 => self.sound_on_register,
 
-            // Sound Channel 3
-            // 0xFF1A => self.ch3_on,
-            // 0xFF1B => self.ch3_len,
-            // 0xFF1C => self.ch3_out_level,
-            // 0xFF1D => self.ch3_freq_low,
-            // 0xFF1E => self.ch3_freq_high,
+            0xFF16..=0xFF19 => self.channel2.read(address),
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.read(address - WAVE_RAM_START),
             _ => 0 //panic!("Unknown read {:#06x} in APU", address)
@@ -78,30 +90,7 @@ impl APU {
             0xFF25 => self.stereo_channel_control = value,
             0xFF26 => self.sound_on_register = value,
 
-            // Sound Channel 1
-            0xFF10..=0xFF14 => {
-                // log!("Wrote to Sound Channel 1")
-            },
-
-            // Sound Channel 2
-            0xFF16..=0xFF19 => {
-                // log!("Wrote to Sound Channel 2")
-            },
-
-            // Sound Channel 3
-            0xFF1A..=0xFF1E => {
-                // log!("Wrote to Sound Channel 3")
-            },
-            // 0xFF1A => self.ch3_on = value,
-            // 0xFF1B => self.ch3_len = value,
-            // 0xFF1C => self.ch3_out_level = value,
-            // 0xFF1D => self.ch3_freq_low = value,
-            // 0xFF1E => self.ch3_freq_high = value,
-
-            // Sound Channel 4
-            0xFF20..=0xFF23 => {
-                // log!("Wrote to Sound Channel 4")
-            },
+            0xFF16..=0xFF19 => self.channel2.write(address, value),
 
             WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.write(address - WAVE_RAM_START, value),
             _ => {} //log!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
@@ -137,11 +126,7 @@ impl APU {
 
             wave_ram: Ram::new(WAVE_RAM_SIZE),
 
-            // ch3_on: 0,
-            // ch3_len: 0,
-            // ch3_nr33: 0,
-            // ch3_nr34: 0,
-            // ch3_out_level: 0
+            channel2: APUChannel2::new(),
 
             sin_counter: 0.0,
             sample_counter: 0,
