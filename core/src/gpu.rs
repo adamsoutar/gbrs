@@ -43,6 +43,9 @@ pub struct Gpu {
     // If ly is lyc ("compare") and the interrupt is enabled,
     // an LCD Status interrupt is flagged
     lyc: u8,
+    // The "Window internal line counter" - relied upon by a handful of
+    // unusual games and DMG-ACID2.
+    window_line_counter: u8,
 
     // Scan-line X co-ordinate
     // This isn't a real readable Gameboy address, it's just for internal tracking
@@ -211,6 +214,7 @@ impl Gpu {
                     self.run_ly_compare(ints);
 
                     if self.ly == 0 {
+                        self.window_line_counter = 0;
                         if self.status.oam_interrupt {
                             ints.raise_interrupt(InterruptReason::LCDStat);
                         }
@@ -221,7 +225,19 @@ impl Gpu {
             _ => {
                 match self.lx {
                     0 => {
+                        // Unusual GPU implementation detail. This is only
+                        // incremented when the Window was drawn on this scanline.
+                        // TODO: Relate these magic numbers to constants.
+                        if self.control.window_enable && 
+                            self.wx < 166 && 
+                            self.wy < 143 && 
+                            self.ly >= self.wy
+                        {
+                            self.window_line_counter += 1;
+                        }
+
                         self.ly += 1;
+
                         self.run_ly_compare(ints);
                         // Done with frame, enter VBlank
                         if self.ly == gpu_timing::VBLANK_ON {
@@ -322,10 +338,8 @@ impl Gpu {
         let y16: u16;
 
         if is_window {
-            // TODO: This is a bit guessed but seems to work
-            //       Try more games with windows
             x16 = x.wrapping_sub(self.wx - 7) as u16;
-            y16 = y.wrapping_sub(self.wy) as u16;
+            y16 = self.window_line_counter as u16;
         } else {
             x16 = x.wrapping_add(self.scx) as u16;
             y16 = y.wrapping_add(self.scy) as u16;
@@ -486,6 +500,7 @@ impl Gpu {
         Gpu {
             frame: empty_frame,
             finished_frame: empty_frame.clone(),
+            window_line_counter: 0,
             scy: 0, scx: 0, ly: 0, lx: 0, lyc:0, wy: 0, wx: 0,
             bg_pallette: 0, sprite_pallete_1: 0, sprite_pallete_2: 0,
             status: LcdStatus::new(),
