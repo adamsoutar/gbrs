@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 pub trait APUChannel {
     fn step(&mut self);
-    fn sample(&self) -> i16;
+    fn sample(&self) -> f32;
     fn read(&self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
 }
@@ -27,7 +27,6 @@ pub struct APU {
 
     pub channel2: APUChannel2,
 
-    pub sin_counter: f64,
     pub sample_counter: usize,
     // This could be a Vec that we check len() against, but we can save the 
     // allocation because we know the size it's always going to be.
@@ -40,7 +39,6 @@ impl APU {
         self.channel2.step();
 
         self.sample_counter += 1;
-        self.sin_counter += 0.0006;
 
         if self.sample_counter == APU_SAMPLE_CLOCKS {
             self.sample_counter = 0;
@@ -49,13 +47,17 @@ impl APU {
     }
 
     pub fn sample (&mut self) {
-        let mut mixed_sample: i16 = 0;
+        let mut mixed_sample: f32 = 0.;
         mixed_sample += self.channel2.sample();
 
+        // Average the 4 channels
+        mixed_sample /= 4.;
+        
         // TODO: Audio panning.
         //   Right now we essentially play mono down two channels.
-        let left_sample = mixed_sample;
-        let right_sample = mixed_sample;
+        let i16_sample = (mixed_sample * 30_000.) as i16;
+        let left_sample = i16_sample;
+        let right_sample = i16_sample;
 
         self.buffer[self.buffer_idx] = left_sample;
         self.buffer_idx += 1;
@@ -127,7 +129,6 @@ impl APU {
 
             channel2: APUChannel2::new(),
 
-            sin_counter: 0.0,
             sample_counter: 0,
             buffer: [0; SOUND_BUFFER_SIZE],
             buffer_idx: 0

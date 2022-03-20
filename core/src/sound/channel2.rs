@@ -36,6 +36,8 @@ impl APUChannel2 {
     self.volume_envelope.restart_triggered();
     self.length_function.restart_triggered();
     self.length_function.channel_enabled = true;
+    // TODO: Restarting a tone channel resets its frequency_timer to
+    //   (2048 - frequency) * 4... I think.
   }
 }
 
@@ -104,16 +106,14 @@ impl APUChannel for APUChannel2 {
     }
   }
 
-  fn sample (&self) -> i16 {
-    if !self.length_function.channel_enabled { return 0 }
+  fn sample (&self) -> f32 {
+    if !self.length_function.channel_enabled { return 0. }
 
     let wave_pattern = WAVEFORM_TABLE[self.wave_duty];
     let amplitude_bit = (wave_pattern & (1 << self.wave_duty_position)) >> self.wave_duty_position;
     
     let dac_input = amplitude_bit as usize * self.volume_envelope.volume;
     // The DAC in the Gameboy outputs between -1.0 and 1.0
-    let dac_output = (dac_input as f64 / 7.5) - 1.0;
-
-    (dac_output * 7500.0) as i16
+    (dac_input as f32 / 7.5) - 1.0
   }
 }
