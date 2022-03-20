@@ -42,7 +42,7 @@ impl APUChannel2 {
       enabled: false,
       frequency: 0,
       frequency_timer: 1,
-      wave_duty: 0,
+      wave_duty: 2,
       wave_duty_position: 0,
       env_initial_volume: 0,
       env_direction: EnvelopeDirection::Down,
@@ -93,8 +93,10 @@ impl APUChannel2 {
     }
 
     if self.length_timer == 0 {
-      self.length_timer = 64 - self.length_data;
-      self.enabled = false;
+      if self.length_timer_enabled {
+        self.length_timer = 64 - self.length_data;
+        self.enabled = false;
+      }
     }
   }
 }
@@ -129,7 +131,9 @@ impl APUChannel for APUChannel2 {
   }
 
   fn read (&self, address: u16) -> u8 {
-    0
+    match address {
+      _ => 0//panic!("Unimplemented APU Channel 2 read {:#06x}", address)
+    }
   }
 
   fn write (&mut self, address: u16, value: u8) {
@@ -164,6 +168,8 @@ impl APUChannel for APUChannel2 {
           (self.frequency & 0b000_1111_1111)
           | ((frequency_bits as usize) << 8);
         
+        self.length_timer = 0;
+        self.length_clock_timer = 0;
         self.length_timer_enabled = (value & 0b0100_0000) > 0;
 
         if (value & 0b1000_0000) > 0 {
@@ -184,6 +190,6 @@ impl APUChannel for APUChannel2 {
     // The DAC in the Gameboy outputs between -1.0 and 1.0
     let dac_output = (dac_input as f64 / 7.5) - 1.0;
 
-    (dac_output * 30_000.0) as i16
+    (dac_output * 7500.0) as i16
   }
 }
