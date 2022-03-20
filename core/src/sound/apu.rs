@@ -53,15 +53,15 @@ impl APU {
         // Average the 4 channels
         mixed_sample /= 4.;
         
-        // TODO: Audio panning.
-        //   Right now we essentially play mono down two channels.
-        let i16_sample = (mixed_sample * 30_000.) as i16;
-        let left_sample = i16_sample;
-        let right_sample = i16_sample;
+        let left_sample = mixed_sample * self.stereo_left_volume;
+        let right_sample = mixed_sample * self.stereo_right_volume;
 
-        self.buffer[self.buffer_idx] = left_sample;
+        let left_sample_int = (left_sample * 30_000.) as i16;
+        let right_sample_int = (right_sample * 30_000.) as i16;
+
+        self.buffer[self.buffer_idx] = left_sample_int;
         self.buffer_idx += 1;
-        self.buffer[self.buffer_idx] = right_sample;
+        self.buffer[self.buffer_idx] = right_sample_int;
         self.buffer_idx += 1;
 
         if self.buffer_idx == SOUND_BUFFER_SIZE {
