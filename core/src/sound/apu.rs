@@ -1,7 +1,6 @@
 use crate::callbacks::CALLBACKS;
 use crate::constants::*;
 use crate::memory::ram::Ram;
-use crate::log;
 use crate::sound::channel2::APUChannel2;
 
 #[cfg(not(feature = "std"))]

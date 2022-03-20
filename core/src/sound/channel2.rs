@@ -1,5 +1,6 @@
-use crate::sound::apu::APUChannel;
-use crate::sound::volume_envelope::VolumeEnvelope;
+use super::apu::APUChannel;
+use super::volume_envelope::VolumeEnvelope;
+use super::length_function::LengthFunction;
 
 const WAVEFORM_TABLE: [u8; 4] = [
   0b00000001,
@@ -7,35 +8,25 @@ const WAVEFORM_TABLE: [u8; 4] = [
   0b00001111,
   0b11111100
 ];
-// 256Hz
-const LENGTH_CLOCKS: usize = 16_392;
 
 pub struct APUChannel2 {
-  enabled: bool,
   frequency: usize,
   frequency_timer: usize,
   wave_duty: usize,
   wave_duty_position: usize,
-  length_timer: usize,
-  length_data: usize,
-  length_timer_enabled: bool,
-  length_clock_timer: usize,
-  volume_envelope: VolumeEnvelope
+  volume_envelope: VolumeEnvelope,
+  length_function: LengthFunction
 }
 
 impl APUChannel2 {
   pub fn new () -> APUChannel2 {
     APUChannel2 {
-      enabled: false,
       frequency: 0,
       frequency_timer: 1,
       wave_duty: 2,
       wave_duty_position: 0,
-      length_timer: 0,
-      length_data: 0,
-      length_timer_enabled: false,
-      length_clock_timer: 0,
-      volume_envelope: VolumeEnvelope::new()
+      volume_envelope: VolumeEnvelope::new(),
+      length_function: LengthFunction::new()
     }
   }
 
@@ -43,22 +34,8 @@ impl APUChannel2 {
   // That means the game is issuing a "restart sound" command
   fn restart_triggered (&mut self) {
     self.volume_envelope.restart_triggered();
-    self.length_timer = 64 - self.length_data;
-    self.enabled = true;
-  }
-
-  // Called at 256Hz
-  fn length_clock (&mut self) {
-    if self.length_timer > 0 {
-      self.length_timer -= 1;
-    }
-
-    if self.length_timer == 0 {
-      if self.length_timer_enabled {
-        self.length_timer = 64 - self.length_data;
-        self.enabled = false;
-      }
-    }
+    self.length_function.restart_triggered();
+    self.length_function.channel_enabled = true;
   }
 }
 
@@ -67,7 +44,7 @@ impl APUChannel for APUChannel2 {
     // TODO: I think the Frame Sequencer timers should still be ticking even
     //   if this channel is not enabled. The Frame Sequencer exists outside
     //   the channel.
-    if !self.enabled { return }
+    if !self.length_function.channel_enabled { return }
     
     self.frequency_timer -= 1;
 
@@ -82,12 +59,7 @@ impl APUChannel for APUChannel2 {
     }
 
     self.volume_envelope.step();
-
-    self.length_clock_timer += 1;
-    if self.length_clock_timer == LENGTH_CLOCKS {
-      self.length_clock_timer = 0;
-      self.length_clock();
-    }
+    self.length_function.step();
   }
 
   fn read (&self, address: u16) -> u8 {
@@ -102,7 +74,9 @@ impl APUChannel for APUChannel2 {
         let wave_duty = (value & 0b1100_0000) >> 6;
         let length = value & 0b0011_1111;
         self.wave_duty = wave_duty as usize;
-        self.length_data = length as usize;
+        // TODO: Is there a way we change this into a generic register_write
+        //   function for LengthFunction?
+        self.length_function.data = length as usize;
       },
       0xFF17 => self.volume_envelope.register_write(value),
       0xFF18 => {
@@ -120,9 +94,7 @@ impl APUChannel for APUChannel2 {
           (self.frequency & 0b000_1111_1111)
           | ((frequency_bits as usize) << 8);
         
-        self.length_timer = 0;
-        self.length_clock_timer = 0;
-        self.length_timer_enabled = (value & 0b0100_0000) > 0;
+        self.length_function.timer_enabled = (value & 0b0100_0000) > 0;
 
         if (value & 0b1000_0000) > 0 {
           self.restart_triggered();
@@ -133,7 +105,7 @@ impl APUChannel for APUChannel2 {
   }
 
   fn sample (&self) -> i16 {
-    if !self.enabled { return 0 }
+    if !self.length_function.channel_enabled { return 0 }
 
     let wave_pattern = WAVEFORM_TABLE[self.wave_duty];
     let amplitude_bit = (wave_pattern & (1 << self.wave_duty_position)) >> self.wave_duty_position;
