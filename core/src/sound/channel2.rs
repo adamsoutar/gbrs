@@ -163,7 +163,7 @@ impl APUChannel for APUChannel2 {
       0xFF19 => {
         // Among other things, this register sets the top 3 bits
         // of the 11-bit frequency register.
-        let frequency_bits = 0b0000_0111;
+        let frequency_bits = value & 0b0000_0111;
         self.frequency =
           (self.frequency & 0b000_1111_1111)
           | ((frequency_bits as usize) << 8);
