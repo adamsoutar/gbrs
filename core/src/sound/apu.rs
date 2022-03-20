@@ -1,7 +1,8 @@
 use crate::callbacks::CALLBACKS;
 use crate::constants::*;
 use crate::memory::ram::Ram;
-use crate::sound::channel2::APUChannel2;
+use super::channel2::APUChannel2;
+use super::registers::*;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -19,7 +20,7 @@ pub struct APU {
     pub stereo_left_volume: f32,
     pub stereo_right_volume: f32,
 
-    pub stereo_channel_control: u8,
+    pub stereo_panning: StereoPanning,
 
     pub sound_on_register: u8,
 
@@ -47,14 +48,25 @@ impl APU {
     }
 
     pub fn sample (&mut self) {
-        let mut mixed_sample: f32 = 0.;
-        mixed_sample += self.channel2.sample();
+        let mut left_sample = 0.;
+        let mut right_sample = 0.;
+
+        let chan2 = self.channel2.sample();
+
+        if self.stereo_panning.channel2_left {
+            left_sample += chan2;
+        }
+        if self.stereo_panning.channel2_right {
+            right_sample += chan2;
+        }
 
         // Average the 4 channels
-        mixed_sample /= 4.;
-        
-        let left_sample = mixed_sample * self.stereo_left_volume;
-        let right_sample = mixed_sample * self.stereo_right_volume;
+        left_sample /= 4.;
+        right_sample /= 4.;
+
+        // Adjust for soft-panning
+        left_sample *= self.stereo_left_volume;
+        right_sample *= self.stereo_right_volume;
 
         let left_sample_int = (left_sample * 30_000.) as i16;
         let right_sample_int = (right_sample * 30_000.) as i16;
@@ -75,7 +87,7 @@ impl APU {
     pub fn read (&self, address: u16) -> u8 {
         match address {
             0xFF24 => self.serialise_nr50(),
-            0xFF25 => self.stereo_channel_control,
+            0xFF25 => u8::from(self.stereo_panning.clone()),
             0xFF26 => self.sound_on_register,
 
             0xFF16..=0xFF19 => self.channel2.read(address),
@@ -88,7 +100,7 @@ impl APU {
     pub fn write (&mut self, address: u16, value: u8) {
         match address {
             0xFF24 => self.deserialise_nr50(value),
-            0xFF25 => self.stereo_channel_control = value,
+            0xFF25 => self.stereo_panning = StereoPanning::from(value),
             0xFF26 => self.sound_on_register = value,
 
             0xFF16..=0xFF19 => self.channel2.write(address, value),
@@ -122,7 +134,7 @@ impl APU {
             // These might be meant to start 0, not sure
             stereo_left_volume: 1.,
             stereo_right_volume: 1.,
-            stereo_channel_control: 0,
+            stereo_panning: StereoPanning::from(0),
             sound_on_register: 0,
 
             wave_ram: Ram::new(WAVE_RAM_SIZE),
