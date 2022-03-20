@@ -1,7 +1,7 @@
 use crate::callbacks::CALLBACKS;
 use crate::constants::*;
-use crate::memory::ram::Ram;
 use super::channel2::APUChannel2;
+use super::channel3::APUChannel3;
 use super::registers::*;
 
 #[cfg(not(feature = "std"))]
@@ -24,9 +24,8 @@ pub struct APU {
 
     pub sound_on_register: u8,
 
-    pub wave_ram: Ram,
-
     pub channel2: APUChannel2,
+    pub channel3: APUChannel3,
 
     pub sample_counter: usize,
     // This could be a Vec that we check len() against, but we can save the 
@@ -38,6 +37,7 @@ pub struct APU {
 impl APU {
     pub fn step (&mut self) {
         self.channel2.step();
+        self.channel3.step();
 
         self.sample_counter += 1;
 
@@ -52,12 +52,19 @@ impl APU {
         let mut right_sample = 0.;
 
         let chan2 = self.channel2.sample();
-
         if self.stereo_panning.channel2_left {
             left_sample += chan2;
         }
         if self.stereo_panning.channel2_right {
             right_sample += chan2;
+        }
+
+        let chan3 = self.channel3.sample();
+        if self.stereo_panning.channel3_left {
+            left_sample += chan3;
+        }
+        if self.stereo_panning.channel3_right {
+            right_sample += chan3;
         }
 
         // Average the 4 channels
@@ -91,8 +98,9 @@ impl APU {
             0xFF26 => self.sound_on_register,
 
             0xFF16..=0xFF19 => self.channel2.read(address),
+            0xFF1A..=0xFF1E => self.channel3.read(address),
 
-            WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.read(address - WAVE_RAM_START),
+            WAVE_RAM_START..=WAVE_RAM_END => self.channel3.read(address),
             _ => 0 //panic!("Unknown read {:#06x} in APU", address)
         }
     }
@@ -104,8 +112,9 @@ impl APU {
             0xFF26 => self.sound_on_register = value,
 
             0xFF16..=0xFF19 => self.channel2.write(address, value),
+            0xFF1A..=0xFF1E => self.channel3.write(address, value),
 
-            WAVE_RAM_START ..= WAVE_RAM_END => self.wave_ram.write(address - WAVE_RAM_START, value),
+            WAVE_RAM_START..=WAVE_RAM_END => self.channel3.write(address, value),
             _ => {} //log!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
         }
     }
@@ -137,9 +146,8 @@ impl APU {
             stereo_panning: StereoPanning::from(0),
             sound_on_register: 0,
 
-            wave_ram: Ram::new(WAVE_RAM_SIZE),
-
             channel2: APUChannel2::new(),
+            channel3: APUChannel3::new(),
 
             sample_counter: 0,
             buffer: [0; SOUND_BUFFER_SIZE],
