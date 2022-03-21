@@ -26,9 +26,7 @@ impl APUChannel3 {
       volume_shift: 0
     }
   }  
-}
 
-impl APUChannel3 {
   fn restart_triggered (&mut self) {
     self.length_function.restart_triggered();
     self.length_function.channel_enabled = true;

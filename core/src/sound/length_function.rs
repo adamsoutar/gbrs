@@ -19,6 +19,8 @@ impl LengthFunction {
   }
 
   pub fn restart_triggered (&mut self) {
+    // TODO: This behaviour isn't quite right
+    //   https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Trigger_Event
     self.timer = 64 - self.data;
   }
 
@@ -38,7 +40,7 @@ impl LengthFunction {
 
   pub fn new () -> LengthFunction {
     LengthFunction {
-      channel_enabled: false,
+      channel_enabled: true,
       timer: 0,
       data: 0,
       timer_enabled: false,

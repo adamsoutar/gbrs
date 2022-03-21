@@ -2,6 +2,7 @@ use crate::callbacks::CALLBACKS;
 use crate::constants::*;
 use super::channel2::APUChannel2;
 use super::channel3::APUChannel3;
+use super::channel4::APUChannel4;
 use super::registers::*;
 
 #[cfg(not(feature = "std"))]
@@ -26,6 +27,7 @@ pub struct APU {
 
     pub channel2: APUChannel2,
     pub channel3: APUChannel3,
+    pub channel4: APUChannel4,
 
     pub sample_counter: usize,
     // This could be a Vec that we check len() against, but we can save the 
@@ -38,6 +40,7 @@ impl APU {
     pub fn step (&mut self) {
         self.channel2.step();
         self.channel3.step();
+        self.channel4.step();
 
         self.sample_counter += 1;
 
@@ -51,6 +54,7 @@ impl APU {
         let mut left_sample = 0.;
         let mut right_sample = 0.;
 
+        // TODO: Maybe we could generate these with a macro?
         let chan2 = self.channel2.sample();
         if self.stereo_panning.channel2_left {
             left_sample += chan2;
@@ -65,6 +69,14 @@ impl APU {
         }
         if self.stereo_panning.channel3_right {
             right_sample += chan3;
+        }
+
+        let chan4 = self.channel4.sample();
+        if self.stereo_panning.channel4_left {
+            left_sample += chan4;
+        }
+        if self.stereo_panning.channel4_right {
+            right_sample += chan4;
         }
 
         // Average the 4 channels
@@ -99,6 +111,7 @@ impl APU {
 
             0xFF16..=0xFF19 => self.channel2.read(address),
             0xFF1A..=0xFF1E => self.channel3.read(address),
+            0xFF20..=0xFF23 => self.channel4.read(address),
 
             WAVE_RAM_START..=WAVE_RAM_END => self.channel3.read(address),
             _ => 0 //panic!("Unknown read {:#06x} in APU", address)
@@ -113,6 +126,7 @@ impl APU {
 
             0xFF16..=0xFF19 => self.channel2.write(address, value),
             0xFF1A..=0xFF1E => self.channel3.write(address, value),
+            0xFF20..=0xFF23 => self.channel4.write(address, value),
 
             WAVE_RAM_START..=WAVE_RAM_END => self.channel3.write(address, value),
             _ => {} //log!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
@@ -148,6 +162,7 @@ impl APU {
 
             channel2: APUChannel2::new(),
             channel3: APUChannel3::new(),
+            channel4: APUChannel4::new(),
 
             sample_counter: 0,
             buffer: [0; SOUND_BUFFER_SIZE],
