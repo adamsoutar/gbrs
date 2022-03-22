@@ -1,5 +1,6 @@
 use crate::callbacks::CALLBACKS;
 use crate::constants::*;
+use super::channel1::APUChannel1;
 use super::channel2::APUChannel2;
 use super::channel3::APUChannel3;
 use super::channel4::APUChannel4;
@@ -25,6 +26,7 @@ pub struct APU {
 
     pub sound_on_register: u8,
 
+    pub channel1: APUChannel1,
     pub channel2: APUChannel2,
     pub channel3: APUChannel3,
     pub channel4: APUChannel4,
@@ -38,6 +40,7 @@ pub struct APU {
 
 impl APU {
     pub fn step (&mut self) {
+        self.channel1.step();
         self.channel2.step();
         self.channel3.step();
         self.channel4.step();
@@ -55,6 +58,14 @@ impl APU {
         let mut right_sample = 0.;
 
         // TODO: Maybe we could generate these with a macro?
+        let chan1 = self.channel1.sample();
+        if self.stereo_panning.channel1_left {
+            left_sample += chan1;
+        }
+        if self.stereo_panning.channel1_right {
+            right_sample += chan1;
+        }
+
         let chan2 = self.channel2.sample();
         if self.stereo_panning.channel2_left {
             left_sample += chan2;
@@ -109,6 +120,7 @@ impl APU {
             0xFF25 => u8::from(self.stereo_panning.clone()),
             0xFF26 => self.sound_on_register,
 
+            0xFF10..=0xFF14 => self.channel1.read(address),
             0xFF16..=0xFF19 => self.channel2.read(address),
             0xFF1A..=0xFF1E => self.channel3.read(address),
             0xFF20..=0xFF23 => self.channel4.read(address),
@@ -124,6 +136,7 @@ impl APU {
             0xFF25 => self.stereo_panning = StereoPanning::from(value),
             0xFF26 => self.sound_on_register = value,
 
+            0xFF10..=0xFF14 => self.channel1.write(address, value),
             0xFF16..=0xFF19 => self.channel2.write(address, value),
             0xFF1A..=0xFF1E => self.channel3.write(address, value),
             0xFF20..=0xFF23 => self.channel4.write(address, value),
@@ -160,6 +173,7 @@ impl APU {
             stereo_panning: StereoPanning::from(0),
             sound_on_register: 0,
 
+            channel1: APUChannel1::new(),
             channel2: APUChannel2::new(),
             channel3: APUChannel3::new(),
             channel4: APUChannel4::new(),
