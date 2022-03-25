@@ -364,7 +364,8 @@ impl Cpu {
         
         loop {
             cycles += self.step();
-            if self.mem.apu.buffer_idx == 0 {
+            if self.mem.apu.buffer_full {
+                self.mem.apu.buffer_full = false;
                 break;
             }
         }
