@@ -10,14 +10,28 @@ use sfml::audio::{Sound, SoundBuffer, SoundStatus};
 
 pub const STEP_BY_STEP: bool = false;
 pub const FPS_CYCLES_DEBUG: bool = false;
+pub const DRAW_FPS: bool = true;
 
+pub static mut SOUND_BACKING_STORE: [i16; SOUND_BUFFER_SIZE] = [0; SOUND_BUFFER_SIZE];
 pub static mut SOUND_BUFFER: Option<SfBox<SoundBuffer>> = None;
 pub static mut SOUND: Option<Sound> = None;
 
+fn update_joypad_state (gameboy: &mut Cpu) {
+    // TODO: Raise the joypad interrupt
+    gameboy.mem.joypad.a_pressed = Key::is_pressed(Key::X);
+    gameboy.mem.joypad.b_pressed = Key::is_pressed(Key::Z);
+    gameboy.mem.joypad.start_pressed = Key::is_pressed(Key::Return);
+    gameboy.mem.joypad.select_pressed = Key::is_pressed(Key::BackSpace);
+    gameboy.mem.joypad.up_pressed = Key::is_pressed(Key::Up);
+    gameboy.mem.joypad.down_pressed = Key::is_pressed(Key::Down);
+    gameboy.mem.joypad.left_pressed = Key::is_pressed(Key::Left);
+    gameboy.mem.joypad.right_pressed = Key::is_pressed(Key::Right);
+}
+
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
-    let window_width: u32 = 1280;
-    let window_height: u32 = 1024;
+    let window_width: u32 = 5120;
+    let window_height: u32 = 2880;
 
     let style = Style::RESIZE | Style::TITLEBAR | Style::CLOSE;
     let mut window = RenderWindow::new(
@@ -36,7 +50,6 @@ pub fn run_gui (mut gameboy: Cpu) {
     );
 
     let mut clock = Clock::start();
-    let mut step_last_frame = false;
 
     unsafe {
         set_callbacks(Callbacks {
@@ -50,18 +63,32 @@ pub fn run_gui (mut gameboy: Cpu) {
                 //   scope, it stops playing.
                 // TODO: Is this leaking memory? Does Rust still call Drop
                 //   when a mutable static is reassigned?
-                SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap());
-                SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
-                    Some(buff) => buff,
-                    None => unreachable!()
-                }));
-                match &mut SOUND {
-                    Some(sound) => sound.play(),
-                    None => unreachable!()
-                }
+                // SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap());
+                // SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
+                //     Some(buff) => buff,
+                //     None => unreachable!()
+                // }));
+                // match &mut SOUND {
+                //     Some(sound) => sound.play(),
+                //     None => unreachable!()
+                // }
             }
         })
     }
+
+
+    let font;
+    let mut text;
+    // if DRAW_FPS {
+        // NOTE: DRAW_FPS only works on macOS at the moment due to hardcoded
+        //   font paths. I don't want to include a font in the gbrs repo just
+        //   for this debug feature.
+        font = Font::from_file("/System/Library/Fonts/Menlo.ttc").unwrap();
+        text = Text::new("", &font, 32);
+    // }
+
+    // Get the initial frame & buffer of audio
+    gameboy.step_until_full_audio_buffer();
 
     loop {
         let secs = clock.restart().as_seconds();
@@ -79,29 +106,10 @@ pub fn run_gui (mut gameboy: Cpu) {
             }
         }
 
-        // TODO: Raise the joypad interrupt
-        gameboy.mem.joypad.a_pressed = Key::is_pressed(Key::X);
-        gameboy.mem.joypad.b_pressed = Key::is_pressed(Key::Z);
-        gameboy.mem.joypad.start_pressed = Key::is_pressed(Key::Return);
-        gameboy.mem.joypad.select_pressed = Key::is_pressed(Key::BackSpace);
-        gameboy.mem.joypad.up_pressed = Key::is_pressed(Key::Up);
-        gameboy.mem.joypad.down_pressed = Key::is_pressed(Key::Down);
-        gameboy.mem.joypad.left_pressed = Key::is_pressed(Key::Left);
-        gameboy.mem.joypad.right_pressed = Key::is_pressed(Key::Right);
+        update_joypad_state(&mut gameboy);
+        // gameboy.step_until_full_audio_buffer();
 
-        if STEP_BY_STEP {
-            let pressing_step = Key::is_pressed(Key::S);
-            if pressing_step && !step_last_frame {
-                gameboy.step();
-            }
-            step_last_frame = pressing_step;
-        } else {
-            let cycles = gameboy.step_until_full_audio_buffer();
-            if FPS_CYCLES_DEBUG {
-                println!("Ran {} cycles that frame", cycles);
-            }
-        }
-
+        // Draw the previous frame
         unsafe {
             screen_texture.update_from_pixels(&gameboy.gpu.get_sfml_frame(), sw, sh, 0, 0);
         }
@@ -110,16 +118,73 @@ pub fn run_gui (mut gameboy: Cpu) {
 
         window.clear(Color::BLACK);
         window.draw(&screen_sprite);
+        if DRAW_FPS {
+            text.set_string(&format!("{} FPS", (1. / secs) as usize)[..]);
+            window.draw(&text);
+        }
         window.display();
 
+        // Play the audio while creating the next frame and sound buffer
+        // This way we're not idling, we're actively computing the next event.
+        // let sound_buffer = SoundBuffer::from_samples(&gameboy.mem.apu.buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap();
+        // let mut sound = Sound::with_buffer(&sound_buffer);
+        // sound.play();
 
         unsafe {
-            if let Some(sound) = &SOUND {
-                // Wait until we drain the audio buffer
-                while sound.status() == SoundStatus::Playing {
-                    std::hint::spin_loop()
-                }
+            SOUND_BACKING_STORE = gameboy.mem.apu.buffer.clone();
+            SOUND_BUFFER = Some(SoundBuffer::from_samples(&SOUND_BACKING_STORE, 2, SOUND_SAMPLE_RATE as u32).unwrap());
+            SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
+                Some(buff) => buff,
+                None => unreachable!()
+            }));
+            match &mut SOUND {
+                Some(sound) => {
+                    sound.play();
+                    while sound.status() == SoundStatus::Playing {
+                        if !gameboy.mem.apu.buffer_full {
+                            gameboy.step();
+                        } else {
+                            // We're finished with this frame. Let's just wait for audio
+                            // to sync up.
+                            std::hint::spin_loop();
+                        }
+                    }
+                },
+                None => unreachable!()
             }
         }
+
+        while !gameboy.mem.apu.buffer_full {
+            // update_joypad_state(&mut gameboy);
+            gameboy.step();
+        }
+        gameboy.mem.apu.buffer_full = false;
+        // gameboy.step_until_full_audio_buffer();
+
+        // println!("Entering sound loop");
+        // println!("{:?}", sound.status());
+        // while sound.status() == SoundStatus::Playing {
+            // if !gameboy.mem.apu.buffer_full {
+            //     update_joypad_state(&mut gameboy);
+            //     gameboy.step();
+            // } else {
+            //     We're finished with this frame. Let's just wait for audio
+            //     to sync up.
+            //     std::hint::spin_loop();
+            // }
+        // }
+        // println!("{:?}", sound.status());
+        
+        // Just make double-sure we're up-to-date.
+        // This only gets run if the audio finished before we were ready for
+        // the next bit. In this case, we might drop frames or get audio pops.
+        // But it should be rare.
+        // println!("Entering catchup loop");
+        // while !gameboy.mem.apu.buffer_full {
+        //     update_joypad_state(&mut gameboy);
+        //     gameboy.step();
+        // }
+        // println!("Exiting catchup loop");
+        // gameboy.mem.apu.buffer_full = false;
     }
 }
