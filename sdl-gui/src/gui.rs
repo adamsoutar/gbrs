@@ -2,6 +2,7 @@ use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
 use gbrs_core::lcd::GreyShade;
+use sdl2::audio::{AudioCallback, AudioSpecDesired};
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
@@ -12,6 +13,21 @@ use std::time::Duration;
 //   Please choose a multiple of 160x144
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 720;
+
+struct GameboyAudio {
+    pub apu_buffer: [i16; SOUND_BUFFER_SIZE],
+    pub called_back: bool
+}
+impl AudioCallback for GameboyAudio {
+    type Channel = f32;
+
+    fn callback (&mut self, out: &mut [f32]) {
+        for i in 0..SOUND_BUFFER_SIZE {
+            out[i] = self.apu_buffer[i] as f32 / 32767.0;
+        }
+        self.called_back = true;
+    }
+}
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sdl_context = sdl2::init().unwrap();
@@ -38,6 +54,28 @@ pub fn run_gui (mut gameboy: Cpu) {
     let perf_freq = timer.performance_frequency();
     assert_eq!(perf_freq, 1000000000, 
         "TODO: Don't rely on hardcoded nanosecond accuracy");
+
+    let audio_subsystem = sdl_context.audio().unwrap();
+    let desired_spec = AudioSpecDesired {
+        freq: Some(SOUND_SAMPLE_RATE as i32),
+        channels: Some(2),
+        samples: Some(SOUND_BUFFER_SIZE as u16)
+    };
+
+    // TODO: Change to SDL AudioQueue and sync graphics output based on sound
+    let mut device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
+        println!("{:?}", spec);
+        assert_eq!(spec.samples, SOUND_BUFFER_SIZE as u16, 
+            "Audio device does not support desired buffer size");
+
+        GameboyAudio {
+            apu_buffer: [0; SOUND_BUFFER_SIZE],
+            called_back: false
+        }
+    }).unwrap();
+
+    // Start audio
+    device.resume();
 
     let mut last_perf_counter = timer.performance_counter();
     'running: loop {
@@ -66,7 +104,14 @@ pub fn run_gui (mut gameboy: Cpu) {
         gameboy.mem.joypad.up_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Up);
         gameboy.mem.joypad.down_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Down);
         gameboy.step_one_frame();
+        // TODO: Try step_until_full_audio_buffer
 
+        {
+            // Acquire a lock. This lets us read and modify callback data.
+            let mut lock = device.lock();
+            (*lock).apu_buffer = gameboy.mem.apu.buffer.clone();
+            // Lock guard is dropped here
+        }
 
         for x in 0..SCREEN_WIDTH {
             for y in 0..SCREEN_HEIGHT {
