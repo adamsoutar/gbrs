@@ -2,41 +2,45 @@ use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
 use gbrs_core::lcd::GreyShade;
-use sdl2::pixels::{Color, PixelFormat, PixelFormatEnum};
+use sdl2::pixels::Color;
 use sdl2::event::Event;
-use sdl2::keyboard::{Keycode, Scancode};
-use sdl2::rect::Point;
-use sdl2::render::TextureAccess;
+use sdl2::keyboard::Scancode;
+use sdl2::rect::Rect;
 use std::time::Duration;
+
+// NOTE: The SDL port does not currently perform non-integer scaling.
+//   Please choose a multiple of 160x144
+const WINDOW_WIDTH: u32 = 800;
+const WINDOW_HEIGHT: u32 = 720;
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
     let window_title = format!("gbrs - {}", gameboy.cart_info.title);
-    let window = video_subsystem.window(&window_title[..], 800, 600)
+    let window = video_subsystem.window(&window_title[..], WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas().build().unwrap();
+    let square_width = WINDOW_WIDTH as usize / SCREEN_WIDTH;
+    let square_height = WINDOW_HEIGHT as usize / SCREEN_HEIGHT;
 
-    let texture_creator = canvas.texture_creator();
-    // Create a texture the size of the gameboy screen
-    // access: Steaming means we intend to update the texture's byte-array with
-    // a full new frame each loop.
-    let mut texture = texture_creator.create_texture(
-        Some(PixelFormatEnum::ARGB8888), TextureAccess::Streaming, 160, 144)
-        .unwrap();
+    let mut canvas = window.into_canvas().build().unwrap();
 
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
+    let timer = sdl_context.timer().unwrap();
+    
+    let perf_freq = timer.performance_frequency();
+    assert_eq!(perf_freq, 1000000000, 
+        "TODO: Don't rely on hardcoded nanosecond accuracy");
+
+    let mut last_perf_counter = timer.performance_counter();
     'running: loop {
-        // canvas.set_draw_color(Color::RGB(255, 255, 255));
-        // canvas.clear();
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..} => {
@@ -45,6 +49,13 @@ pub fn run_gui (mut gameboy: Cpu) {
                 _ => {}
             }
         }
+
+        let new_perf_counter = timer.performance_counter();
+        // Nanoseconds it took to draw the last frame
+        // We can use this to roughly slow ourselves down and try to lock at
+        // real gameboy speed.
+        let frame_time = new_perf_counter - last_perf_counter;
+        last_perf_counter = new_perf_counter;
 
         gameboy.mem.joypad.start_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Return);
         gameboy.mem.joypad.select_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Backspace);
@@ -56,71 +67,43 @@ pub fn run_gui (mut gameboy: Cpu) {
         gameboy.mem.joypad.down_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Down);
         gameboy.step_one_frame();
 
-        // canvas.with_texture_canvas(&mut texture, |texture_canvas| {
-        //     for x in 0..160 {
-        //         for y in 0..144 {
-        //             let i = y * 160 + x;
-        //             match &gameboy.gpu.finished_frame[i] {
-        //                 GreyShade::White => {
-        //                     texture_canvas
-        //                         .set_draw_color(Color::RGB(0xDD, 0xDD, 0xDD));
-        //                 },
-        //                 GreyShade::LightGrey => {
-        //                     texture_canvas
-        //                         .set_draw_color(Color::RGB(0xAA, 0xAA, 0xAA));
-        //                 },
-        //                 GreyShade::DarkGrey => {
-        //                     texture_canvas
-        //                         .set_draw_color(Color::RGB(0x88, 0x88, 0x88));
-        //                 },
-        //                 GreyShade::Black => {
-        //                     texture_canvas
-        //                         .set_draw_color(Color::RGB(0x55, 0x55, 0x55));
-        //                 }
-        //             }
-        //             texture_canvas
-        //                 .draw_point(Point::new(x as i32, y as i32))
-        //                 .unwrap();
-        //         }
-        //     }
-        // }).unwrap();
 
-        texture.with_lock(None, |frame, _pitch| {
-            for i in 0..SCREEN_BUFFER_SIZE {
-                let start = i * 4;
+        for x in 0..SCREEN_WIDTH {
+            for y in 0..SCREEN_HEIGHT {
+                let i = (y * 160 + x) as usize;
                 match &gameboy.gpu.finished_frame[i] {
                     GreyShade::White => {
-                        frame[start] = 0xDD;
-                        frame[start + 1] = 0xDD;
-                        frame[start + 2] = 0xDD;
-                        frame[start + 3] = 0xFF;
+                        canvas
+                            .set_draw_color(Color::RGB(0xDD, 0xDD, 0xDD));
                     },
                     GreyShade::LightGrey => {
-                        frame[start] = 0xAA;
-                        frame[start + 1] = 0xAA;
-                        frame[start + 2] = 0xAA;
-                        frame[start + 3] = 0xFF;
+                        canvas
+                            .set_draw_color(Color::RGB(0xAA, 0xAA, 0xAA));
                     },
                     GreyShade::DarkGrey => {
-                        frame[start] = 0x88;
-                        frame[start + 1] = 0x88;
-                        frame[start + 2] = 0x88;
-                        frame[start + 3] = 0xFF;
+                        canvas
+                            .set_draw_color(Color::RGB(0x88, 0x88, 0x88));
                     },
                     GreyShade::Black => {
-                        frame[start] = 0x55;
-                        frame[start + 1] = 0x55;
-                        frame[start + 2] = 0x55;
-                        frame[start + 3] = 0xFF;
+                        canvas
+                            .set_draw_color(Color::RGB(0x55, 0x55, 0x55));
                     }
                 }
+                canvas
+                    .fill_rect(Rect::new((x * square_width) as i32, (y * square_height) as i32, square_width as u32, square_height as u32))
+                    .unwrap();
             }
-        }).unwrap();
-
-        canvas.copy(&texture, None, None)
-            .unwrap();
+        }
 
         canvas.present();
-        // ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
+        
+        // If we draw the previous frame quicker than 60FPS, slow down and wait
+        // so we can get back down to speed.
+        // (this does not compensate for if your machine is too slow to eumlate
+        //  gameboy at 60FPS)
+        let nanoseconds_in_one_frame = 1_000_000_000u32 / DEFAULT_FRAME_RATE as u32;
+        if let Some(too_fast_by) = nanoseconds_in_one_frame.checked_sub(frame_time as u32) {
+            ::std::thread::sleep(Duration::new(0, too_fast_by));
+        }
     }
 }
