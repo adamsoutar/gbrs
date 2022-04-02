@@ -1,5 +1,7 @@
 // This allows ports to register functions for things like logging as well as
 // saving/loading battery-backed RAM.
+use crate::constants::SOUND_BUFFER_SIZE;
+
 #[cfg(not(feature = "std"))]
 use alloc::{vec, vec::Vec};
 #[cfg(feature = "std")]
@@ -12,13 +14,15 @@ pub type LoadCallback =
     fn(game_name: &str, rom_path: &str, expected_size: usize) -> Vec<u8>;
 // Should return any number in milliseconds. Used to wait for save debouncing
 pub type TimestampCallback = fn() -> usize;
+pub type SoundCallback = fn(sound_buffer: &[i16; SOUND_BUFFER_SIZE]);
 
 #[derive(Clone)]
 pub struct Callbacks {
     pub log: LogCallback,
     pub save: SaveCallback,
     pub load: LoadCallback,
-    pub get_ms_timestamp: TimestampCallback
+    pub get_ms_timestamp: TimestampCallback,
+    pub play_sound: SoundCallback
 }
 
 #[cfg(feature = "std")]
@@ -55,7 +59,8 @@ pub static mut CALLBACKS: Callbacks = Callbacks {
             vec![0; expected_size]
         }
     },
-    get_ms_timestamp: || PROGRAM_START.elapsed().as_millis() as usize
+    get_ms_timestamp: || PROGRAM_START.elapsed().as_millis() as usize,
+    play_sound: |_sound_buffer| {}
 };
 
 #[cfg(not(feature = "std"))]
@@ -64,7 +69,8 @@ pub static mut CALLBACKS: Callbacks = Callbacks {
     save: |_game_name, _rom_path, _save_data| {},
     load: |_game_name, _rom_path, expected_size| vec![0; expected_size],
     // Acting like time never advances is fine. We just will never save
-    get_ms_timestamp: || 0
+    get_ms_timestamp: || 0,
+    play_sound: |_sound_buffer| {}
 };
 
 pub unsafe fn set_callbacks(cbs: Callbacks) {

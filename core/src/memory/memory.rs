@@ -7,7 +7,7 @@ use crate::helpers::*;
 use crate::joypad::Joypad;
 use crate::cartridge::Cartridge;
 use crate::memory::mbcs::*;
-use crate::apu::APU;
+use crate::sound::apu::APU;
 use crate::serial_cable::SerialCable;
 use crate::log;
 
@@ -84,7 +84,8 @@ impl Memory {
                 }
             }
 
-            self.serial_cable.step(ints);   
+            self.serial_cable.step(ints);
+            self.apu.step();
         }
         self.mbc.step();
     }
