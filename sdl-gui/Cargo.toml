@@ -1,0 +1,9 @@
+[package]
+name = "gbrs-sfml-gui"
+version = "0.2.0"
+authors = ["Adam <adam@overflo.me>"]
+edition = "2018"
+
+[dependencies]
+gbrs-core = { path = "../core" }
+sdl2 = { version = "0.35.2", features = ["bundled"] }
