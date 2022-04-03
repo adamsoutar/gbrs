@@ -2,12 +2,11 @@ use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
 use gbrs_core::lcd::GreyShade;
-use sdl2::audio::{AudioCallback, AudioSpecDesired};
+use sdl2::audio::{AudioCallback, AudioSpecDesired, AudioQueue, self};
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 use sdl2::rect::Rect;
-use std::time::Duration;
 
 // NOTE: The SDL port does not currently perform non-integer scaling.
 //   Please choose a multiple of 160x144
@@ -49,12 +48,6 @@ pub fn run_gui (mut gameboy: Cpu) {
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let timer = sdl_context.timer().unwrap();
-    
-    let perf_freq = timer.performance_frequency();
-    assert_eq!(perf_freq, 1000000000, 
-        "TODO: Don't rely on hardcoded nanosecond accuracy");
-
     let audio_subsystem = sdl_context.audio().unwrap();
     let desired_spec = AudioSpecDesired {
         freq: Some(SOUND_SAMPLE_RATE as i32),
@@ -62,22 +55,14 @@ pub fn run_gui (mut gameboy: Cpu) {
         samples: Some(SOUND_BUFFER_SIZE as u16)
     };
 
-    // TODO: Change to SDL AudioQueue and sync graphics output based on sound
-    let mut device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
-        println!("{:?}", spec);
-        assert_eq!(spec.samples, SOUND_BUFFER_SIZE as u16, 
-            "Audio device does not support desired buffer size");
+    let audio_queue: AudioQueue<i16> = audio_subsystem
+        .open_queue(None, &desired_spec)
+        .unwrap();
+    println!("{:?}", audio_queue.spec());
 
-        GameboyAudio {
-            apu_buffer: [0; SOUND_BUFFER_SIZE],
-            called_back: false
-        }
-    }).unwrap();
+    gameboy.step_until_full_audio_buffer();
+    gameboy.mem.apu.buffer_full = true;
 
-    // Start audio
-    device.resume();
-
-    let mut last_perf_counter = timer.performance_counter();
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -88,31 +73,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             }
         }
 
-        let new_perf_counter = timer.performance_counter();
-        // Nanoseconds it took to draw the last frame
-        // We can use this to roughly slow ourselves down and try to lock at
-        // real gameboy speed.
-        let frame_time = new_perf_counter - last_perf_counter;
-        last_perf_counter = new_perf_counter;
-
-        gameboy.mem.joypad.start_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Return);
-        gameboy.mem.joypad.select_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Backspace);
-        gameboy.mem.joypad.a_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::X);
-        gameboy.mem.joypad.b_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Z);
-        gameboy.mem.joypad.left_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Left);
-        gameboy.mem.joypad.right_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Right);
-        gameboy.mem.joypad.up_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Up);
-        gameboy.mem.joypad.down_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Down);
-        gameboy.step_one_frame();
-        // TODO: Try step_until_full_audio_buffer
-
-        {
-            // Acquire a lock. This lets us read and modify callback data.
-            let mut lock = device.lock();
-            (*lock).apu_buffer = gameboy.mem.apu.buffer.clone();
-            // Lock guard is dropped here
-        }
-
+        // Draw the screen
         for x in 0..SCREEN_WIDTH {
             for y in 0..SCREEN_HEIGHT {
                 let i = (y * 160 + x) as usize;
@@ -139,16 +100,37 @@ pub fn run_gui (mut gameboy: Cpu) {
                     .unwrap();
             }
         }
-
         canvas.present();
         
-        // If we draw the previous frame quicker than 60FPS, slow down and wait
-        // so we can get back down to speed.
-        // (this does not compensate for if your machine is too slow to eumlate
-        //  gameboy at 60FPS)
-        let nanoseconds_in_one_frame = 1_000_000_000u32 / DEFAULT_FRAME_RATE as u32;
-        if let Some(too_fast_by) = nanoseconds_in_one_frame.checked_sub(frame_time as u32) {
-            ::std::thread::sleep(Duration::new(0, too_fast_by));
+        gameboy.mem.joypad.start_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Return);
+        gameboy.mem.joypad.select_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Backspace);
+        gameboy.mem.joypad.a_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::X);
+        gameboy.mem.joypad.b_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Z);
+        gameboy.mem.joypad.left_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Left);
+        gameboy.mem.joypad.right_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Right);
+        gameboy.mem.joypad.up_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Up);
+        gameboy.mem.joypad.down_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Down);
+
+        // Wait for it to finish
+        let mut target = 0;
+        while audio_queue.size() > target {
+            if gameboy.mem.apu.buffer_full == false {
+                gameboy.step();
+
+                if gameboy.mem.apu.buffer_full {
+                    target = audio_queue.size();
+                    audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
+                    audio_queue.resume();
+                }
+            }
+        }
+
+        if gameboy.mem.apu.buffer_full {
+            gameboy.mem.apu.buffer_full = false;
+        } else {
+            gameboy.step_until_full_audio_buffer();
+            audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
+            audio_queue.resume();
         }
     }
 }

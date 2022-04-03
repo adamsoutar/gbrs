@@ -35,7 +35,8 @@ pub struct APU {
     // This could be a Vec that we check len() against, but we can save the 
     // allocation because we know the size it's always going to be.
     pub buffer: [i16; SOUND_BUFFER_SIZE],
-    pub buffer_idx: usize
+    pub buffer_idx: usize,
+    pub buffer_full: bool
 }
 
 impl APU {
@@ -108,6 +109,7 @@ impl APU {
 
         if self.buffer_idx == SOUND_BUFFER_SIZE {
             self.buffer_idx = 0;
+            self.buffer_full = true;
             unsafe {
                 (CALLBACKS.play_sound)(&self.buffer)
             }  
@@ -180,7 +182,8 @@ impl APU {
 
             sample_counter: 0,
             buffer: [0; SOUND_BUFFER_SIZE],
-            buffer_idx: 0
+            buffer_idx: 0,
+            buffer_full: false
         }
     }
 }
