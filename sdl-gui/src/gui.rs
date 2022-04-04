@@ -12,6 +12,7 @@ use sdl2::rect::Rect;
 //   Please choose a multiple of 160x144
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 720;
+const AUDIO_QUEUE_MINIMUM: u32 = 0;
 
 struct GameboyAudio {
     pub apu_buffer: [i16; SOUND_BUFFER_SIZE],
@@ -61,7 +62,7 @@ pub fn run_gui (mut gameboy: Cpu) {
     println!("{:?}", audio_queue.spec());
 
     gameboy.step_until_full_audio_buffer();
-    gameboy.mem.apu.buffer_full = true;
+    // gameboy.mem.apu.buffer_full = true;
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -111,26 +112,40 @@ pub fn run_gui (mut gameboy: Cpu) {
         gameboy.mem.joypad.up_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Up);
         gameboy.mem.joypad.down_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Down);
 
-        // Wait for it to finish
-        let mut target = 0;
-        while audio_queue.size() > target {
-            if gameboy.mem.apu.buffer_full == false {
+
+        gameboy.step_until_full_audio_buffer();
+
+        let pre = audio_queue.size();
+        audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
+        audio_queue.resume();
+        let diff = audio_queue.size() - pre;
+        
+        while audio_queue.size() > diff {
+            if !gameboy.mem.apu.buffer_full {
                 gameboy.step();
-
-                if gameboy.mem.apu.buffer_full {
-                    target = audio_queue.size();
-                    audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
-                    audio_queue.resume();
-                }
             }
+            // std::hint::spin_loop();
         }
 
-        if gameboy.mem.apu.buffer_full {
-            gameboy.mem.apu.buffer_full = false;
-        } else {
-            gameboy.step_until_full_audio_buffer();
-            audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
-            audio_queue.resume();
-        }
+        // let mut target = AUDIO_QUEUE_MINIMUM;
+        // while audio_queue.size() > target {
+        //     if gameboy.mem.apu.buffer_full == false {
+        //         gameboy.step();
+
+        //         if gameboy.mem.apu.buffer_full {
+        //             target = audio_queue.size() + AUDIO_QUEUE_MINIMUM;
+        //             audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
+        //             audio_queue.resume();
+        //         }
+        //     }
+        // }
+
+        // if gameboy.mem.apu.buffer_full {
+        //     gameboy.mem.apu.buffer_full = false;
+        // } else {
+        //     gameboy.step_until_full_audio_buffer();
+        //     audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
+        //     audio_queue.resume();
+        // }
     }
 }

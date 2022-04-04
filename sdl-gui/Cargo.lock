@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gbrs-sfml-gui"
+name = "gbrs-sdl-gui"
 version = "0.2.0"
 dependencies = [
  "gbrs-core",

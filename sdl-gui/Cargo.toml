@@ -1,5 +1,5 @@
 [package]
-name = "gbrs-sfml-gui"
+name = "gbrs-sdl-gui"
 version = "0.2.0"
 authors = ["Adam <adam@overflo.me>"]
 edition = "2018"
