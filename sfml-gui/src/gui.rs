@@ -9,7 +9,7 @@ use sfml::system::*;
 use sfml::audio::{Sound, SoundBuffer, SoundStatus};
 
 pub const STEP_BY_STEP: bool = false;
-pub const FPS_CYCLES_DEBUG: bool = false;
+// NOTE: This debug option is only supported on macOS. See note below
 pub const DRAW_FPS: bool = true;
 
 pub static mut SOUND_BACKING_STORE: [i16; SOUND_BUFFER_SIZE] = [0; SOUND_BUFFER_SIZE];
@@ -61,23 +61,22 @@ pub fn run_gui (mut gameboy: Cpu) {
 
 
     let font;
-    let mut text;
-    // if DRAW_FPS {
+    let mut text = None;
+    if DRAW_FPS {
         // NOTE: DRAW_FPS only works on macOS at the moment due to hardcoded
         //   font paths. I don't want to include a font in the gbrs repo just
         //   for this debug feature.
         font = Font::from_file("/System/Library/Fonts/Menlo.ttc").unwrap();
-        text = Text::new("", &font, 32);
-    // }
+        text = Some(Text::new("", &font, 32));
+        // Make it stick out instead of white on a black+white screen
+        text.as_mut().unwrap().set_fill_color(Color::BLUE);
+    }
 
     // Get the initial frame & buffer of audio
     gameboy.step_until_full_audio_buffer();
 
     loop {
         let secs = clock.restart().as_seconds();
-        if FPS_CYCLES_DEBUG {
-            println!("{} FPS", 1. / secs);
-        }
 
         while let Some(ev) = window.poll_event() {
             match ev {
@@ -102,8 +101,8 @@ pub fn run_gui (mut gameboy: Cpu) {
         window.clear(Color::BLACK);
         window.draw(&screen_sprite);
         if DRAW_FPS {
-            text.set_string(&format!("{} FPS", (1. / secs) as usize)[..]);
-            window.draw(&text);
+            text.as_mut().unwrap().set_string(&format!("{} FPS", (1. / secs) as usize)[..]);
+            window.draw(text.as_ref().unwrap());
         }
         window.display();
 
