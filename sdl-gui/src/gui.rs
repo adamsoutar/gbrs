@@ -26,7 +26,13 @@ pub fn run_gui (mut gameboy: Cpu) {
     let square_width = WINDOW_WIDTH as usize / SCREEN_WIDTH;
     let square_height = WINDOW_HEIGHT as usize / SCREEN_HEIGHT;
 
-    let mut canvas = window.into_canvas().build().unwrap();
+    let mut canvas = window
+        .into_canvas()
+        // TODO: This option fixes visual tearing, but it messes up our sound
+        //   timing code, and the speed of the emulator is thrown way off :(
+        // .present_vsync()
+        .build()
+        .unwrap();
 
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
@@ -107,9 +113,13 @@ pub fn run_gui (mut gameboy: Cpu) {
         let diff = audio_queue.size() - pre;
         
         while audio_queue.size() > diff {
-            // if !gameboy.mem.apu.buffer_full {
-            //     gameboy.step();
-            // }
+            // NOTE: You can comment this if statement out if you're having
+            //   speed or sound issues. It is an attempt to help out slower 
+            //   machines, but you may not need it if your machine is fast 
+            //   enough.
+            if !gameboy.mem.apu.buffer_full {
+                gameboy.step();
+            }
             std::hint::spin_loop();
         }
     }
