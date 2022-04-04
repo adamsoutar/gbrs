@@ -30,8 +30,8 @@ fn update_joypad_state (gameboy: &mut Cpu) {
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
-    let window_width: u32 = 5120;
-    let window_height: u32 = 2880;
+    let window_width: u32 = 1280;
+    let window_height: u32 = 1024;
 
     let style = Style::RESIZE | Style::TITLEBAR | Style::CLOSE;
     let mut window = RenderWindow::new(
