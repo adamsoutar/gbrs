@@ -36,7 +36,7 @@ pub fn run_gui (mut gameboy: Cpu) {
     let style = Style::RESIZE | Style::TITLEBAR | Style::CLOSE;
     let mut window = RenderWindow::new(
         (window_width, window_height),
-        &format!("{} - gbrs", gameboy.cart_info.title)[..],
+        &format!("{} - gbrs (SFML)", gameboy.cart_info.title)[..],
         style,
         &Default::default()
     );

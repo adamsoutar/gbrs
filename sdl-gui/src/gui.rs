@@ -17,7 +17,7 @@ pub fn run_gui (mut gameboy: Cpu) {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window_title = format!("gbrs - {}", gameboy.cart_info.title);
+    let window_title = format!("{} - gbrs (SDL)", gameboy.cart_info.title);
     let window = video_subsystem.window(&window_title[..], WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
         .build()
