@@ -23,7 +23,7 @@ impl MBC for MBCNone {
         // We don't have RAM
     }
 
-    fn step (&mut self) {
+    fn step (&mut self, _ms_since_boot: usize) {
         // We don't need to do anything here
     }
 }

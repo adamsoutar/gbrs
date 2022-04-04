@@ -43,7 +43,13 @@ pub struct Cpu {
 
     pub ints: Interrupts,
     // When EI is executed, they're turned on after the instruction after the EI
-    ime_on_pending: bool
+    ime_on_pending: bool,
+
+    // Counts the milliseconds since the CPU started
+    // Based on CPU clocks. If the emulation is running too slow or too fast,
+    // this will not be accurate to real-world time.
+    pub ms_since_boot: usize,
+    clock_counter: usize
 }
 
 impl Cpu {
@@ -792,13 +798,19 @@ impl Cpu {
             self.ime_on_pending = false;
         }
 
-        self.mem.step(cycles, &mut self.ints);
+        self.mem.step(cycles, &mut self.ints, self.ms_since_boot);
 
         for _ in 0..cycles {
             self.gpu.step(&mut self.ints, &mut self.mem);
         }
 
         self.process_interrupts();
+
+        self.clock_counter += cycles;
+        if self.clock_counter >= CLOCK_SPEED / 1000 {
+            self.ms_since_boot += 1;
+            self.clock_counter = 0;
+        }
 
         return cycles;
     }
@@ -900,7 +912,10 @@ impl Cpu {
             frame_rate: DEFAULT_FRAME_RATE,
 
             ints: Interrupts::new(),
-            ime_on_pending: false
+            ime_on_pending: false,
+
+            ms_since_boot: 0,
+            clock_counter: 0
         }
     }
 
@@ -917,7 +932,10 @@ impl Cpu {
             frame_rate: DEFAULT_FRAME_RATE,
 
             ints: Interrupts::new(),
-            ime_on_pending: false
+            ime_on_pending: false,
+
+            ms_since_boot: 0,
+            clock_counter: 0
         }
     }
 }

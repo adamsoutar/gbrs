@@ -64,7 +64,7 @@ impl Memory {
     }
 
     // Memory has a step command for timers & MBCs
-    pub fn step (&mut self, cycles: usize, ints: &mut Interrupts) {
+    pub fn step (&mut self, cycles: usize, ints: &mut Interrupts, ms_since_boot: usize) {
         for _ in 0..cycles {
             self.timer_divider_increase += 1;
             if self.timer_divider_increase == 256 {
@@ -86,7 +86,7 @@ impl Memory {
 
             self.serial_cable.step(ints);   
         }
-        self.mbc.step();
+        self.mbc.step(ms_since_boot);
     }
 
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
