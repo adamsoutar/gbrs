@@ -110,9 +110,6 @@ impl APU {
         if self.buffer_idx == SOUND_BUFFER_SIZE {
             self.buffer_idx = 0;
             self.buffer_full = true;
-            // unsafe {
-            //     (CALLBACKS.play_sound)(&self.buffer)
-            // }  
         }
     }
 

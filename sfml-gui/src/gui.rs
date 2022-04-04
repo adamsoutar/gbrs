@@ -44,22 +44,22 @@ pub fn run_gui (mut gameboy: Cpu) {
             save: CALLBACKS.save,
             load: CALLBACKS.load,
             get_ms_timestamp: CALLBACKS.get_ms_timestamp,
-            play_sound: |sound_buffer| {
-                // HACK: *Horrible* unsafe crimes to make SOUND outlive its
-                //   block and not get Dropped. When a Sound Drops out of a
-                //   scope, it stops playing.
-                // TODO: Is this leaking memory? Does Rust still call Drop
-                //   when a mutable static is reassigned?
-                SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap());
-                SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
-                    Some(buff) => buff,
-                    None => unreachable!()
-                }));
-                match &mut SOUND {
-                    Some(sound) => sound.play(),
-                    None => unreachable!()
-                }
-            }
+            // play_sound: |sound_buffer| {
+            //     // HACK: *Horrible* unsafe crimes to make SOUND outlive its
+            //     //   block and not get Dropped. When a Sound Drops out of a
+            //     //   scope, it stops playing.
+            //     // TODO: Is this leaking memory? Does Rust still call Drop
+            //     //   when a mutable static is reassigned?
+            //     SOUND_BUFFER = Some(SoundBuffer::from_samples(sound_buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap());
+            //     SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
+            //         Some(buff) => buff,
+            //         None => unreachable!()
+            //     }));
+            //     match &mut SOUND {
+            //         Some(sound) => sound.play(),
+            //         None => unreachable!()
+            //     }
+            // }
         })
     }
 

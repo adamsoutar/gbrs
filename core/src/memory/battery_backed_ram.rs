@@ -27,15 +27,15 @@ impl BatteryBackedRam {
         self.changed_since_last_save = true;
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self, ms_since_boot: usize) {
         if !self.changed_since_last_save || !self.battery_enabled {
             return;
         }
 
-        let current_timestamp = unsafe { (CALLBACKS.get_ms_timestamp)() };
-        let millis_since_last_save = current_timestamp - self.last_saved_at;
+        let millis_since_last_save = ms_since_boot - self.last_saved_at;
 
         if millis_since_last_save >= DEBOUNCE_MILLIS {
+            self.last_saved_at = ms_since_boot;
             self.save_ram_contents()
         }
     }
@@ -44,7 +44,6 @@ impl BatteryBackedRam {
         self.changed_since_last_save = false;
 
         unsafe {
-            self.last_saved_at = (CALLBACKS.get_ms_timestamp)();
             (CALLBACKS.save)(
                 &self.cart.title[..],
                 &self.cart.rom_path[..],
@@ -61,7 +60,6 @@ impl BatteryBackedRam {
         let save_contents = unsafe {
             (CALLBACKS.load)(&cart.title[..], &cart.rom_path[..], ram_size)
         };
-        let current_timestamp = unsafe { (CALLBACKS.get_ms_timestamp)() };
 
         let ram = Ram::from_bytes(save_contents, ram_size);
 
@@ -73,7 +71,7 @@ impl BatteryBackedRam {
             battery_enabled,
             changed_since_last_save: false,
 
-            last_saved_at: current_timestamp
+            last_saved_at: 0
         }
     }
 }

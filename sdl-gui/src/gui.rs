@@ -12,22 +12,6 @@ use sdl2::rect::Rect;
 //   Please choose a multiple of 160x144
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 720;
-const AUDIO_QUEUE_MINIMUM: u32 = 0;
-
-struct GameboyAudio {
-    pub apu_buffer: [i16; SOUND_BUFFER_SIZE],
-    pub called_back: bool
-}
-impl AudioCallback for GameboyAudio {
-    type Channel = f32;
-
-    fn callback (&mut self, out: &mut [f32]) {
-        for i in 0..SOUND_BUFFER_SIZE {
-            out[i] = self.apu_buffer[i] as f32 / 32767.0;
-        }
-        self.called_back = true;
-    }
-}
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sdl_context = sdl2::init().unwrap();
@@ -121,31 +105,10 @@ pub fn run_gui (mut gameboy: Cpu) {
         let diff = audio_queue.size() - pre;
         
         while audio_queue.size() > diff {
-            if !gameboy.mem.apu.buffer_full {
-                gameboy.step();
-            }
-            // std::hint::spin_loop();
+            // if !gameboy.mem.apu.buffer_full {
+            //     gameboy.step();
+            // }
+            std::hint::spin_loop();
         }
-
-        // let mut target = AUDIO_QUEUE_MINIMUM;
-        // while audio_queue.size() > target {
-        //     if gameboy.mem.apu.buffer_full == false {
-        //         gameboy.step();
-
-        //         if gameboy.mem.apu.buffer_full {
-        //             target = audio_queue.size() + AUDIO_QUEUE_MINIMUM;
-        //             audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
-        //             audio_queue.resume();
-        //         }
-        //     }
-        // }
-
-        // if gameboy.mem.apu.buffer_full {
-        //     gameboy.mem.apu.buffer_full = false;
-        // } else {
-        //     gameboy.step_until_full_audio_buffer();
-        //     audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
-        //     audio_queue.resume();
-        // }
     }
 }

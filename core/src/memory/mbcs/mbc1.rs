@@ -81,8 +81,8 @@ impl MBC for MBC1 {
         self.ram.write(address, value)
     }
 
-    fn step(&mut self) {
-        self.ram.step()
+    fn step(&mut self, ms_since_boot: usize) {
+        self.ram.step(ms_since_boot)
     }
 }
 
