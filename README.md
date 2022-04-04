@@ -65,6 +65,7 @@ gbrs supports:
 - LCD Stat interrupt bug (a bug present on the real Gameboy hardware required for Road Rash)
 - Memory Board Controller 1 (MBCs are required for some more complex games)
 - Memory Board Controller 2
+- Sound!
 
 & more!
 
@@ -72,14 +73,31 @@ gbrs supports:
 
 I'm still working on gbrs (and having a **_tonne_** of fun doing it!).
 
-Some main things I'm working on
+The main thing(s) I'm working on:
 
 - Memory Board Controller 3 for Pokémon
-- There's no support for sound right now
 
 ## Building from source
 
 gbrs is not yet finished enough to distribute binaries, but if you want to try it out:
+
+The repo contains ports for multiple graphics backends. SDL is the easiest to build.
+
+### SDL
+
+The SDL port comes with everything you need to compile & run in one
+command. If you experience issues with screen tearing or cracking
+sound, check out the SFML port instead.
+
+```bash
+git clone https://github.com/adamsoutar/gbrs
+cd gbrs/sdl-gui
+cargo run --release ROM_PATH
+```
+
+(Replace ROM_PATH with the path to a .gb file)
+
+### SFML
 
 You'll need SFML set up, which you can find instructions for [here](https://github.com/jeremyletang/rust-sfml/wiki).
 
@@ -92,12 +110,10 @@ cd gbrs/sfml-gui
 cargo run --release ROM_PATH
 ```
 
-(Replace ROM_PATH with the path to a .gb file)
+## Ports to non-PC platforms
 
-## Ports
-
-gbrs is written to be ported to other platforms. Its default GUI for Windows,
-macOS and Linux is just a module that it doesn't _have_ to use.
+gbrs is written to be ported to other platforms. Its default GUIs for Windows,
+macOS and Linux are just modules that it doesn't _have_ to use.
 
 You can port [gbrs-core](./core) to almost anything - especially since it
 supports running _without_ the Rust StdLib.
