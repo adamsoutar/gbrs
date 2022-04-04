@@ -1,6 +1,5 @@
 // This allows ports to register functions for things like logging as well as
 // saving/loading battery-backed RAM.
-use crate::constants::SOUND_BUFFER_SIZE;
 
 #[cfg(not(feature = "std"))]
 use alloc::{vec, vec::Vec};

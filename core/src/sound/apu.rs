@@ -1,4 +1,3 @@
-use crate::callbacks::CALLBACKS;
 use crate::constants::*;
 use super::channel1::APUChannel1;
 use super::channel2::APUChannel2;

@@ -10,7 +10,7 @@ use sfml::audio::{Sound, SoundBuffer, SoundStatus};
 
 pub const STEP_BY_STEP: bool = false;
 // NOTE: This debug option is only supported on macOS. See note below
-pub const DRAW_FPS: bool = true;
+pub const DRAW_FPS: bool = false;
 
 pub static mut SOUND_BACKING_STORE: [i16; SOUND_BUFFER_SIZE] = [0; SOUND_BUFFER_SIZE];
 pub static mut SOUND_BUFFER: Option<SfBox<SoundBuffer>> = None;

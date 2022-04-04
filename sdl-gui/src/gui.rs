@@ -2,7 +2,7 @@ use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
 use gbrs_core::lcd::GreyShade;
-use sdl2::audio::{AudioCallback, AudioSpecDesired, AudioQueue, self};
+use sdl2::audio::{AudioSpecDesired, AudioQueue};
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
@@ -43,7 +43,9 @@ pub fn run_gui (mut gameboy: Cpu) {
     let audio_queue: AudioQueue<i16> = audio_subsystem
         .open_queue(None, &desired_spec)
         .unwrap();
-    println!("{:?}", audio_queue.spec());
+
+    assert_eq!(audio_queue.spec().samples, SOUND_BUFFER_SIZE as u16, 
+        "Audio device does not support gbrs' sound buffer size");
 
     gameboy.step_until_full_audio_buffer();
     // gameboy.mem.apu.buffer_full = true;
