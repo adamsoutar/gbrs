@@ -43,7 +43,6 @@ pub fn run_gui (mut gameboy: Cpu) {
             log: CALLBACKS.log,
             save: CALLBACKS.save,
             load: CALLBACKS.load,
-            get_ms_timestamp: CALLBACKS.get_ms_timestamp,
             // play_sound: |sound_buffer| {
             //     // HACK: *Horrible* unsafe crimes to make SOUND outlive its
             //     //   block and not get Dropped. When a Sound Drops out of a
