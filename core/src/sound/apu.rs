@@ -5,9 +5,6 @@ use super::channel3::APUChannel3;
 use super::channel4::APUChannel4;
 use super::registers::*;
 
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-
 pub trait APUChannel {
     fn step(&mut self);
     fn sample(&self) -> f32;
