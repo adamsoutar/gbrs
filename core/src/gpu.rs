@@ -123,7 +123,7 @@ impl Gpu {
     }
 
     fn get_all_sprites (&self) -> Vec<Sprite> {
-        let mut out = vec![];
+        let mut out = Vec::with_capacity(40);
 
         // There's room for 40 sprites in the OAM table
         for i in 0..40 {
@@ -450,7 +450,7 @@ impl Gpu {
         let sprite_height = if self.control.obj_size { 16 } else { 8 };
 
         let iy = y as i32;
-        let mut on_line = vec![];
+        let mut on_line = Vec::with_capacity(10);
         for s in &self.sprite_cache {
             if s.y_pos <= iy && (s.y_pos + sprite_height) > iy {
                 on_line.push(s.clone());
@@ -507,7 +507,7 @@ impl Gpu {
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
             dma_source: 0, dma_cycles: 0,
-            sprite_cache: vec![]
+            sprite_cache: Vec::with_capacity(0)
         }
     }
 }
