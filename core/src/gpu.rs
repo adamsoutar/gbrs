@@ -64,7 +64,12 @@ pub struct Gpu {
     dma_source: u8,
     dma_cycles: u8,
 
-    sprite_cache: Vec<Sprite>
+    // The global 40-sprite OAM cache
+    sprite_cache: Vec<Sprite>,
+    // The per-scanline 10-sprite cache
+    // TODO: These come straight from sprite_cache. Maybe they can be &Sprite?
+    //   Would that be faster?
+    sprites_on_line: Vec<Sprite>
 }
 
 impl Gpu {
@@ -152,7 +157,7 @@ impl Gpu {
 
             i += 1;
         }
-        
+
         self.sprite_cache.truncate(i);
     }
 
@@ -280,14 +285,14 @@ impl Gpu {
             // Draw the current line
             // TODO: Move these draw_pixel calls into the mode switch above
             //       to allow mid-scanline visual effects
-            let sprites = self.get_sprites_on_line(self.ly);
+            self.cache_sprites_on_line(self.ly);
             for x in 0..(SCREEN_WIDTH as u8) {
-                self.draw_pixel(ints, mem, &sprites, x, self.ly);
+                self.draw_pixel(ints, mem, x, self.ly);
             }
         }
     }
 
-    fn draw_pixel (&mut self, ints: &Interrupts, mem: &Memory, sprites_on_line: &Vec<Sprite>, x: u8, y: u8) {
+    fn draw_pixel (&mut self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) {
         let ux = x as usize; let uy = y as usize;
         let idx = uy * SCREEN_WIDTH + ux;
 
@@ -302,7 +307,7 @@ impl Gpu {
         };
 
         // If there's a non-transparent sprite here, use its colour
-        let s_col = self.get_sprite_colour_at(ints, mem, sprites_on_line, bg_col, bg_col_id, x, y);
+        let s_col = self.get_sprite_colour_at(ints, mem, bg_col, bg_col_id, x, y);
 
         self.frame[idx] = s_col;
     }
@@ -382,7 +387,7 @@ impl Gpu {
         col_id
     }
 
-    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, sprites: &Vec<Sprite>, bg_col: GreyShade, bg_col_id: u16, x: u8, y: u8) -> GreyShade {
+    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, bg_col: GreyShade, bg_col_id: u16, x: u8, y: u8) -> GreyShade {
         // Sprites are hidden for this scanline
         if !self.control.obj_enable {
             return bg_col
@@ -394,7 +399,7 @@ impl Gpu {
 
         let mut maybe_colour: Option<GreyShade> = None;
         let mut min_x: i32 = SCREEN_WIDTH as i32 + 8;
-        for sprite in sprites {
+        for sprite in &self.sprites_on_line {
             if sprite.x_pos <= ix && (sprite.x_pos + 8) > ix && sprite.x_pos < min_x {
                 if !sprite.above_bg && bg_col_id != 0 {
                     continue;
@@ -454,19 +459,17 @@ impl Gpu {
     }
 
     // Will be used later for get_sprite_pixel
-    fn get_sprites_on_line (&self, y: u8) -> Vec<Sprite> {
+    fn cache_sprites_on_line (&mut self, y: u8) {
         let sprite_height = if self.control.obj_size { 16 } else { 8 };
 
         let iy = y as i32;
-        let mut on_line = Vec::with_capacity(10);
+        self.sprites_on_line.truncate(0);
         for s in &self.sprite_cache {
             if s.y_pos <= iy && (s.y_pos + sprite_height) > iy {
-                on_line.push(s.clone());
+                self.sprites_on_line.push(s.clone());
             }
-            if on_line.len() == 10 { break }
+            if self.sprites_on_line.len() == 10 { break }
         }
-
-        on_line
     }
 
     pub fn get_sfml_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {
@@ -515,7 +518,8 @@ impl Gpu {
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
             dma_source: 0, dma_cycles: 0,
-            sprite_cache: Vec::with_capacity(40)
+            sprite_cache: Vec::with_capacity(40),
+            sprites_on_line: Vec::with_capacity(10)
         }
     }
 }
