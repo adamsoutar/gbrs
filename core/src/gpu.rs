@@ -122,12 +122,11 @@ impl Gpu {
         }
     }
 
-    fn get_all_sprites (&self) -> Vec<Sprite> {
-        let mut out = Vec::with_capacity(40);
-
+    fn cache_all_sprites (&mut self) {
         // There's room for 40 sprites in the OAM table
-        for i in 0..40 {
-            let address: u16 = i * 4;
+        let mut i = 0;
+        while i < 40 {
+            let address: u16 = i as u16 * 4;
 
             let y_pos = self.oam.read(address) as i32 - 16;
             let x_pos = self.oam.read(address + 1) as i32 - 8;
@@ -139,13 +138,22 @@ impl Gpu {
             let x_flip = (attribs & 0b0010_0000) == 0b0010_0000;
             let use_palette_0 = (attribs & 0b0001_0000) != 0b0001_0000;
 
-            out.push(Sprite {
-                y_pos, x_pos, pattern_id,
-                above_bg, y_flip, x_flip, use_palette_0
-            })
-        }
+            if self.sprite_cache.len() > i {
+                self.sprite_cache[i] = Sprite {
+                    y_pos, x_pos, pattern_id,
+                    above_bg, y_flip, x_flip, use_palette_0
+                };
+            } else {
+                self.sprite_cache.push(Sprite {
+                    y_pos, x_pos, pattern_id,
+                    above_bg, y_flip, x_flip, use_palette_0
+                });
+            }
 
-        out
+            i += 1;
+        }
+        
+        self.sprite_cache.truncate(i);
     }
 
     fn begin_dma(&mut self, source: u8) {
@@ -259,7 +267,7 @@ impl Gpu {
 
         if new_mode == LcdMode::OAMSearch && new_mode != self.status.get_mode() {
             // We've just entered OAMSearch, here we get the sprites
-            self.sprite_cache = self.get_all_sprites();
+            self.cache_all_sprites();
         }
 
         self.status.set_mode(new_mode);
@@ -507,7 +515,7 @@ impl Gpu {
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
             dma_source: 0, dma_cycles: 0,
-            sprite_cache: Vec::with_capacity(0)
+            sprite_cache: Vec::with_capacity(40)
         }
     }
 }
