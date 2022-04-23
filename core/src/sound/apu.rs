@@ -37,6 +37,12 @@ pub struct APU {
 
 impl APU {
     pub fn step (&mut self) {
+        // Sound processing can take up to 40% of runtime
+        // Some ports don't even support sound output, so we'll allow them to 
+        // turn off this waste of time
+        #[cfg(not(feature = "sound"))]
+        return;
+
         self.channel1.step();
         self.channel2.step();
         self.channel3.step();
@@ -110,6 +116,9 @@ impl APU {
     }
 
     pub fn read (&self, address: u16) -> u8 {
+        #[cfg(not(feature = "sound"))]
+        return 0;
+        
         match address {
             0xFF24 => self.serialise_nr50(),
             0xFF25 => u8::from(self.stereo_panning.clone()),
@@ -126,6 +135,9 @@ impl APU {
     }
 
     pub fn write (&mut self, address: u16, value: u8) {
+        #[cfg(not(feature = "sound"))]
+        return;
+
         match address {
             0xFF24 => self.deserialise_nr50(value),
             0xFF25 => self.stereo_panning = StereoPanning::from(value),
