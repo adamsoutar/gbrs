@@ -5,11 +5,7 @@ use crate::memory::memory::Memory;
 use crate::interrupts::*;
 use crate::log;
 
-#[cfg(not(feature = "std"))]
-use alloc::{
-    vec::Vec,
-    vec
-};
+use smallvec::SmallVec;
 
 #[derive(Clone)]
 pub struct Sprite {
@@ -65,11 +61,11 @@ pub struct Gpu {
     dma_cycles: u8,
 
     // The global 40-sprite OAM cache
-    sprite_cache: Vec<Sprite>,
+    sprite_cache: SmallVec<[Sprite; 64]>,
     // The per-scanline 10-sprite cache
     // TODO: These come straight from sprite_cache. Maybe they can be &Sprite?
     //   Would that be faster?
-    sprites_on_line: Vec<Sprite>
+    sprites_on_line: SmallVec<[Sprite; 10]>
 }
 
 impl Gpu {
@@ -518,8 +514,8 @@ impl Gpu {
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
             dma_source: 0, dma_cycles: 0,
-            sprite_cache: Vec::with_capacity(40),
-            sprites_on_line: Vec::with_capacity(10)
+            sprite_cache: SmallVec::with_capacity(40),
+            sprites_on_line: SmallVec::with_capacity(10)
         }
     }
 }
