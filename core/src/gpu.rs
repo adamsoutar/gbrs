@@ -212,14 +212,21 @@ impl Gpu {
             return;
         }
 
-        self.lx = (self.lx + 1) % gpu_timing::HTOTAL;
+        self.lx += 1;
+        if self.lx == gpu_timing::HTOTAL {
+            self.lx = 0;
+        }
 
         let mode = self.status.get_mode();
 
         let new_mode = match mode {
             LcdMode::VBlank => {
                 if self.lx == 0 {
-                    self.ly = (self.ly + 1) % gpu_timing::VTOTAL;
+                    self.ly += 1;
+                    if self.ly == gpu_timing::VTOTAL {
+                        self.ly = 0;
+                    }
+
                     self.run_ly_compare(ints);
 
                     if self.ly == 0 {
