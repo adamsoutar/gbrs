@@ -41,10 +41,10 @@ impl SerialCable {
     }
   }
 
-  pub fn step (&mut self, ints: &mut Interrupts) {
+  pub fn step (&mut self, ints: &mut Interrupts, cycles: usize) {
     if !self.transfer_in_progress { return; }
 
-    self.counter += 1;
+    self.counter += cycles;
 
     if self.counter >= 512 {
       self.transfer_in_progress = false;

@@ -37,12 +37,6 @@ pub struct APU {
 
 impl APU {
     pub fn step (&mut self) {
-        // Sound processing can take up to 40% of runtime
-        // Some ports don't even support sound output, so we'll allow them to 
-        // turn off this waste of time
-        #[cfg(not(feature = "sound"))]
-        return;
-
         self.channel1.step();
         self.channel2.step();
         self.channel3.step();

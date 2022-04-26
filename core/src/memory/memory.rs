@@ -65,29 +65,38 @@ impl Memory {
 
     // Memory has a step command for timers & MBCs
     pub fn step (&mut self, cycles: usize, ints: &mut Interrupts, ms_since_boot: usize) {
+        // These two timers are safe to implement like this vs per-cycle 
+        // because the CPU will never do more than about 16 cycles per step, 
+        // let alone >256
+        self.timer_divider_increase += cycles as u16;
+        if self.timer_divider_increase >= 256 {
+            self.timer_divider_increase -= 256;
+            self.timer_divider = self.timer_divider.wrapping_add(1);
+        }
+
+        let inc = self.get_counter_increase();
+        self.timer_counter_increase += inc * cycles as u32;
+        if self.timer_counter_increase >= 262144 {
+            self.timer_counter_increase -= 262144;
+            self.timer_counter = self.timer_counter.wrapping_add(1);
+            // If it overflowed
+            if self.timer_counter == 0 {
+                self.timer_counter = self.timer_modulo;
+                ints.raise_interrupt(InterruptReason::Timer);
+            }
+        }
+
+        self.serial_cable.step(ints, cycles);
+
+        self.mbc.step(ms_since_boot);
+
+        // Sound processing can take up to 40% of runtime
+        // Some ports don't even support sound output, so we'll allow them to 
+        // turn off this waste of time
+        #[cfg(feature = "sound")]
         for _ in 0..cycles {
-            self.timer_divider_increase += 1;
-            if self.timer_divider_increase == 256 {
-                self.timer_divider_increase = 0;
-                self.timer_divider = self.timer_divider.wrapping_add(1);
-            }
-
-            let inc = self.get_counter_increase();
-            self.timer_counter_increase += inc;
-            if self.timer_counter_increase == 262144 {
-                self.timer_counter_increase = 0;
-                self.timer_counter = self.timer_counter.wrapping_add(1);
-                // If it overflowed
-                if self.timer_counter == 0 {
-                    self.timer_counter = self.timer_modulo;
-                    ints.raise_interrupt(InterruptReason::Timer);
-                }
-            }
-
-            self.serial_cable.step(ints);
             self.apu.step();
         }
-        self.mbc.step(ms_since_boot);
     }
 
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
