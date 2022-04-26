@@ -362,6 +362,9 @@ impl Gpu {
         }
 
         let tx = x16 / 8; let ty = y16 / 8;
+        // NOTE: Things like y16 % 8 is equivalent to y16 - ty * 8
+        //   However, this is not more performant. I think the compiler
+        //   is smart enough to recognise that.
         let subx = (x16 % 8) as u8; let suby = y16 % 8;
 
         let byte_offset = ty * 32 + tx;

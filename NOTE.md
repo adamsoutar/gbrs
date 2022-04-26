@@ -26,11 +26,13 @@ MBCs probably do not need to be stepped per-cycle either. They can likely be
 stepped per frame, or _even per second_ or something, and still be fine.
 This step is only for save files and real-time clocks (not implemented).
 MBC::Step _may_ currently be slow due to MBCs being allocated on the heap and
-using indirection due to traits.
+using indirection due to traits. - This turned out not to be very important.
+Even not stepping an MBC at all barely impacts performance.
 
 There may be optimisation to be found in the fact that, if we have a sprite
-pixel, there is no need to go and calculate a background pixel colour.
+pixel, there is no need to go and calculate a background pixel colour. - This
+isn't terribly useful as sprites don't cover tonnes of the screen.
 
 The screen buffer likely does not need to be fully copied every frame.
 Since we're not at all multi-threaded (yet?), frame data will not be modified
-during rendering.
+during rendering. - This also doesn't seem to be much quicker.
