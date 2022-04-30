@@ -99,6 +99,7 @@ impl Memory {
         }
     }
 
+    #[inline(always)]
     pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
         match address {
             // Cartridge memory starts at the 0 address
@@ -143,6 +144,7 @@ impl Memory {
         }
     }
 
+    #[inline(always)]
     pub fn write (&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u8) {
         match address {
             0 ..= MBC_ROM_END => self.mbc.write(address, value),
@@ -186,9 +188,11 @@ impl Memory {
         }
     }
 
+    #[inline(always)]
     pub fn read_16(&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u16 {
         combine_u8(self.read(ints, gpu, address + 1), self.read(ints, gpu, address))
     }
+    #[inline(always)]
     pub fn write_16(&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u16) {
         let (b1, b2) = split_u16(value);
         self.write(ints, gpu, address, b1);

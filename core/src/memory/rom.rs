@@ -12,6 +12,7 @@ pub struct Rom {
 }
 
 impl Rom {
+    #[inline(always)]
     pub fn read (&self, address: u16) -> u8 {
         self.bytes[address as usize]
     }

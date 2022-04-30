@@ -7,10 +7,12 @@ pub struct Ram {
 }
 
 impl Ram {
+    #[inline(always)]
     pub fn read(&self, address: u16) -> u8 {
         self.bytes[address as usize]
     }
 
+    #[inline(always)]
     pub fn write(&mut self, address: u16, value: u8) {
         self.bytes[address as usize] = value;
     }
