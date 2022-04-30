@@ -69,6 +69,7 @@ pub struct Interrupts {
 }
 
 impl Interrupts {
+    #[inline(always)]
     pub fn raise_interrupt (&mut self, reason: InterruptReason) {
         let mut data = self.flag_read();
         data |= get_interrupt_reason_bitmask(reason);
@@ -76,22 +77,26 @@ impl Interrupts {
     }
 
     // Called when GB writes to FFFF
+    #[inline(always)]
     pub fn enable_write (&mut self, value: u8) {
         // log!("{:08b} written to IE", value);
         self.enable = InterruptFields::from(value)
     }
 
     // Called when GB writes to FF0F
+    #[inline(always)]
     pub fn flag_write (&mut self, value: u8) {
         self.flag = InterruptFields::from(value)
     }
 
     // Called when GB reads from FFFF
+    #[inline(always)]
     pub fn enable_read (&self) -> u8 {
         u8::from(self.enable.clone())
     }
 
     // Called when GB reads from FF0F
+    #[inline(always)]
     pub fn flag_read (&self) -> u8 {
         u8::from(self.flag.clone())
     }

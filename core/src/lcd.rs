@@ -91,6 +91,7 @@ impl LcdStatus {
         }
     }
 
+    #[inline(always)]
     pub fn set_data (&mut self, data: u8, ints: &mut Interrupts) {
         // There's actually a DMG GPU bug when writing to LCDStat
         // where sometimes it fires off an interrupt at the wrong time
@@ -113,6 +114,7 @@ impl LcdStatus {
         //       they're read only
     }
 
+    #[inline(always)]
     pub fn set_mode (&mut self, mode: LcdMode) {
         self.mode_flag = mode as u8;
     }
@@ -123,6 +125,7 @@ impl LcdStatus {
     }
 }
 impl From<u8> for LcdStatus {
+    #[inline(always)]
     fn from(n: u8) -> LcdStatus {
         LcdStatus {
             lyc: (n & 0b1000000) == 0b1000000,
@@ -135,6 +138,7 @@ impl From<u8> for LcdStatus {
     }
 }
 impl From<LcdStatus> for u8 {
+    #[inline(always)]
     fn from(lcd: LcdStatus) -> u8 {
         lcd.mode_flag |
         (lcd.coincidence_flag as u8) << 2 |

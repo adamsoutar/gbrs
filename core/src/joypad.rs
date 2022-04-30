@@ -21,6 +21,7 @@ enum JoypadReadoutMode {
   }
   
   impl Joypad {
+    #[inline(always)]
     pub fn write (&mut self, n: u8) {
         let masked = n & 0b0011_0000;
   
@@ -31,6 +32,7 @@ enum JoypadReadoutMode {
         }
     }
   
+    #[inline(always)]
     fn direction_bits (&self) -> u8 {
         (!self.right_pressed as u8) |
         ((!self.left_pressed as u8) << 1) |
@@ -38,6 +40,7 @@ enum JoypadReadoutMode {
         ((!self.down_pressed as u8) << 3)
     }
   
+    #[inline(always)]
     fn button_bits (&self) -> u8 {
         (!self.a_pressed as u8) |
         ((!self.b_pressed as u8) << 1) |
@@ -45,6 +48,7 @@ enum JoypadReadoutMode {
         ((!self.start_pressed as u8) << 3)
     }
   
+    #[inline(always)]
     fn selection_bits (&self) -> u8 {
         match self.readout_mode {
             JoypadReadoutMode::Buttons => 0b0010_0000,
@@ -53,6 +57,7 @@ enum JoypadReadoutMode {
         }
     }
   
+    #[inline(always)]
     pub fn read (&self) -> u8 {
         let n = match self.readout_mode {
             JoypadReadoutMode::Buttons => self.button_bits(),

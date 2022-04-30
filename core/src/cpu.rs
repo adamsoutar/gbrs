@@ -52,33 +52,41 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    #[inline(always)]
     fn read_next (&mut self) -> u8 {
         let byte = self.mem_read(self.regs.pc);
         // log!("Read address {:#x}, value: {:#x}", self.regs.pc, byte);
         self.regs.pc += 1;
         byte
     }
+    #[inline(always)]
     fn read_next_16 (&mut self) -> u16 {
         let b1 = self.read_next();
         let b2 = self.read_next();
         combine_u8!(b2, b1)
     }
 
+    #[inline(always)]
     fn mem_write (&mut self, address: u16, value: u8) {
         self.mem.write(&mut self.ints, &mut self.gpu, address, value)
     }
+    #[inline(always)]
     fn mem_read (&mut self, address: u16) -> u8 {
         self.mem.read(&self.ints, &self.gpu, address)
     }
+    #[inline(always)]
     fn mem_write_16 (&mut self, address: u16, value: u16) {
         self.mem.write_16(&mut self.ints, &mut self.gpu, address, value)
     }
+    #[inline(always)]
     fn mem_read_16 (&mut self, address: u16) -> u16 {
         self.mem.read_16(&self.ints, &self.gpu, address)
     }
+    #[inline(always)]
     fn set_singular_register(&mut self, register: u8, value: u8) {
         self.regs.set_singular_register(register, value, &mut self.mem, &mut self.ints, &mut self.gpu)
     }
+    #[inline(always)]
     fn get_singular_register(&mut self, register: u8) -> u8 {
         self.regs.get_singular_register(register, &self.mem, &self.ints, &self.gpu)
     }
@@ -302,10 +310,12 @@ impl Cpu {
         self.regs.a = a;
     }
 
+    #[inline(always)]
     fn stack_push (&mut self, value: u16) {
         self.regs.sp -= 2;
         self.mem_write_16(self.regs.sp, value);
     }
+    #[inline(always)]
     fn stack_pop (&mut self) -> u16 {
         let val = self.mem_read_16(self.regs.sp);
         self.regs.sp += 2;
