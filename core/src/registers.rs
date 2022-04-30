@@ -96,6 +96,7 @@ impl Registers {
 
     // These are left to right from the "GoldenCrystal Gameboy Z80 CPU Opcodes" PDF
     // The "sp" flag indicates whether 0b11 refers to the SP or AF
+    #[inline(always)]
     fn set_combined_register_base (&mut self, register: u8, value: u16, sp: bool) {
         match register {
             0b00 => self.set_bc(value),
@@ -105,6 +106,7 @@ impl Registers {
             _ => panic!("Invalid combined register set")
         }
     }
+    #[inline(always)]
     fn get_combined_register_base (&self, register: u8, sp: bool) -> u16 {
         match register {
             0b00 => self.get_bc(),
@@ -115,20 +117,24 @@ impl Registers {
         }
     }
 
+    #[inline(always)]
     pub fn get_combined_register (&self, register: u8) -> u16 {
         self.get_combined_register_base(register, true)
     }
+    #[inline(always)]
     pub fn set_combined_register(&mut self, register: u8, value: u16) {
         self.set_combined_register_base(register, value, true)
     }
+    #[inline(always)]
     pub fn get_combined_register_alt (&self, register: u8) -> u16 {
         self.get_combined_register_base(register, false)
     }
+    #[inline(always)]
     pub fn set_combined_register_alt (&mut self, register: u8, value: u16) {
         self.set_combined_register_base(register, value, false)
     }
 
-
+    #[inline(always)]
     pub fn set_singular_register (&mut self, register: u8, value: u8, mem: &mut Memory, ints: &mut Interrupts, gpu: &mut Gpu) {
         match register {
             0b000 => self.b = value,
@@ -143,6 +149,7 @@ impl Registers {
         }
     }
 
+    #[inline(always)]
     pub fn get_singular_register (&self, register: u8, mem: &Memory, ints: &Interrupts, gpu: &Gpu) -> u8 {
         match register {
             0b000 => self.b,
