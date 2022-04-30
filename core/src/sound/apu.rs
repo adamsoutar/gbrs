@@ -109,6 +109,8 @@ impl APU {
         }
     }
 
+    #[allow(unused_variables)]
+    #[allow(unreachable_code)]
     pub fn read (&self, address: u16) -> u8 {
         #[cfg(not(feature = "sound"))]
         return 0;
@@ -128,6 +130,8 @@ impl APU {
         }
     }
 
+    #[allow(unused_variables)]
+    #[allow(unreachable_code)]
     pub fn write (&mut self, address: u16, value: u8) {
         #[cfg(not(feature = "sound"))]
         return;
