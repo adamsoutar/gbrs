@@ -3,7 +3,7 @@ use crate::memory::ram::Ram;
 use crate::memory::rom::Rom;
 use crate::gpu::Gpu;
 use crate::interrupts::*;
-use crate::helpers::*;
+use crate::{split_u16, combine_u8};
 use crate::joypad::Joypad;
 use crate::cartridge::Cartridge;
 use crate::memory::mbcs::*;
@@ -190,11 +190,11 @@ impl Memory {
 
     #[inline(always)]
     pub fn read_16(&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u16 {
-        combine_u8(self.read(ints, gpu, address + 1), self.read(ints, gpu, address))
+        combine_u8!(self.read(ints, gpu, address + 1), self.read(ints, gpu, address))
     }
     #[inline(always)]
     pub fn write_16(&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u16) {
-        let (b1, b2) = split_u16(value);
+        let (b1, b2) = split_u16!(value);
         self.write(ints, gpu, address, b1);
         self.write(ints, gpu, address + 1, b2);
     }

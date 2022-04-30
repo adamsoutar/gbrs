@@ -1,22 +1,23 @@
-#[inline(always)]
-pub fn combine_u8 (b1: u8, b2: u8) -> u16 {
-    let bu1 = b1 as u16;
-    let bu2 = b2 as u16;
-    (bu1 << 8) | bu2
-}
-#[inline(always)]
-pub fn split_u16 (v: u16) -> (u8, u8) {
-    let b1 = (v & 0x00FF) as u8;
-    let b2 = ((v & 0xFF00) >> 8) as u8;
-    (b1, b2)
-}
-#[inline(always)]
-pub fn set_bit (number: &mut u8, bit_index: u8, bit: u8) {
-    // Clear the bit
-    *number &= !(1 << bit_index);
-    // Set it
-    *number |= bit << bit_index;
-}
+#[macro_export]
+macro_rules! combine_u8(
+    ($x:expr, $y:expr) => (
+        (($x as u16) << 8) | $y as u16
+    )
+);
+#[macro_export]
+macro_rules! split_u16(
+    ($n:expr) => ({
+        let b1 = ($n & 0x00FF) as u8;
+        let b2 = (($n & 0xFF00) >> 8) as u8;
+        (b1, b2)
+    })
+);
+#[macro_export]
+macro_rules! set_bit(
+    ($number:expr, $bit_index:expr, $bit:expr) => (
+        $number = ($number & !(1 << $bit_index)) | $bit << $bit_index;
+    )
+);
 
 #[macro_export]
 macro_rules! log {

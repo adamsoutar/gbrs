@@ -1,7 +1,6 @@
 use crate::memory::memory::Memory;
-use crate::helpers::*;
 use crate::constants::*;
-use crate::{bitmatch, compute_mask, compute_equal};
+use crate::{bitmatch, compute_mask, compute_equal, combine_u8, set_bit};
 use crate::registers::Registers;
 use crate::interrupts::*;
 use crate::gpu::Gpu;
@@ -62,7 +61,7 @@ impl Cpu {
     fn read_next_16 (&mut self) -> u16 {
         let b1 = self.read_next();
         let b2 = self.read_next();
-        combine_u8(b2, b1)
+        combine_u8!(b2, b1)
     }
 
     fn mem_write (&mut self, address: u16, value: u8) {
@@ -339,7 +338,7 @@ impl Cpu {
                     // Yes, disable all interrupts
                     self.ints.ime = false;
                     // Disable that interrupt
-                    set_bit(&mut pending_ints, i, 0);
+                    set_bit!(pending_ints, i, 0);
                     self.ints.flag_write(pending_ints);
                     // Call interrupt vector
                     self.stack_push(self.regs.pc);
@@ -897,7 +896,7 @@ impl Cpu {
             // RES N, D
             op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
                 let mut val = self.get_singular_register(v_d);
-                set_bit(&mut val, v_n, 0);
+                set_bit!(val, v_n, 0);
                 self.set_singular_register(v_d, val);
                 v_d_hl_cycles
             }
@@ -905,7 +904,7 @@ impl Cpu {
             // SET N, D
             op if bitmatch!(op, (1,1,_,_,_,_,_,_)) => {
                 let mut val = self.get_singular_register(v_d);
-                set_bit(&mut val, v_n, 1);
+                set_bit!(val, v_n, 1);
                 self.set_singular_register(v_d, val);
                 v_d_hl_cycles
             }

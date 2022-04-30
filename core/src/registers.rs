@@ -1,7 +1,7 @@
-use crate::helpers::*;
 use crate::memory::memory::Memory;
 use crate::interrupts::*;
 use crate::gpu::Gpu;
+use crate::{split_u16, combine_u8, set_bit};
 
 #[cfg(not(feature = "std"))]
 use alloc::{
@@ -24,7 +24,7 @@ pub struct Registers {
 }
 impl Registers {
     fn set_flag(&mut self, flag_index: u8, bit: u8) {
-        set_bit(&mut self.f, 4 + flag_index, bit)
+        set_bit!(self.f, 4 + flag_index, bit);
     }
     pub fn set_carry_flag (&mut self, bit: u8) {
         self.set_flag(0, bit)
@@ -63,34 +63,34 @@ impl Registers {
     }
 
     pub fn get_af (&self) -> u16 {
-        combine_u8(self.a, self.f)
+        combine_u8!(self.a, self.f)
     }
     pub fn set_af (&mut self, value: u16) {
-        let (b1, b2) = split_u16(value);
+        let (b1, b2) = split_u16!(value);
         self.a = b2; self.f = b1 & 0xF0;
     }
 
     pub fn get_bc (&self) -> u16 {
-        combine_u8(self.b, self.c)
+        combine_u8!(self.b, self.c)
     }
     pub fn set_bc (&mut self, value: u16) {
-        let (b1, b2) = split_u16(value);
+        let (b1, b2) = split_u16!(value);
         self.b = b2; self.c = b1;
     }
 
     pub fn get_de (&self) -> u16 {
-        combine_u8(self.d, self.e)
+        combine_u8!(self.d, self.e)
     }
     pub fn set_de (&mut self, value: u16) {
-        let (b1, b2) = split_u16(value);
+        let (b1, b2) = split_u16!(value);
         self.d = b2; self.e = b1;
     }
 
     pub fn get_hl (&self) -> u16 {
-        combine_u8(self.h, self.l)
+        combine_u8!(self.h, self.l)
     }
     pub fn set_hl (&mut self, value: u16) {
-        let (b1, b2) = split_u16(value);
+        let (b1, b2) = split_u16!(value);
         self.h = b2; self.l = b1;
     }
 
