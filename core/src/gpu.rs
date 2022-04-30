@@ -219,74 +219,82 @@ impl Gpu {
 
         let mode = self.status.get_mode();
 
-        let new_mode = match mode {
-            LcdMode::VBlank => {
-                if self.lx == 0 {
-                    self.ly += 1;
-                    if self.ly == gpu_timing::VTOTAL {
-                        self.ly = 0;
+        if mode == LcdMode::VBlank {
+            if self.lx == 0 {
+                self.ly += 1;
+                if self.ly == gpu_timing::VTOTAL {
+                    self.ly = 0;
+                }
+
+                self.run_ly_compare(ints);
+
+                if self.ly == 0 {
+                    self.window_line_counter = 0;
+                    if self.status.oam_interrupt {
+                        ints.raise_interrupt(InterruptReason::LCDStat);
                     }
-
-                    self.run_ly_compare(ints);
-
-                    if self.ly == 0 {
-                        self.window_line_counter = 0;
-                        if self.status.oam_interrupt {
-                            ints.raise_interrupt(InterruptReason::LCDStat);
-                        }
-                        LcdMode::OAMSearch
-                    } else { mode }
-                } else { mode }
-            },
-            _ => {
-                match self.lx {
-                    0 => {
-                        // Unusual GPU implementation detail. This is only
-                        // incremented when the Window was drawn on this scanline.
-                        // TODO: Relate these magic numbers to constants.
-                        if self.control.window_enable && 
-                            self.wx < 166 && 
-                            self.wy < 143 && 
-                            self.ly >= self.wy
-                        {
-                            self.window_line_counter += 1;
-                        }
-
-                        self.ly += 1;
-
-                        self.run_ly_compare(ints);
-                        // Done with frame, enter VBlank
-                        if self.ly == gpu_timing::VBLANK_ON {
-                            self.enter_vblank(ints);
-                            LcdMode::VBlank
-                        } else { LcdMode::OAMSearch }
-                    }
-                    gpu_timing::HTRANSFER_ON => LcdMode::Transfer,
-                    gpu_timing::HBLANK_ON => {
-                        if self.status.hblank_interrupt {
-                            ints.raise_interrupt(InterruptReason::LCDStat)
-                        }
-                        LcdMode::HBlank
-                    },
-                    _ => mode
+                    self.status.set_mode(LcdMode::OAMSearch);
+                    self.cache_all_sprites();
+                    self.draw_line_if_necessary(ints, mem);
                 }
             }
-        };
-
-        if new_mode == LcdMode::OAMSearch && new_mode != self.status.get_mode() {
-            // We've just entered OAMSearch, here we get the sprites
-            self.cache_all_sprites();
+            return;
         }
 
-        self.status.set_mode(new_mode);
+        if self.lx == 0 {
+            // Unusual GPU implementation detail. This is only
+            // incremented when the Window was drawn on this scanline.
+            // TODO: Relate these magic numbers to constants.
+            if self.control.window_enable && 
+                self.wx < 166 && 
+                self.wy < 143 && 
+                self.ly >= self.wy
+            {
+                self.window_line_counter += 1;
+            }
 
-        // The first line takes longer to draw
+            self.ly += 1;
+
+            self.run_ly_compare(ints);
+            // Done with frame, enter VBlank
+            if self.ly == gpu_timing::VBLANK_ON {
+                self.enter_vblank(ints);
+                self.status.set_mode(LcdMode::VBlank);
+            } else { 
+                if mode != LcdMode::OAMSearch {
+                    self.status.set_mode(LcdMode::OAMSearch);
+                    self.cache_all_sprites();
+                    self.draw_line_if_necessary(ints, mem);
+                }
+            }
+            return;
+        }
+
+        if self.lx == gpu_timing::HTRANSFER_ON {
+            self.status.set_mode(LcdMode::Transfer);
+            self.draw_line_if_necessary(ints, mem);
+            return;
+        }
+
+        if self.lx == gpu_timing::HBLANK_ON {
+            if self.status.hblank_interrupt {
+                ints.raise_interrupt(InterruptReason::LCDStat)
+            }
+            self.status.set_mode(LcdMode::HBlank);
+            return;
+        }
+
+        self.draw_line_if_necessary(ints, mem);
+    }
+
+    #[inline(always)]
+    fn draw_line_if_necessary (&mut self, ints: &mut Interrupts, mem: &mut Memory) {
         let line_start = gpu_timing::HTRANSFER_ON +
             if self.ly == 0 { 160 } else { 48 };
 
-        if self.lx == line_start && self.status.get_mode() != LcdMode::VBlank {
+        if self.lx == line_start {
             // Draw the current line
-            // TODO: Move these draw_pixel calls into the mode switch above
+            // TODO: Move these draw_pixel calls into the mode switch
             //       to allow mid-scanline visual effects
             self.cache_sprites_on_line(self.ly);
             for x in 0..(SCREEN_WIDTH as u8) {
