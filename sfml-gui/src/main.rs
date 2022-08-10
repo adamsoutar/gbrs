@@ -1,4 +1,5 @@
 pub mod gui;
+pub mod control;
 
 use std::env;
 

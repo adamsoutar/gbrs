@@ -1,3 +1,5 @@
+use crate::control::*;
+
 use gbrs_core::callbacks::{Callbacks, CALLBACKS};
 use gbrs_core::callbacks::set_callbacks;
 use gbrs_core::cpu::Cpu;
@@ -6,27 +8,15 @@ use gbrs_core::constants::*;
 use sfml::graphics::*;
 use sfml::window::*;
 use sfml::system::*;
-use sfml::audio::{Sound, SoundBuffer, SoundStatus};
+use sfml::audio::{Sound, SoundBuffer, SoundStatus, SoundSource};
 
 pub const STEP_BY_STEP: bool = false;
 // NOTE: This debug option is only supported on macOS. See note below
-pub const DRAW_FPS: bool = false;
+pub const DRAW_FPS: bool = true;
 
 pub static mut SOUND_BACKING_STORE: [i16; SOUND_BUFFER_SIZE] = [0; SOUND_BUFFER_SIZE];
 pub static mut SOUND_BUFFER: Option<SfBox<SoundBuffer>> = None;
 pub static mut SOUND: Option<Sound> = None;
-
-fn update_joypad_state (gameboy: &mut Cpu) {
-    // TODO: Raise the joypad interrupt
-    gameboy.mem.joypad.a_pressed = Key::is_pressed(Key::X);
-    gameboy.mem.joypad.b_pressed = Key::is_pressed(Key::Z);
-    gameboy.mem.joypad.start_pressed = Key::is_pressed(Key::Return);
-    gameboy.mem.joypad.select_pressed = Key::is_pressed(Key::BackSpace);
-    gameboy.mem.joypad.up_pressed = Key::is_pressed(Key::Up);
-    gameboy.mem.joypad.down_pressed = Key::is_pressed(Key::Down);
-    gameboy.mem.joypad.left_pressed = Key::is_pressed(Key::Left);
-    gameboy.mem.joypad.right_pressed = Key::is_pressed(Key::Right);
-}
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
@@ -121,6 +111,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             }));
             match &mut SOUND {
                 Some(sound) => {
+                    sound.set_volume(0.);
                     sound.play();
                     while sound.status() == SoundStatus::Playing {
                         if !gameboy.mem.apu.buffer_full {
