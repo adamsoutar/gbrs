@@ -8,7 +8,7 @@ use gbrs_core::constants::*;
 use sfml::graphics::*;
 use sfml::window::*;
 use sfml::system::*;
-use sfml::audio::{Sound, SoundBuffer, SoundStatus, SoundSource};
+use sfml::audio::{Sound, SoundBuffer, SoundStatus};
 
 pub const STEP_BY_STEP: bool = false;
 // NOTE: This debug option is only supported on macOS. See note below
