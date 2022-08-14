@@ -39,7 +39,7 @@ impl MBC for MBC3 {
                 self.ram_enabled = (value & 0x0A) == 0x0A;
             },
             0x2000..=0x3FFF => {
-                let mut n = value & 0b00111111;
+                let mut n = value & 0b01111111;
                 // let max_bank = (self.rom.bytes.len() / KB_16) as u8;
                 // if n > max_bank {
                 //     n = max_bank;
