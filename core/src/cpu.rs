@@ -408,7 +408,8 @@ impl Cpu {
         let v_d_alt = op & 0b00000_111;
 
         // Loading from (HL) adds 4 cycles to ALU instructions
-        let v_d_is_hl = (v_d & 0b110) == 0b110;
+        let v_d_is_hl = v_d == 0b110;
+        let v_d_alt_is_hl = v_d_alt == 0b110;
 
         let cycles = match op {
             0 => { 4 },
@@ -484,7 +485,11 @@ impl Cpu {
             op if bitmatch!(op, (0,0,_,_,_,1,1,0)) => {
                 let val = self.read_next();
                 self.set_singular_register(v_d, val);
-                8
+                if v_d_is_hl {
+                    12
+                } else {
+                    8
+                }
             },
 
             // RdCA and RdA
@@ -594,7 +599,11 @@ impl Cpu {
             op if bitmatch!(op, (0,1,_,_,_,_,_,_)) => {
                 let reg_val = self.get_singular_register(v_d_alt);
                 self.set_singular_register(v_d, reg_val);
-                4
+                if v_d_alt_is_hl {
+                    8
+                } else {
+                    4
+                }
             }
 
             // ALU A, D
@@ -602,7 +611,7 @@ impl Cpu {
                 let val = self.get_singular_register(v_d_alt);
                 let operation = (op & 0b00111000) >> 3;
                 self.alu(operation, val);
-                if v_d_is_hl { 8 } else { 4 }
+                if v_d_alt_is_hl { 8 } else { 4 }
             }
 
             // ALU A, N
