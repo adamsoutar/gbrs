@@ -40,11 +40,10 @@ impl MBC for MBC3 {
             },
             0x2000..=0x3FFF => {
                 let mut n = value & 0b01111111;
-                // let max_bank = (self.rom.bytes.len() / KB_16) as u8;
-                // if n > max_bank {
-                //     n = max_bank;
-                // }
-                if n == 0 {
+                let max_bank = (self.rom.bytes.len() / KB_16) as u8;
+                let bitmask = max_bank - 1;
+                n = n & bitmask;
+                if n == 0 { 
                     n = 1
                 }
                 // log!("Selecting ROM bank {}", n);
