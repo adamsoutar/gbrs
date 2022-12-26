@@ -2,6 +2,8 @@
 
 A Rust GameBoy emulator!
 
+<!-- TODO: Add gameplay gifs for Pokémon Red, WarioLand 2 and Dr Mario -->
+
 <table>
   <tr>
     <th>Tetris</th><th>Zelda: Link's Awakening</th>
@@ -65,6 +67,7 @@ gbrs supports:
 - LCD Stat interrupt bug (a bug present on the real Gameboy hardware required for Road Rash)
 - Memory Board Controller 1 (MBCs are required for some more complex games)
 - Memory Board Controller 2
+- Memory Board Controller 3 (Real-time clock WIP)
 - Sound!
 
 & more!
@@ -75,7 +78,9 @@ I'm still working on gbrs (and having a **_tonne_** of fun doing it!).
 
 The main thing(s) I'm working on:
 
-- Memory Board Controller 3 for Pokémon
+- MBC3 RTC for real-world timekeeping in Pokemon
+- Laying the foundations for GameBoy Color support
+- Performance optimisations for bare-metal ports
 
 ## Building from source
 
