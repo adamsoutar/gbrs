@@ -61,6 +61,8 @@ pub struct Gpu {
     dma_cycles: u8,
 
     // The global 40-sprite OAM cache
+    // SmallVec doesn't do blocks of 40 so we leave 24 empty slots, it's still 
+    // more performant than allocating.
     sprite_cache: SmallVec<[Sprite; 64]>,
     // The per-scanline 10-sprite cache
     // TODO: These come straight from sprite_cache. Maybe they can be &Sprite?

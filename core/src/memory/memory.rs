@@ -19,7 +19,7 @@ use alloc::boxed::Box;
 pub struct Memory {
     mbc: Box<dyn MBC>,
 
-    // TODO: Move VRAM to GPU
+    // TODO: Move VRAM to GPU?
     vram: Ram,
     wram: Ram,
     hram: Ram,
@@ -42,27 +42,6 @@ pub struct Memory {
 }
 
 impl Memory {
-    fn get_counter_increase (&self) -> u32 {
-        let enabled = (self.timer_control >> 2) == 1;
-        if !enabled { return 0 }
-
-        match self.timer_control & 0b11 {
-            0b00 => 64,
-            0b01 => 1,
-            0b10 => 4,
-            0b11 => 16,
-            _ => panic!()
-        }
-        //
-        // match self.timer_control & 0b11 {
-        //     0b00 => 1,
-        //     0b01 => 64,
-        //     0b10 => 16,
-        //     0b11 => 4,
-        //     _ => panic!()
-        // }
-    }
-
     // Memory has a step command for timers & MBCs
     pub fn step (&mut self, cycles: usize, ints: &mut Interrupts, ms_since_boot: usize) {
         // These two timers are safe to implement like this vs per-cycle 
@@ -74,15 +53,25 @@ impl Memory {
             self.timer_divider = self.timer_divider.wrapping_add(1);
         }
 
-        let inc = self.get_counter_increase();
-        self.timer_counter_increase += inc * cycles as u32;
-        if self.timer_counter_increase >= 262144 {
-            self.timer_counter_increase -= 262144;
-            self.timer_counter = self.timer_counter.wrapping_add(1);
-            // If it overflowed
-            if self.timer_counter == 0 {
-                self.timer_counter = self.timer_modulo;
-                ints.raise_interrupt(InterruptReason::Timer);
+        let enabled = (self.timer_control >> 2) == 1;
+        if enabled {
+            self.timer_counter_increase += cycles as u32;
+
+            let step = match self.timer_control & 0b11 {
+                0b00 => 1024,
+                0b01 => 16,
+                0b10 => 64,
+                0b11 => 256,
+                _ => unreachable!()
+            };
+
+            while self.timer_counter_increase >= step {
+                self.timer_counter = self.timer_counter.wrapping_add(1);
+                if self.timer_counter == 0 {
+                    self.timer_counter = self.timer_modulo;
+                    ints.raise_interrupt(InterruptReason::Timer);
+                }
+                self.timer_counter_increase -= step;
             }
         }
 
@@ -210,7 +199,7 @@ impl Memory {
             timer_divider: 0,
             timer_counter_increase: 0,
             timer_counter: 0,
-            timer_control: 0,
+            timer_control: 0b00000010,
             timer_modulo: 0,
             joypad: Joypad::new(),
             apu: APU::new()
