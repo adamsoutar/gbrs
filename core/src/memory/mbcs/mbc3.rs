@@ -139,7 +139,7 @@ impl MBC3 {
     }
 
     pub fn new(cart_info: Cartridge, rom: Rom) -> Self {
-        let has_battery = cart_info.cart_type == 0x06;
+        let has_battery = cart_info.cart_type == 0x13;
         MBC3 {
             rom,
             rom_bank: 1,
