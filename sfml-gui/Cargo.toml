@@ -1,7 +1,7 @@
 [package]
 name = "gbrs-sfml-gui"
 version = "0.2.0"
-authors = ["Adam <adam@overflo.me>"]
+authors = ["Adam Soutar <adam@overflo.me>"]
 edition = "2018"
 
 [dependencies]
