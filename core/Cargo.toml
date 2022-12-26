@@ -2,7 +2,7 @@
 name = "gbrs-core"
 version = "0.2.0"
 authors = ["Adam Soutar <adam@overflo.me>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 lazy_static = { version =  "1.4.0", optional = true }
