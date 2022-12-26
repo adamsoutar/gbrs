@@ -48,7 +48,9 @@ pub struct Cpu {
     // Based on CPU clocks. If the emulation is running too slow or too fast,
     // this will not be accurate to real-world time.
     pub ms_since_boot: usize,
-    clock_counter: usize
+    clock_counter: usize,
+
+    halted: bool    
 }
 
 impl Cpu {
@@ -334,10 +336,17 @@ impl Cpu {
 
     fn process_interrupts (&mut self) {
         // The master interrupt enable flag
-        if !self.ints.ime { return }
+        if !self.ints.ime && !self.halted { return }
 
         let mut pending_ints = self.ints.flag_read();
         let enabled_ints = self.ints.enable_read();
+
+        let any_enabled = (pending_ints & enabled_ints) > 0;
+        if !any_enabled { return; }
+        self.halted = false;
+
+        if !self.ints.ime { return; }
+
         // log!("Enabled: {:08b}", enabled_ints);
         for i in 0..8 {
             let mask: u8 = 1 << i;
@@ -391,441 +400,453 @@ impl Cpu {
     pub fn step (&mut self) -> usize {
         let p = self.ime_on_pending;
 
-        let op = self.read_next();
+        let cycles: usize;
 
-        if CPU_DEBUG {
-            log!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
-        }
+        if self.halted {
+            cycles = 4;
+        } else {
+            let op = self.read_next();
 
-        for b in BREAKPOINTS.iter() {
-            if self.regs.pc - 1 == *b {
-                panic!("BREAK");
-            }
-        }
-
-        let v_r = (op & 0b00_11_0000) >> 4;
-        let v_d = (op & 0b00_111_000) >> 3;
-        let v_d_alt = op & 0b00000_111;
-
-        // Loading from (HL) adds 4 cycles to ALU instructions
-        let v_d_is_hl = v_d == 0b110;
-        let v_d_alt_is_hl = v_d_alt == 0b110;
-
-        let cycles = match op {
-            0 => { 4 },
-
-            // LD (N),SP
-            0b00001000 => {
-                // Store the stack pointer in ram
-                let addr = self.read_next_16();
-                self.mem_write_16(addr, self.regs.sp);
-                20
+            if CPU_DEBUG {
+                log!("PC: {:#06x} | OPCODE: {:#04x} | {}", self.regs.pc - 1, op, self.regs.debug_dump());
             }
 
-            // LD R, N
-            op if bitmatch!(op, (0,0,_,_,0,0,0,1)) => {
-                let n = self.read_next_16();
-                self.regs.set_combined_register(v_r, n);
-                12
+            for b in BREAKPOINTS.iter() {
+                if self.regs.pc - 1 == *b {
+                    panic!("BREAK");
+                }
             }
 
-            // ADD HL, R
-            op if bitmatch!(op, (0,0,_,_,1,0,0,1)) => {
-                let reg = self.regs.get_combined_register(v_r);
-                self.alu_add_hl(reg);
-                8
-            }
+            let v_r = (op & 0b00_11_0000) >> 4;
+            let v_d = (op & 0b00_111_000) >> 3;
+            let v_d_alt = op & 0b00000_111;
 
-            // LD (R), A
-            op if bitmatch!(op, (0,0,0,_,0,0,1,0)) => {
-                let reg_val = self.regs.get_combined_register(v_r);
-                self.mem_write(reg_val, self.regs.a);
-                8
-            }
+            // Loading from (HL) adds 4 cycles to ALU instructions
+            let v_d_is_hl = v_d == 0b110;
+            let v_d_alt_is_hl = v_d_alt == 0b110;
 
-            // LD A, (R)
-            op if bitmatch!(op, (0,0,0,_,1,0,1,0)) => {
-                let reg_val = self.regs.get_combined_register(v_r);
-                let memval = self.mem_read(reg_val);
-                self.regs.a = memval;
-                8
-            }
+            cycles = match op {
+                0 => { 4 },
 
-            // INC R
-            op if bitmatch!(op, (0,0,_,_,0,0,1,1)) => {
-                let reg_val = self.regs.get_combined_register(v_r);
-                self.regs.set_combined_register(v_r, reg_val.wrapping_add(1));
-                8
-            }
+                // LD (N),SP
+                0b00001000 => {
+                    // Store the stack pointer in ram
+                    let addr = self.read_next_16();
+                    self.mem_write_16(addr, self.regs.sp);
+                    20
+                }
 
-            // DEC R
-            op if bitmatch!(op, (0,0,_,_,1,0,1,1)) => {
-                let reg_val = self.regs.get_combined_register(v_r);
-                self.regs.set_combined_register(v_r, reg_val.wrapping_sub(1));
-                8
-            }
-
-            // INC D
-            op if bitmatch!(op, (0,0,_,_,_,1,0,0)) => {
-                let mut val = self.get_singular_register(v_d);
-                val = self.alu_inc(val);
-                self.set_singular_register(v_d, val);
-                4
-            }
-
-            // DEC D
-            op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
-                let mut val = self.get_singular_register(v_d);
-                val = self.alu_dec(val);
-                self.set_singular_register(v_d, val);
-                4
-            }
-
-            // LD D,N
-            op if bitmatch!(op, (0,0,_,_,_,1,1,0)) => {
-                let val = self.read_next();
-                self.set_singular_register(v_d, val);
-                if v_d_is_hl {
+                // LD R, N
+                op if bitmatch!(op, (0,0,_,_,0,0,0,1)) => {
+                    let n = self.read_next_16();
+                    self.regs.set_combined_register(v_r, n);
                     12
-                } else {
+                }
+
+                // ADD HL, R
+                op if bitmatch!(op, (0,0,_,_,1,0,0,1)) => {
+                    let reg = self.regs.get_combined_register(v_r);
+                    self.alu_add_hl(reg);
                     8
                 }
-            },
 
-            // RdCA and RdA
-            op if bitmatch!(op, (0,0,0,_,_,1,1,1)) => {
-                let dir = ((op & 0b0000_1_000) >> 3) == 1;
-                let carry = ((op & 0b000_1_0000) >> 4) != 1;
-                self.alu_rotate(dir, carry);
-                4
-            }
-
-            // JR N
-            0b00011000 => {
-                // The displacement is signed
-                let disp = self.read_next() as i8;
-                if disp > 0 {
-                    self.regs.pc = self.regs.pc.wrapping_add(disp as u16);
-                } else {
-                    self.regs.pc = self.regs.pc.wrapping_sub(disp.abs() as u16);
+                // LD (R), A
+                op if bitmatch!(op, (0,0,0,_,0,0,1,0)) => {
+                    let reg_val = self.regs.get_combined_register(v_r);
+                    self.mem_write(reg_val, self.regs.a);
+                    8
                 }
-                12
-            },
 
-            // JR F, N
-            op if bitmatch!(op, (0,0,1,_,_,0,0,0)) => {
-                let disp = self.read_next() as i8;
-                let condition = (op & 0b000_11_000) >> 3;
+                // LD A, (R)
+                op if bitmatch!(op, (0,0,0,_,1,0,1,0)) => {
+                    let reg_val = self.regs.get_combined_register(v_r);
+                    let memval = self.mem_read(reg_val);
+                    self.regs.a = memval;
+                    8
+                }
 
-                if self.condition_met(condition) {
-                    // We do want to jump
+                // INC R
+                op if bitmatch!(op, (0,0,_,_,0,0,1,1)) => {
+                    let reg_val = self.regs.get_combined_register(v_r);
+                    self.regs.set_combined_register(v_r, reg_val.wrapping_add(1));
+                    8
+                }
+
+                // DEC R
+                op if bitmatch!(op, (0,0,_,_,1,0,1,1)) => {
+                    let reg_val = self.regs.get_combined_register(v_r);
+                    self.regs.set_combined_register(v_r, reg_val.wrapping_sub(1));
+                    8
+                }
+
+                // INC D
+                op if bitmatch!(op, (0,0,_,_,_,1,0,0)) => {
+                    let mut val = self.get_singular_register(v_d);
+                    val = self.alu_inc(val);
+                    self.set_singular_register(v_d, val);
+                    4
+                }
+
+                // DEC D
+                op if bitmatch!(op, (0,0,_,_,_,1,0,1)) => {
+                    let mut val = self.get_singular_register(v_d);
+                    val = self.alu_dec(val);
+                    self.set_singular_register(v_d, val);
+                    4
+                }
+
+                // LD D,N
+                op if bitmatch!(op, (0,0,_,_,_,1,1,0)) => {
+                    let val = self.read_next();
+                    self.set_singular_register(v_d, val);
+                    if v_d_is_hl {
+                        12
+                    } else {
+                        8
+                    }
+                },
+
+                // RdCA and RdA
+                op if bitmatch!(op, (0,0,0,_,_,1,1,1)) => {
+                    let dir = ((op & 0b0000_1_000) >> 3) == 1;
+                    let carry = ((op & 0b000_1_0000) >> 4) != 1;
+                    self.alu_rotate(dir, carry);
+                    4
+                }
+
+                // JR N
+                0b00011000 => {
+                    // The displacement is signed
+                    let disp = self.read_next() as i8;
                     if disp > 0 {
                         self.regs.pc = self.regs.pc.wrapping_add(disp as u16);
                     } else {
                         self.regs.pc = self.regs.pc.wrapping_sub(disp.abs() as u16);
                     }
                     12
-                } else {
+                },
+
+                // JR F, N
+                op if bitmatch!(op, (0,0,1,_,_,0,0,0)) => {
+                    let disp = self.read_next() as i8;
+                    let condition = (op & 0b000_11_000) >> 3;
+
+                    if self.condition_met(condition) {
+                        // We do want to jump
+                        if disp > 0 {
+                            self.regs.pc = self.regs.pc.wrapping_add(disp as u16);
+                        } else {
+                            self.regs.pc = self.regs.pc.wrapping_sub(disp.abs() as u16);
+                        }
+                        12
+                    } else {
+                        8
+                    }
+                },
+
+                // LD (HL+/-), A
+                op if bitmatch!(op, (0,0,1,_,0,0,1,0)) => {
+                    let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
+                    let mut hl = self.regs.get_hl();
+
+                    // Write a to mem
+                    self.mem_write(hl, self.regs.a);
+
+                    // Increment/decrement
+                    if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
+                    self.regs.set_hl(hl);
+
                     8
                 }
-            },
 
-            // LD (HL+/-), A
-            op if bitmatch!(op, (0,0,1,_,0,0,1,0)) => {
-                let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
-                let mut hl = self.regs.get_hl();
+                // LD A, (HL+/-)
+                op if bitmatch!(op, (0,0,1,_,1,0,1,0)) => {
+                    let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
+                    let mut hl = self.regs.get_hl();
 
-                // Write a to mem
-                self.mem_write(hl, self.regs.a);
+                    self.regs.a = self.mem_read(hl);
 
-                // Increment/decrement
-                if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
-                self.regs.set_hl(hl);
+                    if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
+                    self.regs.set_hl(hl);
 
-                8
-            }
-
-            // LD A, (HL+/-)
-            op if bitmatch!(op, (0,0,1,_,1,0,1,0)) => {
-                let is_inc = ((op & 0b000_1_0000) >> 4) == 0;
-                let mut hl = self.regs.get_hl();
-
-                self.regs.a = self.mem_read(hl);
-
-                if is_inc { hl = hl.wrapping_add(1) } else { hl = hl.wrapping_sub(1) }
-                self.regs.set_hl(hl);
-
-                8
-            }
-
-            // DAA
-            0b00100111 => {
-                self.alu_daa();
-                4
-            }
-
-            // SCF
-            0b00110111 => {
-                self.regs.set_carry_flag(1);
-                self.regs.set_half_carry_flag(0);
-                self.regs.set_operation_flag(0);
-                4
-            }
-
-            // CCF
-            0b00111111 => {
-                if self.regs.get_carry_flag() == 0 {
-                    self.regs.set_carry_flag(1);
-                } else {
-                    self.regs.set_carry_flag(0);
-                }
-                self.regs.set_half_carry_flag(0);
-                self.regs.set_operation_flag(0);
-                4
-            }
-
-            // CPL
-            0b00101111 => {
-                let value = self.regs.a;
-                self.regs.a = !value;
-
-                self.regs.set_half_carry_flag(1);
-                self.regs.set_operation_flag(1);
-
-                4
-            }
-
-            // LD D, D
-            op if bitmatch!(op, (0,1,_,_,_,_,_,_)) => {
-                let reg_val = self.get_singular_register(v_d_alt);
-                self.set_singular_register(v_d, reg_val);
-                if v_d_alt_is_hl {
                     8
-                } else {
+                }
+
+                // DAA
+                0b00100111 => {
+                    self.alu_daa();
                     4
                 }
-            }
 
-            // ALU A, D
-            op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
-                let val = self.get_singular_register(v_d_alt);
-                let operation = (op & 0b00111000) >> 3;
-                self.alu(operation, val);
-                if v_d_alt_is_hl { 8 } else { 4 }
-            }
+                // SCF
+                0b00110111 => {
+                    self.regs.set_carry_flag(1);
+                    self.regs.set_half_carry_flag(0);
+                    self.regs.set_operation_flag(0);
+                    4
+                }
 
-            // ALU A, N
-            op if bitmatch!(op, (1,1,_,_,_,1,1,0)) => {
-                let val = self.read_next();
-                let operation = (op & 0b00111000) >> 3;
-                self.alu(operation, val);
-                8
-            }
+                // CCF
+                0b00111111 => {
+                    if self.regs.get_carry_flag() == 0 {
+                        self.regs.set_carry_flag(1);
+                    } else {
+                        self.regs.set_carry_flag(0);
+                    }
+                    self.regs.set_half_carry_flag(0);
+                    self.regs.set_operation_flag(0);
+                    4
+                }
 
-            // POP R
-            op if bitmatch!(op, (1,1,_,_,0,0,0,1)) => {
-                let val = self.stack_pop();
-                self.regs.set_combined_register_alt(v_r, val);
-                12
-            }
+                // CPL
+                0b00101111 => {
+                    let value = self.regs.a;
+                    self.regs.a = !value;
 
-            // PUSH R
-            op if bitmatch!(op, (1,1,_,_,0,1,0,1)) => {
-                let val = self.regs.get_combined_register_alt(v_r);
-                self.stack_push(val);
-                16
-            }
+                    self.regs.set_half_carry_flag(1);
+                    self.regs.set_operation_flag(1);
 
-            // RST N
-            op if bitmatch!(op, (1,1,_,_,_,1,1,1)) => {
-                let n = op & 0b00111000;
-                self.stack_push(self.regs.pc);
-                // TODO: Check if this should be 0x100 + n
-                self.regs.pc = n as u16;
-                16
-            }
+                    4
+                }
 
-            // RET F
-            op if bitmatch!(op, (1,1,0,_,_,0,0,0)) => {
-                let condition = (op & 0b000_11_000) >> 3;
+                // LD D, D
+                op if bitmatch!(op, (0,1,_,_,_,_,_,_)) => {
+                    let reg_val = self.get_singular_register(v_d_alt);
+                    self.set_singular_register(v_d, reg_val);
 
-                if self.condition_met(condition) {
-                    self.regs.pc = self.stack_pop();
-                    20
-                } else {
+                    if op == 0b01110110 {
+                        self.halted = true;
+                        return 4;
+                    }
+
+                    if v_d_alt_is_hl {
+                        8
+                    } else {
+                        4
+                    }
+                }
+
+                // ALU A, D
+                op if bitmatch!(op, (1,0,_,_,_,_,_,_)) => {
+                    let val = self.get_singular_register(v_d_alt);
+                    let operation = (op & 0b00111000) >> 3;
+                    self.alu(operation, val);
+                    if v_d_alt_is_hl { 8 } else { 4 }
+                }
+
+                // ALU A, N
+                op if bitmatch!(op, (1,1,_,_,_,1,1,0)) => {
+                    let val = self.read_next();
+                    let operation = (op & 0b00111000) >> 3;
+                    self.alu(operation, val);
                     8
                 }
-            }
 
-            // RET
-            0b11001001 => {
-                self.regs.pc = self.stack_pop();
-                16
-            }
-
-            // RETI
-            0b11011001 => {
-                self.regs.pc = self.stack_pop();
-                // TODO: Check if this is an immediate enable
-                self.ime_on_pending = true;
-                16
-            }
-
-            // JP F, N
-            op if bitmatch!(op, (1,1,0,_,_,0,1,0)) => {
-                let condition = (op & 0b000_11_000) >> 3;
-                let address = self.read_next_16();
-
-                if self.condition_met(condition) {
-                    self.regs.pc = address;
-                    16
-                } else {
+                // POP R
+                op if bitmatch!(op, (1,1,_,_,0,0,0,1)) => {
+                    let val = self.stack_pop();
+                    self.regs.set_combined_register_alt(v_r, val);
                     12
                 }
-            }
 
-            // JP N
-            0b11000011 => {
-                let address = self.read_next_16();
-                self.regs.pc = address;
-                16
-            }
+                // PUSH R
+                op if bitmatch!(op, (1,1,_,_,0,1,0,1)) => {
+                    let val = self.regs.get_combined_register_alt(v_r);
+                    self.stack_push(val);
+                    16
+                }
 
-            // CALL F, N
-            op if bitmatch!(op, (1,1,0,_,_,1,0,0)) => {
-                let address = self.read_next_16();
-                // TODO: Pull out 0b000_11_000 into a common pattern like v_r
-                let condition = (op & 0b000_11_000) >> 3;
+                // RST N
+                op if bitmatch!(op, (1,1,_,_,_,1,1,1)) => {
+                    let n = op & 0b00111000;
+                    self.stack_push(self.regs.pc);
+                    // TODO: Check if this should be 0x100 + n
+                    self.regs.pc = n as u16;
+                    16
+                }
 
-                if self.condition_met(condition) {
+                // RET F
+                op if bitmatch!(op, (1,1,0,_,_,0,0,0)) => {
+                    let condition = (op & 0b000_11_000) >> 3;
+
+                    if self.condition_met(condition) {
+                        self.regs.pc = self.stack_pop();
+                        20
+                    } else {
+                        8
+                    }
+                }
+
+                // RET
+                0b11001001 => {
+                    self.regs.pc = self.stack_pop();
+                    16
+                }
+
+                // RETI
+                0b11011001 => {
+                    self.regs.pc = self.stack_pop();
+                    // TODO: Check if this is an immediate enable
+                    self.ime_on_pending = true;
+                    16
+                }
+
+                // JP F, N
+                op if bitmatch!(op, (1,1,0,_,_,0,1,0)) => {
+                    let condition = (op & 0b000_11_000) >> 3;
+                    let address = self.read_next_16();
+
+                    if self.condition_met(condition) {
+                        self.regs.pc = address;
+                        16
+                    } else {
+                        12
+                    }
+                }
+
+                // JP N
+                0b11000011 => {
+                    let address = self.read_next_16();
+                    self.regs.pc = address;
+                    16
+                }
+
+                // CALL F, N
+                op if bitmatch!(op, (1,1,0,_,_,1,0,0)) => {
+                    let address = self.read_next_16();
+                    // TODO: Pull out 0b000_11_000 into a common pattern like v_r
+                    let condition = (op & 0b000_11_000) >> 3;
+
+                    if self.condition_met(condition) {
+                        self.stack_push(self.regs.pc);
+                        self.regs.pc = address;
+                        24
+                    } else {
+                        12
+                    }
+                }
+
+                // CALL N
+                0b11001101 => {
+                    let address = self.read_next_16();
                     self.stack_push(self.regs.pc);
                     self.regs.pc = address;
                     24
-                } else {
+                }
+
+                // ADD SP, N
+                0b11101000 => {
+                    let sp = self.regs.sp;
+                    let imm_raw = self.read_next();
+                    let imm = i16::from(imm_raw as i8) as u16;
+
+                    self.regs.set_carry_flag(((sp & 0xFF) + (imm & 0xFF) > 0xFF) as u8);
+                    self.regs.set_half_carry_flag(((sp & 0xF) + (imm & 0xF) > 0xF) as u8);
+                    self.regs.set_operation_flag(0);
+                    self.regs.set_zero_flag(0);
+
+                    self.regs.sp = sp.wrapping_add(imm);
+
+                    16
+                }
+
+                // LD HL, SP+N
+                0b11111000 => {
+                    let sp = self.regs.sp;
+                    let imm_raw = self.read_next();
+                    let imm = i16::from(imm_raw as i8) as u16;
+
+                    self.regs.set_carry_flag(((sp & 0xFF) + (imm & 0xFF) > 0xFF) as u8);
+                    self.regs.set_half_carry_flag(((sp & 0xF) + (imm & 0xF) > 0xF) as u8);
+                    self.regs.set_operation_flag(0);
+                    self.regs.set_zero_flag(0);
+
+                    self.regs.set_hl(sp.wrapping_add(imm));
+
                     12
                 }
-            }
 
-            // CALL N
-            0b11001101 => {
-                let address = self.read_next_16();
-                self.stack_push(self.regs.pc);
-                self.regs.pc = address;
-                24
-            }
+                // LD (FF00+N), A
+                0b11100000 => {
+                    let imm = self.read_next();
+                    let a = self.regs.a;
+                    self.mem_write(0xFF00 + imm as u16, a);
 
-            // ADD SP, N
-            0b11101000 => {
-                let sp = self.regs.sp;
-                let imm_raw = self.read_next();
-                let imm = i16::from(imm_raw as i8) as u16;
+                    12
+                }
 
-                self.regs.set_carry_flag(((sp & 0xFF) + (imm & 0xFF) > 0xFF) as u8);
-                self.regs.set_half_carry_flag(((sp & 0xF) + (imm & 0xF) > 0xF) as u8);
-                self.regs.set_operation_flag(0);
-                self.regs.set_zero_flag(0);
+                // LD A, (FF00+N)
+                0b11110000 => {
+                    let imm = self.read_next();
+                    let val = self.mem_read(0xFF00 + imm as u16);
+                    self.regs.a = val;
 
-                self.regs.sp = sp.wrapping_add(imm);
+                    12
+                }
 
-                16
-            }
+                // LD (FF00+C), A
+                0b11100010 => {
+                    self.mem_write(0xFF00 + self.regs.c as u16, self.regs.a);
+                    8
+                }
 
-            // LD HL, SP+N
-            0b11111000 => {
-                let sp = self.regs.sp;
-                let imm_raw = self.read_next();
-                let imm = i16::from(imm_raw as i8) as u16;
+                // LD A, (FF00+C)
+                0b11110010 => {
+                    self.regs.a = self.mem_read(0xFF00 + self.regs.c as u16);
+                    8
+                }
 
-                self.regs.set_carry_flag(((sp & 0xFF) + (imm & 0xFF) > 0xFF) as u8);
-                self.regs.set_half_carry_flag(((sp & 0xF) + (imm & 0xF) > 0xF) as u8);
-                self.regs.set_operation_flag(0);
-                self.regs.set_zero_flag(0);
+                // LD (N), A
+                0b11101010 => {
+                    let imm = self.read_next_16();
+                    self.mem_write(imm, self.regs.a);
+                    16
+                }
 
-                self.regs.set_hl(sp.wrapping_add(imm));
+                // LD A, (N)
+                0b11111010 => {
+                    let imm = self.read_next_16();
+                    self.regs.a = self.mem_read(imm);
+                    16
+                }
 
-                12
-            }
+                // JP HL
+                0b11101001 => {
+                    // TODO: Check if this should contain a mem read
+                    self.regs.pc = self.regs.get_hl();
+                    4
+                }
 
-            // LD (FF00+N), A
-            0b11100000 => {
-                let imm = self.read_next();
-                let a = self.regs.a;
-                self.mem_write(0xFF00 + imm as u16, a);
+                // LD SP, HL
+                0b11111001 => {
+                    self.regs.sp = self.regs.get_hl();
+                    8
+                }
 
-                12
-            }
+                // DI
+                0b11110011 => {
+                    self.ints.ime = false;
+                    self.ime_on_pending = false;
+                    4
+                }
 
-            // LD A, (FF00+N)
-            0b11110000 => {
-                let imm = self.read_next();
-                let val = self.mem_read(0xFF00 + imm as u16);
-                self.regs.a = val;
+                // EI
+                0b11111011 => {
+                    self.ime_on_pending = true;
+                    4
+                }
 
-                12
-            }
+                // Prefix CB
+                // More instructions are encoded by using 0xCB
+                // to access an extended instruction set
+                0b11001011 => {
+                    let op2 = self.read_next();
+                    self.execute_cb(op2)
+                }
 
-            // LD (FF00+C), A
-            0b11100010 => {
-                self.mem_write(0xFF00 + self.regs.c as u16, self.regs.a);
-                8
-            }
-
-            // LD A, (FF00+C)
-            0b11110010 => {
-                self.regs.a = self.mem_read(0xFF00 + self.regs.c as u16);
-                8
-            }
-
-            // LD (N), A
-            0b11101010 => {
-                let imm = self.read_next_16();
-                self.mem_write(imm, self.regs.a);
-                16
-            }
-
-            // LD A, (N)
-            0b11111010 => {
-                let imm = self.read_next_16();
-                self.regs.a = self.mem_read(imm);
-                16
-            }
-
-            // JP HL
-            0b11101001 => {
-                // TODO: Check if this should contain a mem read
-                self.regs.pc = self.regs.get_hl();
-                4
-            }
-
-            // LD SP, HL
-            0b11111001 => {
-                self.regs.sp = self.regs.get_hl();
-                8
-            }
-
-            // DI
-            0b11110011 => {
-                self.ints.ime = false;
-                self.ime_on_pending = false;
-                4
-            }
-
-            // EI
-            0b11111011 => {
-                self.ime_on_pending = true;
-                4
-            }
-
-            // Prefix CB
-            // More instructions are encoded by using 0xCB
-            // to access an extended instruction set
-            0b11001011 => {
-                let op2 = self.read_next();
-                self.execute_cb(op2)
-            }
-
-            _ => panic!("Unsupported op {:08b} ({:#04x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
-        };
+                _ => panic!("Unsupported op {:08b} ({:#04x}), PC: {} ({:#x})", op, op, self.regs.pc - 1, self.regs.pc - 1)
+            };
+        }
 
         if p && self.ime_on_pending {
             self.ints.ime = true;
@@ -949,7 +970,9 @@ impl Cpu {
             ime_on_pending: false,
 
             ms_since_boot: 0,
-            clock_counter: 0
+            clock_counter: 0,
+
+            halted: false
         }
     }
 
@@ -969,7 +992,9 @@ impl Cpu {
             ime_on_pending: false,
 
             ms_since_boot: 0,
-            clock_counter: 0
+            clock_counter: 0,
+
+            halted: false
         }
     }
 }
