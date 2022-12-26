@@ -36,7 +36,10 @@ impl Cartridge {
             },
             2 => 8_192,
             3 => 32_768,
-            4 => 131_072,
+            4 => {
+                log!("[WARN] RAM size is larger than a u16. Internal implementations such as BatteryBackedRam may fail.");
+                131_072
+            },
             5 => 65_536,
             _ => panic!("Unknown RAM size id for cartridge {:#04x}", ram_size_id)
         };

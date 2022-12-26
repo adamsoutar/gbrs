@@ -135,7 +135,7 @@ impl MBC3 {
             return;
         }
 
-        self.ram.ram.bytes[final_addr] = value;
+        self.ram.write(final_addr as u16, value);
     }
 
     pub fn new(cart_info: Cartridge, rom: Rom) -> Self {
