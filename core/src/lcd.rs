@@ -63,7 +63,7 @@ impl From<LcdControl> for u8 {
     }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum LcdMode {
     HBlank = 0,
     VBlank = 1,

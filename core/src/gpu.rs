@@ -75,7 +75,28 @@ impl Gpu {
         match raw_address {
             OAM_START ..= OAM_END => self.oam.write(raw_address - OAM_START, value),
 
-            0xFF40 => self.control = LcdControl::from(value),
+            0xFF40 => {
+                let original_display_enable = self.control.display_enable;
+                self.control = LcdControl::from(value);
+
+                if original_display_enable && !self.control.display_enable {
+                    // The LCD has just been turned off
+                    self.ly = 0;
+                    self.status.set_mode(LcdMode::HBlank);
+                    if self.status.hblank_interrupt {
+                        ints.raise_interrupt(InterruptReason::LCDStat)
+                    }
+                    self.lyc = 0;
+                }
+                if !original_display_enable && self.control.display_enable {
+                    // The LCD has just been turned on
+                    self.status.set_mode(LcdMode::OAMSearch);
+                    if self.status.oam_interrupt {
+                        ints.raise_interrupt(InterruptReason::LCDStat);
+                    }
+                    self.cache_all_sprites();
+                }
+            },
             0xFF41 => self.status.set_data(value, ints),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
