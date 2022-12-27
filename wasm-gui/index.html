@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>gbrs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body {
+        margin: 0; padding: 0;
+        width: 100%; height: 100%;
+      }
+      canvas {
+        width: 100vmin; 
+        height: 100vmin; 
+        image-rendering: pixelated;
+        -webkit-backface-visibility: hidden;
+        -webkit-perspective: 1000px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas width="160" height="144" />
+
+    </canvas>
+    <script type="module">
+      import init, { 
+        create_gameboy, step_one_frame, get_finished_frame
+      } from "./pkg/gbrs_wasm_gui.js"
+
+      const SCREEN_WIDTH = 160
+      const SCREEN_HEIGHT = 144
+      const PALETTE = ['#DDDDDD', '#AAAAAA', '#888888', '#555555']
+      const cnv = document.querySelector('canvas')
+      const ctx = cnv.getContext('2d')
+
+      function drawFrame() {
+        const frame = get_finished_frame()
+
+        for (let x = 0; x < SCREEN_WIDTH; x++) {
+          for (let y = 0; y < SCREEN_HEIGHT; y++) {
+            const pixelIndex = y * SCREEN_WIDTH + x
+            const greyShade = frame[pixelIndex]
+            ctx.fillStyle = PALETTE[greyShade]
+            ctx.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+
+      function frameHandler() {
+        step_one_frame()
+        drawFrame()
+        window.requestAnimationFrame(frameHandler)
+      }
+
+      init().then(() => {
+        create_gameboy()
+        frameHandler()
+      })
+    </script>
+  </body>
+</html>
