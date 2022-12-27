@@ -1,2 +1,2 @@
 wasm-pack build --release --target web && \
-npx http-server
+python3 -m http.server

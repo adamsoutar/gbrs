@@ -1,9 +1,13 @@
 use wasm_bindgen::prelude::*;
-use web_sys::console;
+use web_sys::{console, window, Storage};
 use gbrs_core::cpu::Cpu;
 use gbrs_core::{callbacks, callbacks::Callbacks, constants::*};
 
 static mut CPU: Option<Cpu> = None;
+
+fn local_storage() -> Storage {
+    window().unwrap().local_storage().unwrap().unwrap()
+}
 
 #[wasm_bindgen]
 pub fn create_gameboy() {
@@ -12,16 +16,29 @@ pub fn create_gameboy() {
     unsafe {
         callbacks::set_callbacks(Callbacks {
             log: |log_str| console::log_1(&log_str.into()),
-            save: |game_name, _rom_path, _save_data| 
-                console::log_1(&format!("{} tried to save", game_name).into()),
+            save: |game_name, _rom_path, save_data| {
+                let data_string = base64::encode(save_data);
+                local_storage().set_item(game_name, &data_string)
+                    .expect("Failed to save in localStorage");
+            },
             load: |game_name, _rom_path, expected_size| {
-                console::log_1(&format!("{} tried to load", game_name).into());
+                let optional_data_string = local_storage().get_item(game_name)
+                    .expect("Failed to read save in localStorage");
+                
+                if let Some(data_string) = optional_data_string {
+                    // This game already has save data in this browser
+                    let loaded_data = base64::decode(data_string).unwrap();
+                    if loaded_data.len() == expected_size {
+                        return loaded_data
+                    }
+                }
+                // Else we've not run this game before
                 vec![0; expected_size as usize]
             }
         });
 
         CPU = Some(Cpu::from_rom_bytes(
-            include_bytes!("../../roms/PokemonRed.gb").to_vec()
+            include_bytes!("../../roms/SuperMarioLand2.gb").to_vec()
         ));
     }
 }
