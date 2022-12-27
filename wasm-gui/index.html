@@ -7,6 +7,7 @@
       html, body {
         margin: 0; padding: 0;
         width: 100%; height: 100%;
+        overflow: hidden;
       }
       canvas {
         width: 100vmin; 
@@ -23,7 +24,7 @@
     </canvas>
     <script type="module">
       import init, { 
-        create_gameboy, step_one_frame, get_finished_frame
+        create_gameboy, step_one_frame, get_finished_frame, set_control_state
       } from "./pkg/gbrs_wasm_gui.js"
 
       const SCREEN_WIDTH = 160
@@ -31,6 +32,28 @@
       const PALETTE = ['#DDDDDD', '#AAAAAA', '#888888', '#555555']
       const cnv = document.querySelector('canvas')
       const ctx = cnv.getContext('2d')
+      const pushedKeys = new Set()
+      let pad
+
+      document.addEventListener('keydown', e => {
+        pushedKeys.add(e.keyCode)
+      })
+      document.addEventListener('keyup', e => {
+        pushedKeys.delete(e.keyCode)
+      })
+
+      function updatePad() {
+        // (x, z, arrows, return, backspace)
+        set_control_state(
+          pushedKeys.has(88),
+          pushedKeys.has(90),
+          pushedKeys.has(38),
+          pushedKeys.has(40),
+          pushedKeys.has(37),
+          pushedKeys.has(39),
+          pushedKeys.has(13),
+          pushedKeys.has(8))
+      }
 
       function drawFrame() {
         const frame = get_finished_frame()
@@ -46,12 +69,14 @@
       }
 
       function frameHandler() {
+        updatePad()
         step_one_frame()
         drawFrame()
         window.requestAnimationFrame(frameHandler)
       }
 
       init().then(() => {
+        pad = JoyPad.new()
         create_gameboy()
         frameHandler()
       })

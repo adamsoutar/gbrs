@@ -47,3 +47,19 @@ pub fn get_finished_frame() -> Vec<usize> {
 
     int_frame
 }
+
+#[wasm_bindgen]
+pub fn set_control_state(a: bool, b: bool, up: bool, down: bool, 
+    left: bool, right: bool, start: bool, select: bool) {
+    unsafe {
+        let cpu = CPU.as_mut().unwrap();
+        cpu.mem.joypad.a_pressed = a;
+        cpu.mem.joypad.b_pressed = b;
+        cpu.mem.joypad.up_pressed = up;
+        cpu.mem.joypad.down_pressed = down;
+        cpu.mem.joypad.left_pressed = left;
+        cpu.mem.joypad.right_pressed = right;
+        cpu.mem.joypad.start_pressed = start;
+        cpu.mem.joypad.select_pressed = select;
+    }
+}
