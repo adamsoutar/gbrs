@@ -33,7 +33,6 @@
       const cnv = document.querySelector('canvas')
       const ctx = cnv.getContext('2d')
       const pushedKeys = new Set()
-      let pad
 
       document.addEventListener('keydown', e => {
         pushedKeys.add(e.keyCode)
@@ -76,7 +75,6 @@
       }
 
       init().then(() => {
-        pad = JoyPad.new()
         create_gameboy()
         frameHandler()
       })
