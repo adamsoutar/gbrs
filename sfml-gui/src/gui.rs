@@ -7,6 +7,7 @@ use gbrs_core::constants::*;
 
 use sfml::graphics::*;
 use sfml::window::*;
+use sfml::SfBox;
 use sfml::system::*;
 use sfml::audio::{Sound, SoundBuffer, SoundStatus};
 
@@ -20,8 +21,8 @@ pub static mut SOUND: Option<Sound> = None;
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
-    let window_width: u32 = 1280;
-    let window_height: u32 = 1024;
+    let window_width: u32 = 640;
+    let window_height: u32 = 512;
 
     let style = Style::RESIZE | Style::TITLEBAR | Style::CLOSE;
     let mut window = RenderWindow::new(
@@ -32,7 +33,10 @@ pub fn run_gui (mut gameboy: Cpu) {
     );
     // window.set_framerate_limit(gameboy.frame_rate as u32);
 
-    let mut screen_texture = Texture::new(sw, sh).unwrap();
+    let mut screen_texture = Texture::new().unwrap();
+    if !screen_texture.create(sw, sh) {
+        panic!("Failed to create screen texture");
+    }
     // Scale the 160x144 image to the appropriate resolution
     let sprite_scale = Vector2f::new(
         window_width as f32 / sw as f32,
@@ -112,7 +116,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             match &mut SOUND {
                 Some(sound) => {
                     sound.play();
-                    while sound.status() == SoundStatus::Playing {
+                    while sound.status() == SoundStatus::PLAYING {
                         if !gameboy.mem.apu.buffer_full {
                             gameboy.step();
                         } else {

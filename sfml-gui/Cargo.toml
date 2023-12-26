@@ -6,4 +6,4 @@ edition = "2021"
 
 [dependencies]
 gbrs-core = { path = "../core" }
-sfml = "0.15.1"
+sfml = "0.21.0"
