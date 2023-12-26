@@ -4,7 +4,7 @@ use crate::{bitmatch, compute_mask, compute_equal, combine_u8, set_bit};
 use crate::registers::Registers;
 use crate::interrupts::*;
 use crate::gpu::Gpu;
-use crate::cartridge::Cartridge;
+use crate::cartridge::{Cartridge, CGBSupportType};
 use crate::memory::rom::Rom;
 use crate::log;
 
@@ -31,6 +31,28 @@ const COND_Z: u8 = 0b01;
 const COND_NC: u8 = 0b10;
 const COND_C: u8 = 0b11;
 
+pub enum EmulationTarget {
+    // Original GameBoy
+    Dmg,
+    // GameBoy Color in monochrome back-compat mode
+    CgbDmgMode,
+    // GameBoy Color in full colour mode
+    CgbCgbMode
+}
+
+// When a game supports DMG, CGB back-compat, and full colour, what should we
+// run it as?
+const TARGET_FOR_CGB_OPTIONAL_GAMES: EmulationTarget =
+    EmulationTarget::CgbCgbMode;
+
+fn emulation_target_for_cart_info (cart_info: &Cartridge) -> EmulationTarget {
+    match cart_info.cgb_support {
+        CGBSupportType::None => EmulationTarget::Dmg,
+        CGBSupportType::Optional => TARGET_FOR_CGB_OPTIONAL_GAMES,
+        CGBSupportType::Required => EmulationTarget::CgbCgbMode
+    }
+}
+
 pub struct Cpu {
     pub cart_info: Cartridge,
     pub mem: Memory,
@@ -50,7 +72,9 @@ pub struct Cpu {
     pub ms_since_boot: usize,
     clock_counter: usize,
 
-    halted: bool
+    halted: bool,
+
+    emulation_target: EmulationTarget
 }
 
 impl Cpu {
@@ -619,11 +643,7 @@ impl Cpu {
                         return 4;
                     }
 
-                    if v_d_alt_is_hl {
-                        8
-                    } else {
-                        4
-                    }
+                    if v_d_alt_is_hl { 8 } else { 4 }
                 }
 
                 // ALU A, D
@@ -957,6 +977,7 @@ impl Cpu {
     pub fn from_rom_file (rom_path: String) -> Cpu {
         let rom = Rom::from_file(&rom_path);
         let cart_info = Cartridge::parse(&rom.bytes, rom_path);
+        let emulation_target = emulation_target_for_cart_info(&cart_info);
 
         Cpu {
             mem: Memory::from_info(cart_info.clone(), rom),
@@ -972,13 +993,16 @@ impl Cpu {
             ms_since_boot: 0,
             clock_counter: 0,
 
-            halted: false
+            halted: false,
+
+            emulation_target
         }
     }
 
     pub fn from_rom_bytes (bytes: Vec<u8>) -> Cpu {
         let rom = Rom::from_bytes(bytes);
         let cart_info = Cartridge::parse(&rom.bytes, String::from("bytes.gb"));
+        let emulation_target = emulation_target_for_cart_info(&cart_info);
 
         Cpu {
             mem: Memory::from_info(cart_info.clone(), rom),
@@ -994,7 +1018,9 @@ impl Cpu {
             ms_since_boot: 0,
             clock_counter: 0,
 
-            halted: false
+            halted: false,
+
+            emulation_target
         }
     }
 }

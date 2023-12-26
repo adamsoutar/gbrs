@@ -9,13 +9,22 @@ use alloc::{
 };
 
 #[derive(Clone)]
+pub enum CGBSupportType {
+    None,
+    Optional,
+    Required
+}
+
+#[derive(Clone)]
 pub struct Cartridge {
     pub title: String,
     pub rom_path: String,
     pub cart_type: u8,
 
     pub rom_size: usize,
-    pub ram_size: usize
+    pub ram_size: usize,
+
+    pub cgb_support: CGBSupportType
 }
 
 impl Cartridge {
@@ -44,8 +53,14 @@ impl Cartridge {
             _ => panic!("Unknown RAM size id for cartridge {:#04x}", ram_size_id)
         };
 
+        let cgb_support = match buffer[0x0143] {
+            0x80 => CGBSupportType::Optional,
+            0xC0 => CGBSupportType::Required,
+            _ => CGBSupportType::None
+        };
+
         Cartridge {
-            title, rom_path, cart_type, rom_size, ram_size
+            title, rom_path, cart_type, rom_size, ram_size, cgb_support
         }
     }
 }
@@ -54,7 +69,9 @@ fn get_title (buffer: &Vec<u8>) -> String {
     let mut out_buff = vec![];
     for i in 0x0134..=0x0143 {
         // A null byte terminates the title string
-        if buffer[i] == 0 { break; }
+        // Also, later games have non-ascii values in their titles used for
+        // flags like GameBoy Color support.
+        if buffer[i] == 0 || buffer[i] > 0x7F { break; }
         out_buff.push(buffer[i]);
     }
     String::from_utf8(out_buff)
