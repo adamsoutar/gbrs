@@ -50,7 +50,7 @@ pub struct Cpu {
     pub ms_since_boot: usize,
     clock_counter: usize,
 
-    halted: bool    
+    halted: bool
 }
 
 impl Cpu {
@@ -385,7 +385,7 @@ impl Cpu {
     // SOUND_BUFFER_SIZE constant
     pub fn step_until_full_audio_buffer (&mut self) -> usize {
         let mut cycles = 0;
-        
+
         loop {
             cycles += self.step();
             if self.mem.apu.buffer_full {
