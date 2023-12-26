@@ -19,7 +19,7 @@ pub const DEFAULT_FRAME_RATE: usize = 60;
 // The amount of sound samples we collect before firing them off for
 // playback. This number is essentially guessed.
 pub const SOUND_BUFFER_SIZE: usize = 1024;
-pub const SOUND_SAMPLE_RATE: usize = 44100;
+pub const SOUND_SAMPLE_RATE: usize = 48000;
 // The amount of APU step()s we should run before
 // we sample for audio.
 pub const APU_SAMPLE_CLOCKS: usize = CLOCK_SPEED / SOUND_SAMPLE_RATE;
