@@ -1,3 +1,4 @@
+use crate::cpu::EmulationTarget;
 use crate::memory::memory::Memory;
 use crate::interrupts::*;
 use crate::gpu::Gpu;
@@ -168,11 +169,21 @@ impl Registers {
         format!("AF: {:#06x} | BC: {:#06x} | DE: {:#06x} | HL: {:#06x}", self.get_af(), self.get_bc(), self.get_de(), self.get_hl())
     }
 
-    pub fn new () -> Registers {
+    pub fn new (emulation_target: &EmulationTarget) -> Registers {
         // NOTE: These values are what's in the registers after the boot rom,
         //       since we don't run that.
+        // This is how games detect that they can use GameBoy Color features.
+        let bootup_a_value = match emulation_target {
+            EmulationTarget::Dmg | EmulationTarget::CgbDmgMode => 0x01,
+            EmulationTarget::CgbCgbMode | EmulationTarget::GbaCgbMode => 0x11
+        };
+        // This is exclusively used to detect running on the GameBoy Advance.
+        let bootup_b_value = match emulation_target {
+            EmulationTarget::GbaCgbMode => 0x01,
+            _ => 0x00
+        };
         Registers {
-            a: 0x01, b: 0x00, c: 0x13, d: 0x00,
+            a: bootup_a_value, b: bootup_b_value, c: 0x13, d: 0x00,
             e: 0xD8, f: 0xB0, h: 0x01, l: 0x4D,
             sp: 0xFFFE, pc: 0x100
         }

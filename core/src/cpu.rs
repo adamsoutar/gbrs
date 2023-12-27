@@ -34,10 +34,12 @@ const COND_C: u8 = 0b11;
 pub enum EmulationTarget {
     // Original GameBoy
     Dmg,
-    // GameBoy Color in monochrome back-compat mode
+    // GameBoy Color in DMG back-compat mode
     CgbDmgMode,
     // GameBoy Color in full colour mode
-    CgbCgbMode
+    CgbCgbMode,
+    // GmaeBoy Advance in CGB back-compat mode
+    GbaCgbMode
 }
 
 // When a game supports DMG, CGB back-compat, and full colour, what should we
@@ -982,7 +984,7 @@ impl Cpu {
         Cpu {
             mem: Memory::from_info(cart_info.clone(), rom),
             cart_info,
-            regs: Registers::new(),
+            regs: Registers::new(&emulation_target),
 
             gpu: Gpu::new(),
             frame_rate: DEFAULT_FRAME_RATE,
@@ -1007,7 +1009,7 @@ impl Cpu {
         Cpu {
             mem: Memory::from_info(cart_info.clone(), rom),
             cart_info,
-            regs: Registers::new(),
+            regs: Registers::new(&emulation_target),
 
             gpu: Gpu::new(),
             frame_rate: DEFAULT_FRAME_RATE,
