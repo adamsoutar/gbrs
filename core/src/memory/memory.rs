@@ -21,7 +21,9 @@ pub struct Memory {
 
     // TODO: Move VRAM to GPU?
     vram: Ram,
-    wram: Ram,
+    wram_banks: [Ram; 8],
+    // On DMG, this is always 1. On CGB, it's 1-7 inclusive
+    upper_wram_bank: usize,
     hram: Ram,
 
     serial_cable: SerialCable,
@@ -41,11 +43,25 @@ pub struct Memory {
     pub apu: APU
 }
 
+fn create_wram_banks () -> [Ram; 8] {
+    [
+        Ram::new(WRAM_BANK_SIZE),
+        Ram::new(WRAM_BANK_SIZE),
+        Ram::new(WRAM_BANK_SIZE),
+        Ram::new(WRAM_BANK_SIZE),
+
+        Ram::new(WRAM_BANK_SIZE),
+        Ram::new(WRAM_BANK_SIZE),
+        Ram::new(WRAM_BANK_SIZE),
+        Ram::new(WRAM_BANK_SIZE),
+    ]
+}
+
 impl Memory {
     // Memory has a step command for timers & MBCs
     pub fn step (&mut self, cycles: usize, ints: &mut Interrupts, ms_since_boot: usize) {
-        // These two timers are safe to implement like this vs per-cycle 
-        // because the CPU will never do more than about 16 cycles per step, 
+        // These two timers are safe to implement like this vs per-cycle
+        // because the CPU will never do more than about 16 cycles per step,
         // let alone >256
         self.timer_divider_increase += cycles as u16;
         if self.timer_divider_increase >= 256 {
@@ -80,7 +96,7 @@ impl Memory {
         self.mbc.step(ms_since_boot);
 
         // Sound processing can take up to 40% of runtime
-        // Some ports don't even support sound output, so we'll allow them to 
+        // Some ports don't even support sound output, so we'll allow them to
         // turn off this waste of time
         #[cfg(feature = "sound")]
         for _ in 0..cycles {
@@ -98,8 +114,12 @@ impl Memory {
 
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
 
-            WRAM_START ..= WRAM_END => self.wram.read(address - WRAM_START),
-            ECHO_RAM_START ..= ECHO_RAM_END => self.read(ints, gpu, address - (ECHO_RAM_START - WRAM_START)),
+            WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
+                self.wram_banks[0].read(address - WRAM_LOWER_BANK_START),
+            WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
+                self.wram_banks[self.upper_wram_bank].read(address - WRAM_UPPER_BANK_START),
+            // TODO: How does upper echo RAM work with CGB bank switching?
+            ECHO_RAM_START ..= ECHO_RAM_END => self.read(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START)),
 
             OAM_START ..= OAM_END => gpu.raw_read(address),
 
@@ -143,8 +163,11 @@ impl Memory {
 
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
 
-            WRAM_START ..= WRAM_END => self.wram.write(address - WRAM_START, value),
-            ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_START), value),
+            WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
+                self.wram_banks[0].write(address - WRAM_LOWER_BANK_START, value),
+            WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
+                self.wram_banks[self.upper_wram_bank].write(address - WRAM_UPPER_BANK_START, value),
+            ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START), value),
 
             OAM_START ..= OAM_END => gpu.raw_write(address, value, ints),
 
@@ -192,7 +215,8 @@ impl Memory {
         Memory {
             mbc: mbc_from_info(cart_info, rom),
             vram: Ram::new(VRAM_SIZE),
-            wram: Ram::new(WRAM_SIZE),
+            wram_banks: create_wram_banks(),
+            upper_wram_bank: 1,
             hram: Ram::new(HRAM_SIZE),
             serial_cable: SerialCable::new(),
             timer_divider_increase: 0,

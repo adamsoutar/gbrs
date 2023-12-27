@@ -1,5 +1,5 @@
 // "WRAM" is Work RAM, not Wave RAM
-pub const WRAM_SIZE: usize = 8192;
+pub const WRAM_BANK_SIZE: usize = 4096;
 pub const VRAM_SIZE: usize = 8192;
 pub const HRAM_SIZE: usize = 127;
 pub const OAM_SIZE: usize = 160;
@@ -33,8 +33,10 @@ pub const MBC_RAM_END: u16 = 0xBFFF;
 pub const VRAM_START: u16 = 0x8000;
 pub const VRAM_END: u16 = 0x9FFF;
 
-pub const WRAM_START: u16 = 0xC000;
-pub const WRAM_END: u16 = 0xDFFF;
+pub const WRAM_LOWER_BANK_START: u16 = 0xC000;
+pub const WRAM_LOWER_BANK_END: u16 = 0xCFFF;
+pub const WRAM_UPPER_BANK_START: u16 = 0xD000;
+pub const WRAM_UPPER_BANK_END: u16 = 0xDFFF;
 
 pub const ECHO_RAM_START: u16 = 0xE000;
 pub const ECHO_RAM_END: u16 = 0xFDFF;
