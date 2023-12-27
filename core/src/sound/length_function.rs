@@ -21,7 +21,8 @@ impl LengthFunction {
   pub fn restart_triggered (&mut self) {
     // TODO: This behaviour isn't quite right
     //   https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Trigger_Event
-    self.timer = 64 - self.data;
+    self.timer = 64;
+    self.timer = self.timer.saturating_sub(self.data);
   }
 
   // Called at 256Hz
@@ -32,7 +33,10 @@ impl LengthFunction {
 
     if self.timer == 0 {
       if self.timer_enabled {
-        self.timer = 64 - self.data;
+        // TODO: Without saturating_sub, this causes panics after moving to
+        //   48KHz audio when flapping with the rabbit ears in Mario Land 2
+        self.timer = 64;
+        self.timer = self.timer.saturating_sub(self.data);
         self.channel_enabled = false;
       }
     }
