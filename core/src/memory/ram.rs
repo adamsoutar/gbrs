@@ -18,8 +18,12 @@ impl Ram {
     }
 
     pub fn new(size: usize) -> Ram {
+        Ram::with_filled_value(size, 0)
+    }
+
+    pub fn with_filled_value(size: usize, default_value: u8) -> Ram {
         Ram {
-            bytes: vec![0; size],
+            bytes: vec![default_value; size],
             size,
         }
     }
