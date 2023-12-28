@@ -62,7 +62,7 @@ pub const HRAM_END: u16 = 0xFFFE;
 // This isn't *strictly* true, but it only overlaps CGB
 // functionality, so it's OK.
 pub const LCD_DATA_START: u16 = 0xFF40;
-pub const LCD_DATA_END: u16 = 0xFF4F;
+pub const LCD_DATA_END: u16 = 0xFF4E;
 
 pub const CGB_PALETTE_DATA_START: u16 = 0xFF68;
 pub const CGB_PALETTE_DATA_END: u16 = 0xFF6B;

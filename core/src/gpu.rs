@@ -114,14 +114,11 @@ impl Gpu {
             // TODO: 0xFF4D "CGB Prepare Speed Switch" is in this range.
             0xFF4C ..= 0xFF4E => log!("[WARN] Unknown LCD register write at {:#06x}", raw_address),
 
-            // CGB only ("VRAM Bank Select")
-            0xFF4F => {}
-
             // The Y Scanline is read only.
             // Space Invaders writes here. As a bug?
             0xFF44 => {},
 
-            _ => panic!("Unsupported GPU write at {:#06x}", raw_address)
+            _ => panic!("Unsupported GPU write at {:#06x} (value: {:#04x})", raw_address, value)
         }
     }
     pub fn raw_read (&self, raw_address: u16) -> u8 {

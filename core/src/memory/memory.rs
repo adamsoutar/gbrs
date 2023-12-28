@@ -25,7 +25,8 @@ pub struct Memory {
 
     // TODO: Move VRAM to GPU?
     vram: Ram,
-    wram_banks: [Ram; 8],
+    // Includes all banks contiguously
+    wram: Ram,
     // On DMG, this is always 1. On CGB, it's 1-7 inclusive
     upper_wram_bank: usize,
     hram: Ram,
@@ -47,20 +48,6 @@ pub struct Memory {
     pub joypad: Joypad,
 
     pub apu: APU
-}
-
-fn create_wram_banks () -> [Ram; 8] {
-    [
-        Ram::new(WRAM_BANK_SIZE),
-        Ram::new(WRAM_BANK_SIZE),
-        Ram::new(WRAM_BANK_SIZE),
-        Ram::new(WRAM_BANK_SIZE),
-
-        Ram::new(WRAM_BANK_SIZE),
-        Ram::new(WRAM_BANK_SIZE),
-        Ram::new(WRAM_BANK_SIZE),
-        Ram::new(WRAM_BANK_SIZE),
-    ]
 }
 
 impl Memory {
@@ -121,9 +108,9 @@ impl Memory {
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
 
             WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
-                self.wram_banks[0].read(address - WRAM_LOWER_BANK_START),
+                self.wram.read(address - WRAM_LOWER_BANK_START),
             WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
-                self.wram_banks[self.upper_wram_bank].read(address - WRAM_UPPER_BANK_START),
+                self.wram.read((self.upper_wram_bank * WRAM_BANK_SIZE) as u16 + address - WRAM_UPPER_BANK_START),
             // TODO: How does upper echo RAM work with CGB bank switching?
             ECHO_RAM_START ..= ECHO_RAM_END => self.read(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START)),
 
@@ -167,9 +154,9 @@ impl Memory {
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
 
             WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
-                self.wram_banks[0].write(address - WRAM_LOWER_BANK_START, value),
+                self.wram.write(address - WRAM_LOWER_BANK_START, value),
             WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
-                self.wram_banks[self.upper_wram_bank].write(address - WRAM_UPPER_BANK_START, value),
+                self.wram.write((self.upper_wram_bank * WRAM_BANK_SIZE) as u16 + address - WRAM_UPPER_BANK_START, value),
             ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START), value),
 
             OAM_START ..= OAM_END => gpu.raw_write(address, value, ints),
@@ -228,7 +215,7 @@ impl Memory {
             cgb_features: target.has_cgb_features(),
             mbc: mbc_from_info(cart_info, rom),
             vram: Ram::new(VRAM_SIZE),
-            wram_banks: create_wram_banks(),
+            wram: Ram::new(WRAM_BANK_SIZE * 8),
             upper_wram_bank: 1,
             hram: Ram::new(HRAM_SIZE),
             palette_ram: PaletteRam::new(&target),
