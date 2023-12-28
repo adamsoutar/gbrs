@@ -24,7 +24,9 @@ pub struct Memory {
     mbc: Box<dyn MBC>,
 
     // TODO: Move VRAM to GPU?
+    // Includes both CGB VRAM banks (DMG only uses the lower one)
     vram: Ram,
+    vram_bank: u16,
     // Includes all banks contiguously
     wram: Ram,
     // On DMG, this is always 1. On CGB, it's 1-7 inclusive
@@ -134,6 +136,8 @@ impl Memory {
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
 
+            0xFF4F => self.vram_bank as u8,
+
             0xFF70 => self.upper_wram_bank as u8,
 
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
@@ -181,6 +185,12 @@ impl Memory {
             0xFF06 => self.timer_modulo = value,
             0xFF07 => self.timer_control = value,
 
+            // VRAM bank select
+            0xFF4F => {
+                if !self.cgb_features { return; }
+                self.vram_bank = (value & 0x01) as u16;
+            }
+
             // Upper WRAM bank select
             0xFF70 => {
                 if !self.cgb_features  { return; }
@@ -214,7 +224,8 @@ impl Memory {
         Memory {
             cgb_features: target.has_cgb_features(),
             mbc: mbc_from_info(cart_info, rom),
-            vram: Ram::new(VRAM_SIZE),
+            vram: Ram::new(VRAM_BANK_SIZE * 2),
+            vram_bank: 0,
             wram: Ram::new(WRAM_BANK_SIZE * 8),
             upper_wram_bank: 1,
             hram: Ram::new(HRAM_SIZE),
