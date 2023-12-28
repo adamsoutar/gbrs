@@ -20,3 +20,4 @@ pub mod lcd;
 pub mod memory;
 pub mod registers;
 pub mod serial_cable;
+pub mod colour; // innit bruv

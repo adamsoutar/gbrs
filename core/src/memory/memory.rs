@@ -1,4 +1,5 @@
 use crate::constants::*;
+use crate::cpu::EmulationTarget;
 use crate::memory::ram::Ram;
 use crate::memory::rom::Rom;
 use crate::gpu::Gpu;
@@ -10,6 +11,7 @@ use crate::memory::mbcs::*;
 use crate::sound::apu::APU;
 use crate::serial_cable::SerialCable;
 use crate::log;
+use crate::colour::palette_ram::PaletteRam;
 
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
@@ -25,6 +27,8 @@ pub struct Memory {
     // On DMG, this is always 1. On CGB, it's 1-7 inclusive
     upper_wram_bank: usize,
     hram: Ram,
+    // Used in CGB mode only
+    palette_ram: PaletteRam,
 
     serial_cable: SerialCable,
 
@@ -130,21 +134,16 @@ impl Memory {
             APU_START ..= APU_END => self.apu.read(address),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
+            CGB_PALETTE_DATA_START ..= CGB_PALETTE_DATA_END => self.palette_ram.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
 
             0xFF00 => self.joypad.read(),
-
-            // 0xFF03 => 0xFF,
 
             // Timers
             0xFF04 => self.timer_divider,
             0xFF05 => self.timer_counter,
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
-
-            // 0xFF08 => 0xFF,
-            // 0xFF09 => 0xFF,
-            // 0xFF0A => 0xFF,
 
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
@@ -179,6 +178,7 @@ impl Memory {
             APU_START ..= APU_END => self.apu.write(address, value),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value, ints),
+            CGB_PALETTE_DATA_START ..= CGB_PALETTE_DATA_END => self.palette_ram.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
 
             0xFF00 => self.joypad.write(value),
@@ -211,13 +211,14 @@ impl Memory {
         self.write(ints, gpu, address + 1, b2);
     }
 
-    pub fn from_info (cart_info: Cartridge, rom: Rom) -> Memory {
+    pub fn from_info (cart_info: Cartridge, rom: Rom, target: &EmulationTarget) -> Memory {
         Memory {
             mbc: mbc_from_info(cart_info, rom),
             vram: Ram::new(VRAM_SIZE),
             wram_banks: create_wram_banks(),
             upper_wram_bank: 1,
             hram: Ram::new(HRAM_SIZE),
+            palette_ram: PaletteRam::new(&target),
             serial_cable: SerialCable::new(),
             timer_divider_increase: 0,
             timer_divider: 0,

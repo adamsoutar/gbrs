@@ -42,6 +42,17 @@ pub enum EmulationTarget {
     GbaCgbMode
 }
 
+impl EmulationTarget {
+    pub fn has_cgb_features(&self) -> bool {
+        match self {
+            EmulationTarget::Dmg => false,
+            EmulationTarget::CgbDmgMode => false,
+            EmulationTarget::CgbCgbMode => true,
+            EmulationTarget::GbaCgbMode => true
+        }
+    }
+}
+
 // When a game supports DMG, CGB back-compat, and full colour, what should we
 // run it as?
 const TARGET_FOR_CGB_OPTIONAL_GAMES: EmulationTarget =
@@ -982,7 +993,7 @@ impl Cpu {
         let emulation_target = emulation_target_for_cart_info(&cart_info);
 
         Cpu {
-            mem: Memory::from_info(cart_info.clone(), rom),
+            mem: Memory::from_info(cart_info.clone(), rom, &emulation_target),
             cart_info,
             regs: Registers::new(&emulation_target),
 
@@ -1007,7 +1018,7 @@ impl Cpu {
         let emulation_target = emulation_target_for_cart_info(&cart_info);
 
         Cpu {
-            mem: Memory::from_info(cart_info.clone(), rom),
+            mem: Memory::from_info(cart_info.clone(), rom, &emulation_target),
             cart_info,
             regs: Registers::new(&emulation_target),
 
