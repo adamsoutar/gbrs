@@ -61,7 +61,7 @@ pub struct Gpu {
     dma_cycles: u8,
 
     // The global 40-sprite OAM cache
-    // SmallVec doesn't do blocks of 40 so we leave 24 empty slots, it's still 
+    // SmallVec doesn't do blocks of 40 so we leave 24 empty slots, it's still
     // more performant than allocating.
     sprite_cache: SmallVec<[Sprite; 64]>,
     // The per-scanline 10-sprite cache
@@ -111,6 +111,7 @@ impl Gpu {
             0xFF4A => self.wy = value,
             0xFF4B => self.wx = value,
 
+            // TODO: 0xFF4D "CGB Prepare Speed Switch" is in this range.
             0xFF4C ..= 0xFF4E => log!("[WARN] Unknown LCD register write at {:#06x}", raw_address),
 
             // CGB only ("VRAM Bank Select")
@@ -268,9 +269,9 @@ impl Gpu {
             // Unusual GPU implementation detail. This is only
             // incremented when the Window was drawn on this scanline.
             // TODO: Relate these magic numbers to constants.
-            if self.control.window_enable && 
-                self.wx < 166 && 
-                self.wy < 143 && 
+            if self.control.window_enable &&
+                self.wx < 166 &&
+                self.wy < 143 &&
                 self.ly >= self.wy
             {
                 self.window_line_counter += 1;
@@ -283,7 +284,7 @@ impl Gpu {
             if self.ly == gpu_timing::VBLANK_ON {
                 self.enter_vblank(ints);
                 self.status.set_mode(LcdMode::VBlank);
-            } else { 
+            } else {
                 if mode != LcdMode::OAMSearch {
                     self.status.set_mode(LcdMode::OAMSearch);
                     self.cache_all_sprites();
@@ -370,8 +371,8 @@ impl Gpu {
         let is_window = self.control.window_enable &&
             x as isize > self.wx as isize - 8 && y >= self.wy;
 
-        let tilemap_select = if is_window { 
-            self.control.window_tile_map_display_select 
+        let tilemap_select = if is_window {
+            self.control.window_tile_map_display_select
         } else {
             self.control.bg_tile_map_display_select
         };
@@ -441,17 +442,17 @@ impl Gpu {
                 if !sprite.above_bg && bg_col_id != 0 {
                     continue;
                 }
-        
+
                 let mut subx = (ix - sprite.x_pos) as u8;
                 let mut suby = iy - sprite.y_pos;
-        
+
                 // Tile address for 8x8 mode
                 let mut pattern = sprite.pattern_id;
 
                 if sprite_height == 16 {
                     if suby > 7 {
                         suby -= 8;
-        
+
                         if sprite.y_flip {
                             pattern = sprite.pattern_id & 0xFE;
                         } else {
@@ -465,24 +466,24 @@ impl Gpu {
                         }
                     }
                 }
-        
+
                 if sprite.x_flip { subx = 7 - subx }
                 // TODO: Not sure if this applies to vertically flipped 8x16 mode sprites
                 if sprite.y_flip { suby = 7 - suby }
-        
+
                 let tile_address = 0x8000 + (pattern as u16) * 16;
                 let line_we_need = suby as u16 * 2;
                 let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
-        
+
                 let col_id = self.get_colour_id_in_line(tile_line, subx);
-        
+
                 if col_id == 0 {
                     // This pixel is transparent
                     continue
                 } else {
                     let palette = if sprite.use_palette_0
                         { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
-                    
+
                     min_x = sprite.x_pos;
                     maybe_colour = Some(self.get_shade_from_colour_id(col_id, palette))
                 }

@@ -1,4 +1,4 @@
-use crate::{cpu::EmulationTarget, memory::ram::Ram};
+use crate::{cpu::EmulationTarget, memory::ram::Ram, log};
 
 pub struct PaletteRam {
     // If this is false, we're a DMG.
@@ -12,7 +12,7 @@ impl PaletteRam {
         if !self.cgb_features { return 0xFF; }
 
         match address {
-            _ => unimplemented!("CGB Palette RAM read at {:#06x}", address)
+            _ => { log!("CGB Palette RAM read at {:#06x}", address); 0xFF }
         }
     }
 
@@ -20,7 +20,7 @@ impl PaletteRam {
         if !self.cgb_features { return; }
 
         match address {
-            _ => unimplemented!("CGB Palette RAM write at {:#06x} (value: {:#04x})", address, value)
+            _ => log!("CGB Palette RAM write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 
