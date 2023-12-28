@@ -105,7 +105,8 @@ impl Memory {
             // Cartridge memory starts at the 0 address
             0 ..= MBC_ROM_END => self.mbc.read(address),
 
-            VRAM_START ..= VRAM_END => self.vram.read(address - VRAM_START),
+            VRAM_START ..= VRAM_END => self.vram.read(
+                self.vram_bank * VRAM_BANK_SIZE as u16 + address - VRAM_START),
 
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
 
@@ -153,7 +154,8 @@ impl Memory {
             0 ..= MBC_ROM_END => self.mbc.write(address, value),
 
             // TODO: Disable writing to VRAM if GPU is reading it
-            VRAM_START ..= VRAM_END => self.vram.write(address - VRAM_START, value),
+            VRAM_START ..= VRAM_END => self.vram.write(
+                self.vram_bank * VRAM_BANK_SIZE as u16 + address - VRAM_START, value),
 
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
 
