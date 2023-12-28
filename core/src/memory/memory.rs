@@ -19,6 +19,8 @@ use alloc::boxed::Box;
 // TODO: Rename this to something more appropriate
 //       (I've seen an emu call a similar struct 'Interconnect')
 pub struct Memory {
+    cgb_features: bool,
+
     mbc: Box<dyn MBC>,
 
     // TODO: Move VRAM to GPU?
@@ -145,6 +147,8 @@ impl Memory {
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
 
+            0xFF70 => self.upper_wram_bank as u8,
+
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
 
@@ -190,6 +194,14 @@ impl Memory {
             0xFF06 => self.timer_modulo = value,
             0xFF07 => self.timer_control = value,
 
+            // Upper WRAM bank select
+            0xFF70 => {
+                if !self.cgb_features  { return; }
+                let mut desired_bank = value & 0x07;
+                if desired_bank == 0 { desired_bank = 1; }
+                self.upper_wram_bank = desired_bank as usize;
+            },
+
             // TETRIS also writes here, Sameboy doesn't seem to care
             0xFF7F => {},
 
@@ -213,6 +225,7 @@ impl Memory {
 
     pub fn from_info (cart_info: Cartridge, rom: Rom, target: &EmulationTarget) -> Memory {
         Memory {
+            cgb_features: target.has_cgb_features(),
             mbc: mbc_from_info(cart_info, rom),
             vram: Ram::new(VRAM_SIZE),
             wram_banks: create_wram_banks(),
