@@ -85,9 +85,7 @@ pub struct Cpu {
     pub ms_since_boot: usize,
     clock_counter: usize,
 
-    halted: bool,
-
-    emulation_target: EmulationTarget
+    halted: bool
 }
 
 impl Cpu {
@@ -1006,9 +1004,7 @@ impl Cpu {
             ms_since_boot: 0,
             clock_counter: 0,
 
-            halted: false,
-
-            emulation_target
+            halted: false
         }
     }
 
@@ -1031,9 +1027,7 @@ impl Cpu {
             ms_since_boot: 0,
             clock_counter: 0,
 
-            halted: false,
-
-            emulation_target
+            halted: false
         }
     }
 }

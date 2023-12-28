@@ -1,4 +1,4 @@
-use crate::{cpu::EmulationTarget, memory::ram::Ram, log};
+use crate::{cpu::EmulationTarget, memory::ram::Ram};
 
 fn palette_spec_read (address: u16, auto_increment: bool) -> u8 {
     // This should never be higher than 64 anyway, but let's be safe
@@ -43,7 +43,7 @@ impl PaletteRam {
             0xFF6A => palette_spec_read(self.obj_address, self.obj_auto_increment),
             0xFF6B => self.obj_palette_ram.read(self.obj_address),
 
-            _ => { panic!("CGB Palette RAM read at {:#06x}", address); 0xFF }
+            _ => panic!("CGB Palette RAM read at {:#06x}", address)
         }
     }
 

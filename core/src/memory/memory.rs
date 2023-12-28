@@ -8,6 +8,7 @@ use crate::{split_u16, combine_u8};
 use crate::joypad::Joypad;
 use crate::cartridge::Cartridge;
 use crate::memory::mbcs::*;
+use crate::memory::vram::VRam;
 use crate::sound::apu::APU;
 use crate::serial_cable::SerialCable;
 use crate::log;
@@ -24,9 +25,7 @@ pub struct Memory {
     mbc: Box<dyn MBC>,
 
     // TODO: Move VRAM to GPU?
-    // Includes both CGB VRAM banks (DMG only uses the lower one)
-    vram: Ram,
-    vram_bank: u16,
+    vram: VRam,
     // Includes all banks contiguously
     wram: Ram,
     // On DMG, this is always 1. On CGB, it's 1-7 inclusive
@@ -105,8 +104,7 @@ impl Memory {
             // Cartridge memory starts at the 0 address
             0 ..= MBC_ROM_END => self.mbc.read(address),
 
-            VRAM_START ..= VRAM_END => self.vram.read(
-                self.vram_bank * VRAM_BANK_SIZE as u16 + address - VRAM_START),
+            VRAM_START ..= VRAM_END => self.vram.raw_read(address),
 
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
 
@@ -137,7 +135,7 @@ impl Memory {
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
 
-            0xFF4F => self.vram_bank as u8,
+            0xFF4F => self.vram.bank as u8,
 
             0xFF70 => self.upper_wram_bank as u8,
 
@@ -154,8 +152,7 @@ impl Memory {
             0 ..= MBC_ROM_END => self.mbc.write(address, value),
 
             // TODO: Disable writing to VRAM if GPU is reading it
-            VRAM_START ..= VRAM_END => self.vram.write(
-                self.vram_bank * VRAM_BANK_SIZE as u16 + address - VRAM_START, value),
+            VRAM_START ..= VRAM_END => self.vram.raw_write(address, value),
 
             MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
 
@@ -188,10 +185,7 @@ impl Memory {
             0xFF07 => self.timer_control = value,
 
             // VRAM bank select
-            0xFF4F => {
-                if !self.cgb_features { return; }
-                self.vram_bank = (value & 0x01) as u16;
-            }
+            0xFF4F => self.vram.bank_write(value),
 
             // Upper WRAM bank select
             0xFF70 => {
@@ -223,11 +217,11 @@ impl Memory {
     }
 
     pub fn from_info (cart_info: Cartridge, rom: Rom, target: &EmulationTarget) -> Memory {
+        let cgb_features = target.has_cgb_features();
         Memory {
-            cgb_features: target.has_cgb_features(),
+            cgb_features,
             mbc: mbc_from_info(cart_info, rom),
-            vram: Ram::new(VRAM_BANK_SIZE * 2),
-            vram_bank: 0,
+            vram: VRam::new(cgb_features),
             wram: Ram::new(WRAM_BANK_SIZE * 8),
             upper_wram_bank: 1,
             hram: Ram::new(HRAM_SIZE),
