@@ -343,8 +343,8 @@ impl Gpu {
 
         let bg_col: Colour;
         let bg_col_id = if self.cgb_features || self.control.bg_display {
-            let id = self.get_background_colour_at(ints, mem, x, y);
-            bg_col = self.get_shade_from_colour_id(id, self.bg_pallette);
+            let (new_col, id) = self.get_background_colour_at(ints, mem, x, y);
+            bg_col = new_col;
             id
         } else {
             bg_col = grey_shades::white();
@@ -377,7 +377,7 @@ impl Gpu {
         colour_from_grey_shade_id(shade)
     }
 
-    fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> u16 {
+    fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> (Colour, u16) {
         let is_window = self.control.window_enable &&
             x as isize > self.wx as isize - 8 && y >= self.wy;
 
@@ -409,11 +409,13 @@ impl Gpu {
         // NOTE: Things like y16 % 8 is equivalent to y16 - ty * 8
         //   However, this is not more performant. I think the compiler
         //   is smart enough to recognise that.
-        let subx = (x16 % 8) as u8; let suby = y16 % 8;
+        let mut subx = (x16 % 8) as u8; let mut suby = y16 % 8;
 
         let byte_offset = ty * 32 + tx;
+        let tilemap_address = tilemap_base + byte_offset;
+        let tile_metadata = mem.vram.bg_map_attributes.get_entry(byte_offset);
 
-        let tile_id_raw = mem.read(ints, self, tilemap_base + byte_offset);
+        let tile_id_raw = mem.read(ints, self, tilemap_address);
         let tile_id: u16;
 
         if self.control.bg_and_window_data_select {
@@ -426,15 +428,36 @@ impl Gpu {
             } else { tile_id = tile_id_raw as u16 }
         }
 
+        // BG tile flipping is a CGB-exclusive feature
+        if self.cgb_features {
+            if tile_metadata.x_flip {
+                subx = 7 - subx;
+            }
+            if tile_metadata.y_flip {
+                suby = 7 - suby;
+            }
+        }
+
         let tile_byte_offset = tile_id * 16;
         let tile_line_offset = tile_byte_offset + (suby * 2);
 
         // This is the line of the tile data that out pixel resides on
         let tiledata_base = 0x8000;
+        let tile_address = tiledata_base + tile_line_offset;
 
-        let tile_line = mem.read_16(ints, self, tiledata_base + tile_line_offset);
+        let bank = if self.cgb_features { tile_metadata.vram_bank as u16 } else { 0 };
+        let tile_line0 = mem.vram.read_arbitrary_bank(bank, tile_address);
+        let tile_line1 = mem.vram.read_arbitrary_bank(bank, tile_address + 1);
+        let tile_line = combine_u8!(tile_line1, tile_line0);
+
         let col_id = self.get_colour_id_in_line(tile_line, subx);
-        col_id
+
+        if self.cgb_features {
+            let colour = mem.palette_ram.get_bg_palette_colour(tile_metadata.palette as u16, col_id);
+            (colour, col_id)
+        } else {
+            (self.get_shade_from_colour_id(col_id, self.bg_pallette), col_id)
+        }
     }
 
     fn get_sprite_colour_at (&self, mem: &Memory, bg_col: Colour, bg_col_id: u16, x: u8, y: u8) -> Colour {

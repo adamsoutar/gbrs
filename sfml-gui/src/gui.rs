@@ -9,7 +9,7 @@ use sfml::graphics::*;
 use sfml::window::*;
 use sfml::SfBox;
 use sfml::system::*;
-use sfml::audio::{Sound, SoundBuffer, SoundStatus};
+use sfml::audio::{Sound, SoundBuffer, SoundStatus, SoundSource};
 
 pub const STEP_BY_STEP: bool = false;
 // NOTE: This debug option is only supported on macOS. See note below
@@ -115,6 +115,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             }));
             match &mut SOUND {
                 Some(sound) => {
+                    sound.set_volume(0.);
                     sound.play();
                     while sound.status() == SoundStatus::PLAYING {
                         if !gameboy.mem.apu.buffer_full {

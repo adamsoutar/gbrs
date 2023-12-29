@@ -40,6 +40,11 @@ impl PaletteRam {
         Colour::from_16_bit_colour(combine_u8!(col1, col0))
     }
 
+    pub fn get_bg_palette_colour (&self, palette_id: u16, colour_id: u16) -> Colour {
+        let base_offset = 8 * palette_id;
+        self.read_colour(&self.bg_palette_ram, base_offset + colour_id * 2)
+    }
+
     pub fn get_obj_palette_colour (&self, palette_id: u16, colour_id: u16) -> Colour {
         let base_offset = 8 * palette_id;
         self.read_colour(&self.obj_palette_ram, base_offset + colour_id * 2)
