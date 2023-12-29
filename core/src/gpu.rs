@@ -352,7 +352,7 @@ impl Gpu {
         };
 
         // If there's a non-transparent sprite here, use its colour
-        let s_col = self.get_sprite_colour_at(ints, mem, bg_col, bg_col_id, x, y);
+        let s_col = self.get_sprite_colour_at(mem, bg_col, bg_col_id, x, y);
 
         self.frame[idx] = s_col;
     }
@@ -437,7 +437,7 @@ impl Gpu {
         col_id
     }
 
-    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, bg_col: Colour, bg_col_id: u16, x: u8, y: u8) -> Colour {
+    fn get_sprite_colour_at (&self, mem: &Memory, bg_col: Colour, bg_col_id: u16, x: u8, y: u8) -> Colour {
         // Sprites are hidden for this scanline
         if !self.control.obj_enable {
             return bg_col
