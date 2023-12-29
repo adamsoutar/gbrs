@@ -342,7 +342,7 @@ impl Gpu {
         let idx = uy * SCREEN_WIDTH + ux;
 
         let bg_col: Colour;
-        let bg_col_id = if self.control.bg_display {
+        let bg_col_id = if self.cgb_features || self.control.bg_display {
             let id = self.get_background_colour_at(ints, mem, x, y);
             bg_col = self.get_shade_from_colour_id(id, self.bg_pallette);
             id
@@ -450,8 +450,14 @@ impl Gpu {
         let mut maybe_colour: Option<Colour> = None;
         let mut min_x: i32 = SCREEN_WIDTH as i32 + 8;
         for sprite in &self.sprites_on_line {
+            let mut above_bg = sprite.above_bg;
+            // In CGB mode, bg_display off means sprites always get priority.
+            if self.cgb_features && !self.control.bg_display {
+                above_bg = true;
+            }
+
             if sprite.x_pos <= ix && (sprite.x_pos + 8) > ix && sprite.x_pos < min_x {
-                if !sprite.above_bg && bg_col_id != 0 {
+                if !above_bg && bg_col_id != 0 {
                     continue;
                 }
 
