@@ -1,6 +1,7 @@
 use crate::colour::colour::Colour;
 use crate::colour::grey_shades;
 use crate::colour::grey_shades::colour_from_grey_shade_id;
+use crate::combine_u8;
 use crate::constants::*;
 use crate::lcd::*;
 use crate::memory::ram::Ram;
@@ -484,7 +485,12 @@ impl Gpu {
 
                 let tile_address = 0x8000 + (pattern as u16) * 16;
                 let line_we_need = suby as u16 * 2;
-                let tile_line = mem.read_16(ints, self, tile_address + line_we_need);
+                let bank = if self.cgb_features && sprite.use_upper_vram_bank { 1 } else { 0 };
+                let tile_address = tile_address + line_we_need;
+
+                let tile_line0 = mem.vram.read_arbitrary_bank(bank, tile_address);
+                let tile_line1 = mem.vram.read_arbitrary_bank(bank, tile_address + 1);
+                let tile_line = combine_u8!(tile_line1, tile_line0);
 
                 let col_id = self.get_colour_id_in_line(tile_line, subx);
 
