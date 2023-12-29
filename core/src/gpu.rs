@@ -16,7 +16,11 @@ pub struct Sprite {
     pub above_bg: bool,
     pub y_flip: bool,
     pub x_flip: bool,
-    pub use_palette_0: bool
+    pub use_palette_0: bool,
+
+    // CGB-specific attributes
+    pub use_upper_vram_bank: bool,
+    pub cgb_palette: u8
 }
 
 pub struct Gpu {
@@ -155,20 +159,24 @@ impl Gpu {
             let pattern_id = self.oam.read(address + 2);
             let attribs = self.oam.read(address + 3);
 
-            let above_bg = (attribs & 0b1000_0000) != 0b1000_0000;
-            let y_flip = (attribs & 0b0100_0000) == 0b0100_0000;
-            let x_flip = (attribs & 0b0010_0000) == 0b0010_0000;
-            let use_palette_0 = (attribs & 0b0001_0000) != 0b0001_0000;
+            let above_bg = (attribs & 0b1000_0000) == 0;
+            let y_flip = (attribs & 0b0100_0000) > 0;
+            let x_flip = (attribs & 0b0010_0000) > 0;
+            let use_palette_0 = (attribs & 0b0001_0000) == 0;
+            let use_upper_vram_bank = (attribs & 0b0000_1000) > 0;
+            let cgb_palette = attribs & 0b0000_0111;
 
             if self.sprite_cache.len() > i {
                 self.sprite_cache[i] = Sprite {
                     y_pos, x_pos, pattern_id,
-                    above_bg, y_flip, x_flip, use_palette_0
+                    above_bg, y_flip, x_flip, use_palette_0,
+                    use_upper_vram_bank, cgb_palette
                 };
             } else {
                 self.sprite_cache.push(Sprite {
                     y_pos, x_pos, pattern_id,
-                    above_bg, y_flip, x_flip, use_palette_0
+                    above_bg, y_flip, x_flip, use_palette_0,
+                    use_upper_vram_bank, cgb_palette
                 });
             }
 
