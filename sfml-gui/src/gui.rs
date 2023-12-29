@@ -87,7 +87,7 @@ pub fn run_gui (mut gameboy: Cpu) {
 
         // Draw the previous frame
         unsafe {
-            screen_texture.update_from_pixels(&gameboy.gpu.get_sfml_frame(), sw, sh, 0, 0);
+            screen_texture.update_from_pixels(&gameboy.gpu.get_rgba_frame(), sw, sh, 0, 0);
         }
         let mut screen_sprite = Sprite::with_texture(&screen_texture);
         screen_sprite.set_scale(sprite_scale);
