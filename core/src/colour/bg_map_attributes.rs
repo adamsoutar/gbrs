@@ -1,7 +1,7 @@
 // Data pertaining to rendering coloured background/window tiles
 // Defined by writing to VRAM bank 1 0x9800 to 0x9FFF
 
-const BG_MAP_ATTRIBUTE_TABLE_SIZE: usize = 0x7FF; // 0x9FFF - 0x9800
+const BG_MAP_ATTRIBUTE_TABLE_SIZE: usize = 0x800; // 0x9FFF - 0x9800 + 0th addr
 
 #[derive(Clone, Copy)]
 pub struct BgMapAttributeEntry {
