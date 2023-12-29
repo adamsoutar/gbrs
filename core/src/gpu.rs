@@ -1,3 +1,6 @@
+use crate::colour::colour::Colour;
+use crate::colour::grey_shades;
+use crate::colour::grey_shades::colour_from_grey_shade_id;
 use crate::constants::*;
 use crate::lcd::*;
 use crate::memory::ram::Ram;
@@ -25,10 +28,10 @@ pub struct Sprite {
 
 pub struct Gpu {
     // This is the WIP frame that the GPU draws to
-    frame: [GreyShade; SCREEN_BUFFER_SIZE],
+    frame: [Colour; SCREEN_BUFFER_SIZE],
     // This is the last rendered frame displayed on the LCD, only updated
     // in VBlank. GUI implementations can read it to show the display.
-    pub finished_frame: [GreyShade; SCREEN_BUFFER_SIZE],
+    pub finished_frame: [Colour; SCREEN_BUFFER_SIZE],
 
     // X and Y of background position
     scy: u8,
@@ -336,13 +339,13 @@ impl Gpu {
         let ux = x as usize; let uy = y as usize;
         let idx = uy * SCREEN_WIDTH + ux;
 
-        let bg_col: GreyShade;
+        let bg_col: Colour;
         let bg_col_id = if self.control.bg_display {
             let id = self.get_background_colour_at(ints, mem, x, y);
             bg_col = self.get_shade_from_colour_id(id, self.bg_pallette);
             id
         } else {
-            bg_col = GreyShade::White;
+            bg_col = grey_shades::white();
             0
         };
 
@@ -365,11 +368,11 @@ impl Gpu {
         pixel_colour_id
     }
 
-    fn get_shade_from_colour_id (&self, pixel_colour_id: u16, palette: u8) -> GreyShade {
+    fn get_shade_from_colour_id (&self, pixel_colour_id: u16, palette: u8) -> Colour {
         let shift_2 = pixel_colour_id * 2;
         let shade = (palette & (0b11 << shift_2)) >> shift_2;
 
-        GreyShade::from(shade)
+        colour_from_grey_shade_id(shade)
     }
 
     fn get_background_colour_at (&self, ints: &Interrupts, mem: &Memory, x: u8, y: u8) -> u16 {
@@ -430,7 +433,7 @@ impl Gpu {
         col_id
     }
 
-    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, bg_col: GreyShade, bg_col_id: u16, x: u8, y: u8) -> GreyShade {
+    fn get_sprite_colour_at (&self, ints: &Interrupts, mem: &Memory, bg_col: Colour, bg_col_id: u16, x: u8, y: u8) -> Colour {
         // Sprites are hidden for this scanline
         if !self.control.obj_enable {
             return bg_col
@@ -440,7 +443,7 @@ impl Gpu {
 
         let ix = x as i32; let iy = y as i32;
 
-        let mut maybe_colour: Option<GreyShade> = None;
+        let mut maybe_colour: Option<Colour> = None;
         let mut min_x: i32 = SCREEN_WIDTH as i32 + 8;
         for sprite in &self.sprites_on_line {
             if sprite.x_pos <= ix && (sprite.x_pos + 8) > ix && sprite.x_pos < min_x {
@@ -515,42 +518,20 @@ impl Gpu {
         }
     }
 
-    pub fn get_sfml_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {
+    pub fn get_rgba_frame (&self) -> [u8; SCREEN_RGBA_SLICE_SIZE] {
         let mut out_array = [0; SCREEN_RGBA_SLICE_SIZE];
         for i in 0..SCREEN_BUFFER_SIZE {
             let start = i * 4;
-            match &self.finished_frame[i] {
-                GreyShade::White => {
-                    out_array[start] = 0xDD;
-                    out_array[start + 1] = 0xDD;
-                    out_array[start + 2] = 0xDD;
-                    out_array[start + 3] = 0xFF;
-                },
-                GreyShade::LightGrey => {
-                    out_array[start] = 0xAA;
-                    out_array[start + 1] = 0xAA;
-                    out_array[start + 2] = 0xAA;
-                    out_array[start + 3] = 0xFF;
-                },
-                GreyShade::DarkGrey => {
-                    out_array[start] = 0x88;
-                    out_array[start + 1] = 0x88;
-                    out_array[start + 2] = 0x88;
-                    out_array[start + 3] = 0xFF;
-                },
-                GreyShade::Black => {
-                    out_array[start] = 0x55;
-                    out_array[start + 1] = 0x55;
-                    out_array[start + 2] = 0x55;
-                    out_array[start + 3] = 0xFF;
-                }
-            }
+            out_array[start] = self.finished_frame[i].red;
+            out_array[start + 1] = self.finished_frame[i].green;
+            out_array[start + 2] = self.finished_frame[i].blue;
+            out_array[start + 3] = 0xFF;
         }
         out_array
     }
 
     pub fn new () -> Gpu {
-        let empty_frame = [GreyShade::White; SCREEN_BUFFER_SIZE];
+        let empty_frame = [grey_shades::white(); SCREEN_BUFFER_SIZE];
         Gpu {
             frame: empty_frame,
             finished_frame: empty_frame.clone(),

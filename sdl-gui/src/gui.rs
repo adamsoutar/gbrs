@@ -1,7 +1,6 @@
 use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
-use gbrs_core::lcd::GreyShade;
 use sdl2::audio::{AudioSpecDesired, AudioQueue};
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -50,7 +49,7 @@ pub fn run_gui (mut gameboy: Cpu) {
         .open_queue(None, &desired_spec)
         .unwrap();
 
-    assert_eq!(audio_queue.spec().samples, SOUND_BUFFER_SIZE as u16, 
+    assert_eq!(audio_queue.spec().samples, SOUND_BUFFER_SIZE as u16,
         "Audio device does not support gbrs' sound buffer size");
 
     gameboy.step_until_full_audio_buffer();
@@ -70,31 +69,17 @@ pub fn run_gui (mut gameboy: Cpu) {
         for x in 0..SCREEN_WIDTH {
             for y in 0..SCREEN_HEIGHT {
                 let i = (y * 160 + x) as usize;
-                match &gameboy.gpu.finished_frame[i] {
-                    GreyShade::White => {
-                        canvas
-                            .set_draw_color(Color::RGB(0xDD, 0xDD, 0xDD));
-                    },
-                    GreyShade::LightGrey => {
-                        canvas
-                            .set_draw_color(Color::RGB(0xAA, 0xAA, 0xAA));
-                    },
-                    GreyShade::DarkGrey => {
-                        canvas
-                            .set_draw_color(Color::RGB(0x88, 0x88, 0x88));
-                    },
-                    GreyShade::Black => {
-                        canvas
-                            .set_draw_color(Color::RGB(0x55, 0x55, 0x55));
-                    }
-                }
+                let colour = &gameboy.gpu.finished_frame[i];
+                canvas.set_draw_color(Color::RGB(
+                    colour.red, colour.green, colour.blue
+                ));
                 canvas
                     .fill_rect(Rect::new((x * square_width) as i32, (y * square_height) as i32, square_width as u32, square_height as u32))
                     .unwrap();
             }
         }
         canvas.present();
-        
+
         gameboy.mem.joypad.start_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Return);
         gameboy.mem.joypad.select_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::Backspace);
         gameboy.mem.joypad.a_pressed = event_pump.keyboard_state().is_scancode_pressed(Scancode::X);
@@ -111,11 +96,11 @@ pub fn run_gui (mut gameboy: Cpu) {
         audio_queue.queue_audio(&gameboy.mem.apu.buffer).unwrap();
         audio_queue.resume();
         let diff = audio_queue.size() - pre;
-        
+
         while audio_queue.size() > diff {
             // NOTE: You can comment this if statement out if you're having
-            //   speed or sound issues. It is an attempt to help out slower 
-            //   machines, but you may not need it if your machine is fast 
+            //   speed or sound issues. It is an attempt to help out slower
+            //   machines, but you may not need it if your machine is fast
             //   enough.
             if !gameboy.mem.apu.buffer_full {
                 gameboy.step();

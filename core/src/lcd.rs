@@ -1,25 +1,6 @@
 use crate::interrupts::{Interrupts, InterruptReason};
 
 #[derive(Clone, Copy)]
-pub enum GreyShade {
-    White,
-    LightGrey,
-    DarkGrey,
-    Black
-}
-impl From<u8> for GreyShade {
-    fn from(n: u8) -> GreyShade {
-        match n {
-            0 => GreyShade::White,
-            1 => GreyShade::LightGrey,
-            2 => GreyShade::DarkGrey,
-            3 => GreyShade::Black,
-            _ => panic!("Invalid grey shade id {}", n)
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
 pub struct LcdControl {
     pub display_enable: bool,
     pub window_tile_map_display_select: bool,
