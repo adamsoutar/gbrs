@@ -31,6 +31,8 @@ pub const MBC_RAM_START: u16 = 0xA000;
 pub const MBC_RAM_END: u16 = 0xBFFF;
 
 pub const VRAM_START: u16 = 0x8000;
+// For CGB BG Map Attribute Table
+pub const VRAM_BG_MAP_START: u16 = 0x9800;
 pub const VRAM_END: u16 = 0x9FFF;
 
 pub const WRAM_LOWER_BANK_START: u16 = 0xC000;
