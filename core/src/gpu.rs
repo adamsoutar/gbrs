@@ -27,6 +27,7 @@ pub struct Sprite {
 }
 
 pub struct Gpu {
+    cgb_features: bool,
     // This is the WIP frame that the GPU draws to
     frame: [Colour; SCREEN_BUFFER_SIZE],
     // This is the last rendered frame displayed on the LCD, only updated
@@ -394,7 +395,9 @@ impl Gpu {
         let y16: u16;
 
         if is_window {
-            x16 = x.wrapping_sub(self.wx - 7) as u16;
+            // TODO: Check this saturating_sub, it's a guess.
+            //   Super Mario Bros Deluxe pause menu crashes without it
+            x16 = x.wrapping_sub(self.wx.saturating_sub(7)) as u16;
             y16 = self.window_line_counter as u16;
         } else {
             x16 = x.wrapping_add(self.scx) as u16;
@@ -489,11 +492,16 @@ impl Gpu {
                     // This pixel is transparent
                     continue
                 } else {
-                    let palette = if sprite.use_palette_0
-                        { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
+                    if self.cgb_features {
+                        let colour = mem.palette_ram.get_obj_palette_colour(sprite.cgb_palette as u16, col_id);
+                        maybe_colour = Some(colour)
+                    } else {
+                        let palette = if sprite.use_palette_0
+                            { self.sprite_pallete_1 } else { self.sprite_pallete_2 };
 
-                    min_x = sprite.x_pos;
-                    maybe_colour = Some(self.get_shade_from_colour_id(col_id, palette))
+                        min_x = sprite.x_pos;
+                        maybe_colour = Some(self.get_shade_from_colour_id(col_id, palette))
+                    }
                 }
             }
         }
@@ -530,9 +538,10 @@ impl Gpu {
         out_array
     }
 
-    pub fn new () -> Gpu {
+    pub fn new (cgb_features: bool) -> Gpu {
         let empty_frame = [grey_shades::white(); SCREEN_BUFFER_SIZE];
         Gpu {
+            cgb_features,
             frame: empty_frame,
             finished_frame: empty_frame.clone(),
             window_line_counter: 0,

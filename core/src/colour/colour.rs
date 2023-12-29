@@ -6,13 +6,15 @@ pub struct Colour {
 }
 
 impl Colour {
+    // Colour space conversion algo from
+    //   https://gamedev.stackexchange.com/a/196834
     pub fn from_16_bit_colour (val: u16) -> Colour {
-        let red_5bit = (val & 0b0000_0000_0001_1111) as u8;
-        let green_5bit = (val & 0b0000_0011_1110_0000 >> 5) as u8;
-        let blue_5bit = (val & 0b0111_1100_0000_0000 >> 10) as u8;
-        let red = red_5bit << 3 | red_5bit >> 2;
-        let green = green_5bit << 3 | green_5bit >> 2;
-        let blue = blue_5bit << 3 | blue_5bit >> 2;
+        let mut red = ((val % 32) * 8) as u8;
+        red = red + red / 32;
+        let mut green = (((val / 32) % 32) * 8) as u8;
+        green = green + green / 32;
+        let mut blue = (((val / 1024) % 32) * 8) as u8;
+        blue = blue + blue / 32;
         Colour { red, green, blue }
     }
 

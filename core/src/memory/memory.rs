@@ -25,14 +25,14 @@ pub struct Memory {
     mbc: Box<dyn MBC>,
 
     // TODO: Move VRAM to GPU?
-    vram: VRam,
+    pub vram: VRam,
     // Includes all banks contiguously
     wram: Ram,
     // On DMG, this is always 1. On CGB, it's 1-7 inclusive
     upper_wram_bank: usize,
     hram: Ram,
     // Used in CGB mode only
-    palette_ram: PaletteRam,
+    pub palette_ram: PaletteRam,
 
     serial_cable: SerialCable,
 
@@ -111,7 +111,7 @@ impl Memory {
             WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
                 self.wram.read(address - WRAM_LOWER_BANK_START),
             WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
-                self.wram.read((self.upper_wram_bank * WRAM_BANK_SIZE) as u16 + address - WRAM_UPPER_BANK_START),
+                self.wram.bytes[self.upper_wram_bank * WRAM_BANK_SIZE + (address - WRAM_UPPER_BANK_START) as usize],
             // TODO: How does upper echo RAM work with CGB bank switching?
             ECHO_RAM_START ..= ECHO_RAM_END => self.read(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START)),
 
@@ -158,8 +158,10 @@ impl Memory {
 
             WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
                 self.wram.write(address - WRAM_LOWER_BANK_START, value),
+            // CGB WRAM is so big that upper bank addresses might not fit into a u16,
+            // so we'll do this directly with a usize
             WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
-                self.wram.write((self.upper_wram_bank * WRAM_BANK_SIZE) as u16 + address - WRAM_UPPER_BANK_START, value),
+                self.wram.bytes[self.upper_wram_bank * WRAM_BANK_SIZE + (address - WRAM_UPPER_BANK_START) as usize] = value,
             ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START), value),
 
             OAM_START ..= OAM_END => gpu.raw_write(address, value, ints),

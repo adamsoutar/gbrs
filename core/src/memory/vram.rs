@@ -6,10 +6,15 @@ pub struct VRam {
     cgb_features: bool,
     memory: Ram,
     pub bank: u16,
-    bg_map_attributes: BgMapAttributeTable
+    pub bg_map_attributes: BgMapAttributeTable
 }
 
 impl VRam {
+    pub fn read_arbitrary_bank(&self, bank: u16, address: u16) -> u8 {
+        let relative_address = address - VRAM_START;
+        self.memory.read(bank * VRAM_BANK_SIZE as u16 + relative_address)
+    }
+
     pub fn raw_read(&self, address: u16) -> u8 {
         if self.bank == 1 && address > VRAM_BG_MAP_START {
             return self.bg_map_attributes.read(address - VRAM_BG_MAP_START)

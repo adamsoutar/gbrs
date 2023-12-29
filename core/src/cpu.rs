@@ -767,7 +767,7 @@ impl Cpu {
             cart_info,
             regs: Registers::new(&emulation_target),
 
-            gpu: Gpu::new(),
+            gpu: Gpu::new(emulation_target.has_cgb_features()),
             frame_rate: DEFAULT_FRAME_RATE,
 
             ints: Interrupts::new(),
@@ -790,7 +790,7 @@ impl Cpu {
             cart_info,
             regs: Registers::new(&emulation_target),
 
-            gpu: Gpu::new(),
+            gpu: Gpu::new(emulation_target.has_cgb_features()),
             frame_rate: DEFAULT_FRAME_RATE,
 
             ints: Interrupts::new(),

@@ -55,8 +55,12 @@ pub struct BgMapAttributeTable {
 }
 
 impl BgMapAttributeTable {
+    pub fn get_entry (&self, address: u16) -> BgMapAttributeEntry {
+        self.entries[address as usize]
+    }
+
     pub fn read (&self, address: u16) -> u8 {
-        self.entries[address as usize].as_u8()
+        self.get_entry(address).as_u8()
     }
 
     pub fn write(&mut self, address: u16, value: u8) {

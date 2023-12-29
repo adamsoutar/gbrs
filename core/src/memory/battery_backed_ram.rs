@@ -22,8 +22,17 @@ impl BatteryBackedRam {
         self.ram.read(address)
     }
 
+    pub fn read_usize(&self, address: usize) -> u8 {
+        self.ram.bytes[address]
+    }
+
     pub fn write(&mut self, address: u16, value: u8) {
         self.ram.write(address, value);
+        self.changed_since_last_save = true;
+    }
+
+    pub fn write_usize(&mut self, address: usize, value: u8) {
+        self.ram.bytes[address] = value;
         self.changed_since_last_save = true;
     }
 

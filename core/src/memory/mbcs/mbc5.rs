@@ -5,7 +5,7 @@ use crate::memory::mbcs::MBC;
 use crate::memory::rom::Rom;
 
 // 8KB (one RAM bank) in bytes
-pub const KB_8: u16 = 8_192;
+pub const KB_8: usize = 8_192;
 // 16KB (one ROM bank) in bytes
 pub const KB_16: usize = 16_384;
 
@@ -62,13 +62,13 @@ impl MBC for MBC5 {
             log!("[WARN] MBC5 RAM read while disabled");
         }
 
-        let banked_address = address + self.ram_bank as u16 * KB_8;
+        let banked_address = address as usize + self.ram_bank as usize * KB_8;
 
-        if banked_address as usize >= self.ram.size {
+        if banked_address >= self.ram.size {
             return 0xFF;
         }
 
-        self.ram.read(banked_address)
+        self.ram.read_usize(banked_address)
     }
 
     fn ram_write(&mut self, address: u16, value: u8) {
@@ -78,13 +78,13 @@ impl MBC for MBC5 {
             self.has_shown_ram_warning = true;
         }
 
-        let banked_address = address + self.ram_bank as u16 * KB_8;
+        let banked_address = address as usize + self.ram_bank as usize * KB_8;
 
-        if banked_address as usize >= self.ram.size {
+        if banked_address >= self.ram.size {
             return;
         }
 
-        self.ram.write(banked_address, value)
+        self.ram.write_usize(banked_address, value)
     }
 
     fn step(&mut self, ms_since_boot: usize) {

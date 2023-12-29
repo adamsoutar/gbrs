@@ -1,4 +1,5 @@
-use crate::{cpu::EmulationTarget, memory::ram::Ram};
+use crate::{cpu::EmulationTarget, memory::ram::Ram, combine_u8};
+use super::colour::Colour;
 
 fn palette_spec_read (address: u16, auto_increment: bool) -> u8 {
     // This should never be higher than 64 anyway, but let's be safe
@@ -33,6 +34,17 @@ pub struct PaletteRam {
 }
 
 impl PaletteRam {
+    fn read_colour (&self, ram: &Ram, address: u16) -> Colour {
+        let col0 = ram.read(address);
+        let col1 = ram.read(address + 1);
+        Colour::from_16_bit_colour(combine_u8!(col1, col0))
+    }
+
+    pub fn get_obj_palette_colour (&self, palette_id: u16, colour_id: u16) -> Colour {
+        let base_offset = 8 * palette_id;
+        self.read_colour(&self.obj_palette_ram, base_offset + colour_id * 2)
+    }
+
     pub fn raw_read(&self, address: u16) -> u8 {
         if !self.cgb_features { return 0xFF; }
 
