@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 libretro-rs = "0.1.3"
-gbrs-core = { path = "../core" }
+gbrs-core = { path = "../core", features = ["sound"], default-features = false }
 
 [lib]
 crate-type = ["cdylib"]

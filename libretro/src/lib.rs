@@ -3,7 +3,8 @@ use gbrs_core::cpu::Cpu;
 use libretro_rs::*;
 
 struct LibretroCore {
-    gameboy: Option<Cpu>
+    gameboy: Option<Cpu>,
+    last_rom_data: Vec<u8>
 }
 
 impl LibretroCore {
@@ -16,14 +17,18 @@ impl RetroCore for LibretroCore {
     fn init(_: &RetroEnvironment) -> Self {
         LibretroCore {
             gameboy: None,
+            last_rom_data: vec![]
         }
     }
 
     fn get_system_info() -> RetroSystemInfo {
-        RetroSystemInfo::new("gbrs", env!("CARGO_PKG_VERSION"))
+        let info = RetroSystemInfo::new("gbrs", env!("CARGO_PKG_VERSION"));
+        info.with_valid_extensions(&vec!["gb", "gbc"])
     }
 
-    fn reset(&mut self, _: &libretro_rs::RetroEnvironment) { todo!() }
+    fn reset(&mut self, _: &libretro_rs::RetroEnvironment) {
+        self.gameboy = Some(Cpu::from_rom_bytes(self.last_rom_data.clone()));
+    }
 
     fn run(&mut self, environment: &libretro_rs::RetroEnvironment, runtime: &RetroRuntime) {
         let gb = self.gameboy.as_mut().unwrap();
@@ -66,6 +71,7 @@ impl RetroCore for LibretroCore {
                 panic!("Asked to load RetroGame::None")
             },
             RetroGame::Data { meta: _, data } => {
+                self.last_rom_data = data.to_vec();
                 self.gameboy = Some(Cpu::from_rom_bytes(data.to_vec()));
                 environment.set_pixel_format(RetroPixelFormat::XRGB8888);
                 RetroLoadGameResult::Success {
