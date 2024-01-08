@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libretro-rs = "0.1.3"
+libretro-rs = { git = "https://github.com/libretro-rs/libretro-rs.git", features = ["experimental"] }
 gbrs-core = { path = "../core", features = ["sound"], default-features = false }
 
 [lib]
