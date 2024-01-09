@@ -40,19 +40,18 @@ pub static mut CALLBACKS: Callbacks = Callbacks {
         fs::write(&save_path, save_data).expect("Failed to write save file");
     },
     load: |_game_name, rom_path, expected_size| {
-        vec![0; expected_size]
-        // let save_path = get_save_file_path(rom_path);
-        // let mut buffer = vec![];
-        // let file_result = fs::File::open(save_path);
+        let save_path = get_save_file_path(rom_path);
+        let mut buffer = vec![];
+        let file_result = fs::File::open(save_path);
 
-        // if let Ok(mut file) = file_result {
-        //     file.read_to_end(&mut buffer)
-        //         .expect("Unable to read save file");
-        //     buffer
-        // } else {
-        //     // The save file likely does not exist
-        //     vec![0; expected_size]
-        // }
+        if let Ok(mut file) = file_result {
+            file.read_to_end(&mut buffer)
+                .expect("Unable to read save file");
+            buffer
+        } else {
+            // The save file likely does not exist
+            vec![0; expected_size]
+        }
     }
 };
 
