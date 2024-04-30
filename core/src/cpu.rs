@@ -5,14 +5,8 @@ use crate::registers::Registers;
 use crate::interrupts::*;
 use crate::gpu::Gpu;
 use crate::cartridge::{Cartridge, CGBSupportType};
-use crate::memory::rom::Rom;
+use crate::config::Config;
 use crate::log;
-
-#[cfg(not(feature = "std"))]
-use alloc::{
-    string::String,
-    vec::Vec
-};
 
 const BREAKPOINTS: [u16; 0] = [];
 const CPU_DEBUG: bool = false;
@@ -756,37 +750,12 @@ impl Cpu {
         }
     }
 
-    #[cfg(feature = "std")]
-    pub fn from_rom_file (rom_path: String) -> Cpu {
-        let rom = Rom::from_file(&rom_path);
-        let cart_info = Cartridge::parse(&rom.bytes, rom_path);
+    pub fn from_config (config: Config) -> Cpu {
+        let cart_info = Cartridge::parse(&config.rom.bytes, config.rom.path.clone());
         let emulation_target = emulation_target_for_cart_info(&cart_info);
 
         Cpu {
-            mem: Memory::from_info(cart_info.clone(), rom, &emulation_target),
-            cart_info,
-            regs: Registers::new(&emulation_target),
-
-            gpu: Gpu::new(emulation_target.has_cgb_features()),
-            frame_rate: DEFAULT_FRAME_RATE,
-
-            ints: Interrupts::new(),
-            ime_on_pending: false,
-
-            ms_since_boot: 0,
-            clock_counter: 0,
-
-            halted: false
-        }
-    }
-
-    pub fn from_rom_bytes (bytes: Vec<u8>) -> Cpu {
-        let rom = Rom::from_bytes(bytes);
-        let cart_info = Cartridge::parse(&rom.bytes, String::from("bytes.gb"));
-        let emulation_target = emulation_target_for_cart_info(&cart_info);
-
-        Cpu {
-            mem: Memory::from_info(cart_info.clone(), rom, &emulation_target),
+            mem: Memory::from_info(cart_info.clone(), config.rom, &emulation_target),
             cart_info,
             regs: Registers::new(&emulation_target),
 

@@ -5,10 +5,15 @@ use std::{
 };
 
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
+use alloc::{
+    vec::Vec,
+    string::String
+};
 
+#[derive(Clone)]
 pub struct Rom {
-    pub bytes: Vec<u8>
+    pub bytes: Vec<u8>,
+    pub path: String
 }
 
 impl Rom {
@@ -24,13 +29,15 @@ impl Rom {
         file.read_to_end(&mut buffer).expect("Unable to read ROM file");
 
         Rom {
-            bytes: buffer
+            bytes: buffer,
+            path: path.to_string()
         }
     }
 
     pub fn from_bytes (bytes: Vec<u8>) -> Rom {
         Rom {
-            bytes
+            bytes,
+            path: String::new()
         }
     }
 }

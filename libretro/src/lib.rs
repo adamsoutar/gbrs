@@ -1,5 +1,7 @@
 use gbrs_core::constants::*;
 use gbrs_core::cpu::Cpu;
+use gbrs_core::config::Config;
+use gbrs_core::memory::rom::Rom;
 use libretro_rs::c_utf8::c_utf8;
 use libretro_rs::retro::env::{Init, UnloadGame};
 use libretro_rs::retro::pixel::{Format, XRGB8888};
@@ -8,7 +10,7 @@ use libretro_rs::{ext, libretro_core};
 
 struct LibretroCore {
     gameboy: Cpu,
-    last_rom_data: Vec<u8>,
+    last_cpu_config: Config,
     rendering_mode: SoftwareRenderEnabled,
     frame_buffer: [XRGB8888; SCREEN_WIDTH * SCREEN_HEIGHT],
     pixel_format: Format<XRGB8888>,
@@ -85,17 +87,22 @@ impl<'a> Core<'a> for LibretroCore {
       } = args;
       let pixel_format = env.set_pixel_format_xrgb8888(pixel_format)?;
       let data: &[u8] = game.as_data().ok_or(CoreError::new())?.data();
+      let config = Config {
+          sound_buffer_size: SOUND_BUFFER_SIZE,
+          sound_sample_rate: SOUND_SAMPLE_RATE,
+          rom: Rom::from_bytes(data.to_vec())
+      };
       Ok(Self {
         rendering_mode,
         pixel_format,
-        gameboy: Cpu::from_rom_bytes(data.to_vec()),
-        last_rom_data: data.to_vec(),
+        gameboy: Cpu::from_config(config.clone()),
+        last_cpu_config: config,
         frame_buffer: [XRGB8888::DEFAULT; SCREEN_WIDTH * SCREEN_HEIGHT],
       })
     }
 
     fn reset(&mut self, _env: &mut impl env::Reset) {
-      self.gameboy = Cpu::from_rom_bytes(self.last_rom_data.clone());
+      self.gameboy = Cpu::from_config(self.last_cpu_config.clone());
     }
 
     fn unload_game(self, _env: &mut impl UnloadGame) -> Self::Init {
