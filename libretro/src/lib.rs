@@ -46,9 +46,9 @@ impl<'a> Core<'a> for LibretroCore {
             let r = gb.gpu.finished_frame[i].red;
             let g = gb.gpu.finished_frame[i].green;
             let b = gb.gpu.finished_frame[i].blue;
-            pixel |= r as u32;
+            pixel |= b as u32;
             pixel |= (g as u32) << 8;
-            pixel |= (b as u32) << 16;
+            pixel |= (r as u32) << 16;
             self.frame_buffer[i] = XRGB8888::new_with_raw_value(pixel);
         }
 
