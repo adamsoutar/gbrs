@@ -1,3 +1,5 @@
+use crate::cgb_dma::CgbDmaConfig;
+use crate::cgb_dma::CgbDmaType;
 use crate::colour::colour::Colour;
 use crate::colour::grey_shades;
 use crate::colour::grey_shades::colour_from_grey_shade_id;
@@ -69,9 +71,7 @@ pub struct Gpu {
     dma_source: u8,
     dma_cycles: u8,
 
-    cgb_dma_source: u16,
-    cgb_dma_dest: u16,
-    cgb_dma_cycles: u16,
+    cgb_dma: CgbDmaConfig,
 
     // The global 40-sprite OAM cache
     // SmallVec doesn't do blocks of 40 so we leave 24 empty slots, it's still
@@ -131,10 +131,11 @@ impl Gpu {
             // Space Invaders writes here. As a bug?
             0xFF44 => {},
 
-            0xFF51 => self.cgb_dma_source = (self.cgb_dma_source & 0x0F) | ((value as u16) << 8),
-            0xFF52 => self.cgb_dma_source = (self.cgb_dma_source & 0xF0) | (value as u16),
-            0xFF53 => self.cgb_dma_dest = (self.cgb_dma_dest & 0x0F) | ((value as u16) << 8),
-            0xFF54 => self.cgb_dma_dest = (self.cgb_dma_dest & 0xF0) | (value as u16),
+            0xFF51 => self.cgb_dma.set_source_upper(value),
+            0xFF52 => self.cgb_dma.set_source_lower(value),
+            0xFF53 => self.cgb_dma.set_dest_upper(value),
+            0xFF54 => self.cgb_dma.set_dest_lower(value),
+            0xFF55 => self.cgb_dma.set_config_byte(value),
 
             _ => panic!("Unsupported GPU write at {:#06x} (value: {:#04x})", raw_address, value)
         }
@@ -160,10 +161,11 @@ impl Gpu {
             0xFF49 => self.sprite_pallete_2,
 
             // High and low bits of a 16-bit register
-            0xFF51 => (self.cgb_dma_source >> 8) as u8,
-            0xFF52 => (self.cgb_dma_source & 0xFF) as u8,
-            0xFF53 => (self.cgb_dma_dest >> 8) as u8,
-            0xFF54 => (self.cgb_dma_dest & 0xFF) as u8,
+            0xFF51 => self.cgb_dma.get_source_upper(),
+            0xFF52 => self.cgb_dma.get_source_lower(),
+            0xFF53 => self.cgb_dma.get_dest_upper(),
+            0xFF54 => self.cgb_dma.get_dest_lower(),
+            0xFF55 => self.cgb_dma.get_config_byte(),
 
             _ => { log!("Unsupported GPU read at {:#06x}", raw_address); 0xFF }
         }
@@ -217,7 +219,23 @@ impl Gpu {
         self.dma_cycles = gpu_timing::DMA_CYCLES;
     }
 
+    fn update_cgb_dma(&mut self, ints: &mut Interrupts, mem: &mut Memory) {
+        if self.cgb_dma.bytes_left > 0 {
+            if self.cgb_dma.dma_type == CgbDmaType::HBlank {
+                log!("[WARN] CGB HBlank DMA requested but not implemented, treating as GeneralPurpose");
+            }
+
+            for i in 0..self.cgb_dma.bytes_left {
+                let value = mem.read(ints, self, self.cgb_dma.source + i);
+                mem.write(ints, self, self.cgb_dma.dest + i, value);
+            }
+            self.cgb_dma.bytes_left = 0;
+        }
+    }
+
     fn update_dma (&mut self, ints: &mut Interrupts, mem: &mut Memory) {
+        if self.cgb_features { self.update_cgb_dma(ints, mem) }
+
         // There isn't one pending
         if self.dma_cycles == 0 { return; }
 
@@ -603,7 +621,7 @@ impl Gpu {
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
             dma_source: 0, dma_cycles: 0,
-            cgb_dma_source: 0, cgb_dma_dest: 0, cgb_dma_cycles: 0,
+            cgb_dma: CgbDmaConfig::new(),
             sprite_cache: SmallVec::with_capacity(40),
             sprites_on_line: SmallVec::with_capacity(10)
         }

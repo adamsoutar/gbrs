@@ -23,3 +23,4 @@ pub mod serial_cable;
 pub mod colour; // innit bruv
 pub mod alu;
 pub mod config;
+pub mod cgb_dma;
