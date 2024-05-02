@@ -69,6 +69,10 @@ pub struct Gpu {
     dma_source: u8,
     dma_cycles: u8,
 
+    cgb_dma_source: u16,
+    cgb_dma_dest: u16,
+    cgb_dma_cycles: u16,
+
     // The global 40-sprite OAM cache
     // SmallVec doesn't do blocks of 40 so we leave 24 empty slots, it's still
     // more performant than allocating.
@@ -121,11 +125,16 @@ impl Gpu {
             0xFF4B => self.wx = value,
 
             // TODO: 0xFF4D "CGB Prepare Speed Switch" is in this range.
-            0xFF4C ..= 0xFF4E => log!("[WARN] Unknown LCD register write at {:#06x}", raw_address),
+            0xFF4C ..= 0xFF4E => log!("[WARN] Unknown LCD register write at {:#06x} (value: {:#04x})", raw_address, value),
 
             // The Y Scanline is read only.
             // Space Invaders writes here. As a bug?
             0xFF44 => {},
+
+            0xFF51 => self.cgb_dma_source = (self.cgb_dma_source & 0x0F) | ((value as u16) << 8),
+            0xFF52 => self.cgb_dma_source = (self.cgb_dma_source & 0xF0) | (value as u16),
+            0xFF53 => self.cgb_dma_dest = (self.cgb_dma_dest & 0x0F) | ((value as u16) << 8),
+            0xFF54 => self.cgb_dma_dest = (self.cgb_dma_dest & 0xF0) | (value as u16),
 
             _ => panic!("Unsupported GPU write at {:#06x} (value: {:#04x})", raw_address, value)
         }
@@ -149,6 +158,13 @@ impl Gpu {
             0xFF47 => self.bg_pallette,
             0xFF48 => self.sprite_pallete_1,
             0xFF49 => self.sprite_pallete_2,
+
+            // High and low bits of a 16-bit register
+            0xFF51 => (self.cgb_dma_source >> 8) as u8,
+            0xFF52 => (self.cgb_dma_source & 0xFF) as u8,
+            0xFF53 => (self.cgb_dma_dest >> 8) as u8,
+            0xFF54 => (self.cgb_dma_dest & 0xFF) as u8,
+
             _ => { log!("Unsupported GPU read at {:#06x}", raw_address); 0xFF }
         }
     }
@@ -516,6 +532,7 @@ impl Gpu {
                 let line_we_need = suby as u16 * 2;
                 let bank = if self.cgb_features && sprite.use_upper_vram_bank { 1 } else { 0 };
                 let tile_address = tile_address + line_we_need;
+                // log!("Sprite at [{},{}] is using upper VRAM bank? {:?}, pattern_id {}, address: {:#06x}", sprite.x_pos, sprite.y_pos, sprite.use_upper_vram_bank, sprite.pattern_id, tile_address);
 
                 let tile_line0 = mem.vram.read_arbitrary_bank(bank, tile_address);
                 let tile_line1 = mem.vram.read_arbitrary_bank(bank, tile_address + 1);
@@ -586,6 +603,7 @@ impl Gpu {
             control: LcdControl::new(),
             oam: Ram::new(OAM_SIZE),
             dma_source: 0, dma_cycles: 0,
+            cgb_dma_source: 0, cgb_dma_dest: 0, cgb_dma_cycles: 0,
             sprite_cache: SmallVec::with_capacity(40),
             sprites_on_line: SmallVec::with_capacity(10)
         }

@@ -64,6 +64,9 @@ pub const HRAM_END: u16 = 0xFFFE;
 pub const LCD_DATA_START: u16 = 0xFF40;
 pub const LCD_DATA_END: u16 = 0xFF4E;
 
+pub const CGB_DMA_START: u16 = 0xFF51;
+pub const CGB_DMA_END: u16 = 0xFF55;
+
 pub const CGB_PALETTE_DATA_START: u16 = 0xFF68;
 pub const CGB_PALETTE_DATA_END: u16 = 0xFF6B;
 

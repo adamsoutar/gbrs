@@ -124,6 +124,7 @@ impl Memory {
             APU_START ..= APU_END => self.apu.read(address),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
+            CGB_DMA_START ..= CGB_DMA_END => gpu.raw_read(address),
             CGB_PALETTE_DATA_START ..= CGB_PALETTE_DATA_END => self.palette_ram.raw_read(address),
             HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
 
@@ -174,6 +175,7 @@ impl Memory {
             APU_START ..= APU_END => self.apu.write(address, value),
 
             LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value, ints),
+            CGB_DMA_START ..= CGB_DMA_END => gpu.raw_write(address, value, ints),
             CGB_PALETTE_DATA_START ..= CGB_PALETTE_DATA_END => self.palette_ram.raw_write(address, value),
             HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
 
