@@ -20,7 +20,7 @@ impl CgbDmaConfig {
         } else {
             CgbDmaType::GeneralPurpose
         };
-        self.bytes_left = (value & 0x7F) as u16 * 0x10 + 1;
+        self.bytes_left = ((value & 0x7F) + 1) as u16 * 0x10;
     }
     pub fn get_config_byte(&self) -> u8 {
         // let top_bit = match self.dma_type {
