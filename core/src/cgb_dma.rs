@@ -8,6 +8,7 @@ pub struct CgbDmaConfig {
     pub source: u16,
     pub dest: u16,
     pub dma_type: CgbDmaType,
+    pub bytes_copied: u16,
     pub bytes_left: u16,
     pub transfer_done: bool
 }
@@ -21,19 +22,18 @@ impl CgbDmaConfig {
             CgbDmaType::GeneralPurpose
         };
         self.bytes_left = ((value & 0x7F) + 1) as u16 * 0x10;
+        self.bytes_copied = 0;
     }
     pub fn get_config_byte(&self) -> u8 {
         if self.transfer_done {
             return 0xFF
         }
+        // TODO: Not sure this is quite the correct calculation
+        ((self.bytes_left / 0x10) - 1) as u8
+    }
 
-        // let top_bit = match self.dma_type {
-        //     CgbDmaType::HBlank => 0x80,
-        //     CgbDmaType::GeneralPurpose => 0x00
-        // };
-        // TODO: Because we don't currently support HBlank transfer, we will
-        //   always return a set bit 7, which means 'no transfer active'
-        0x80 | ((self.bytes_left - 1) / 0x10) as u8
+    pub fn is_hblank_dma(&self) -> bool {
+        self.dma_type == CgbDmaType::HBlank
     }
 
     pub fn get_source_upper(&self) -> u8 {
@@ -81,6 +81,7 @@ impl CgbDmaConfig {
             dest: 0,
             dma_type: CgbDmaType::GeneralPurpose,
             bytes_left: 0,
+            bytes_copied: 0,
             transfer_done: false
         }
     }

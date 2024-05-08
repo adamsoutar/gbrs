@@ -219,12 +219,8 @@ impl Gpu {
         self.dma_cycles = gpu_timing::DMA_CYCLES;
     }
 
-    fn update_cgb_dma(&mut self, ints: &mut Interrupts, mem: &mut Memory) {
-        if self.cgb_dma.bytes_left > 0 {
-            if self.cgb_dma.dma_type == CgbDmaType::HBlank {
-                log!("[WARN] CGB HBlank DMA requested but not implemented, treating as GeneralPurpose");
-            }
-
+    fn update_cgb_generic_dma(&mut self, ints: &mut Interrupts, mem: &mut Memory) {
+        if self.cgb_dma.bytes_left > 0 && !self.cgb_dma.is_hblank_dma() {
             for i in 0..self.cgb_dma.bytes_left {
                 let value = mem.read(ints, self, self.cgb_dma.source + i);
                 mem.write(ints, self, self.cgb_dma.dest + i, value);
@@ -233,8 +229,21 @@ impl Gpu {
         }
     }
 
+    fn update_cgb_hblank_dma(&mut self, ints: &mut Interrupts, mem: &mut Memory) {
+        if self.cgb_dma.bytes_left > 0 && self.cgb_dma.is_hblank_dma() {
+            for i in 0..0x10 {
+                // TODO: This shouldn't be called, all DMAs are a multiple of 0x10 long
+                if self.cgb_dma.bytes_left == 0 { break }
+                let value = mem.read(ints, self, self.cgb_dma.source + self.cgb_dma.bytes_copied + i);
+                mem.write(ints, self, self.cgb_dma.dest + self.cgb_dma.bytes_copied + i, value);
+            }
+            self.cgb_dma.bytes_left -= 0x10;
+            self.cgb_dma.bytes_copied += 0x10;
+        }
+    }
+
     fn update_dma (&mut self, ints: &mut Interrupts, mem: &mut Memory) {
-        if self.cgb_features { self.update_cgb_dma(ints, mem) }
+        if self.cgb_features { self.update_cgb_generic_dma(ints, mem) }
 
         // There isn't one pending
         if self.dma_cycles == 0 { return; }
@@ -345,6 +354,7 @@ impl Gpu {
         }
 
         if self.lx == gpu_timing::HBLANK_ON {
+            self.update_cgb_hblank_dma(ints, mem);
             if self.status.hblank_interrupt {
                 ints.raise_interrupt(InterruptReason::LCDStat)
             }
