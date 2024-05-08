@@ -62,7 +62,7 @@ pub const HRAM_START: u16 = 0xFF80;
 pub const HRAM_END: u16 = 0xFFFE;
 
 pub const LCD_DATA_START: u16 = 0xFF40;
-pub const LCD_DATA_END: u16 = 0xFF4E;
+pub const LCD_DATA_END: u16 = 0xFF4C;
 
 pub const CGB_DMA_START: u16 = 0xFF51;
 pub const CGB_DMA_END: u16 = 0xFF55;
@@ -72,6 +72,9 @@ pub const CGB_PALETTE_DATA_END: u16 = 0xFF6B;
 
 pub const INTERRUPT_ENABLE_ADDRESS: u16 = 0xFFFF;
 pub const INTERRUPT_FLAG_ADDRESS: u16 = 0xFF0F;
+
+pub const HALT_INSTRUCTION_OPCODE: u8 = 0x76;
+pub const SPEED_SWITCH_HALT_CYCLES: usize = 8200;
 
 pub mod gpu_timing {
     // Total line size incl. HBlank

@@ -4,3 +4,4 @@ pub mod memory;
 pub mod mbcs;
 pub mod battery_backed_ram;
 pub mod vram;
+pub mod cgb_speed_switch;

@@ -2,6 +2,7 @@ use crate::constants::*;
 use crate::cpu::EmulationTarget;
 use crate::memory::ram::Ram;
 use crate::memory::rom::Rom;
+use crate::memory::cgb_speed_switch::CgbSpeedSwitch;
 use crate::gpu::Gpu;
 use crate::interrupts::*;
 use crate::{split_u16, combine_u8};
@@ -48,7 +49,8 @@ pub struct Memory {
 
     pub joypad: Joypad,
 
-    pub apu: APU
+    pub apu: APU,
+    pub speed_switch: CgbSpeedSwitch
 }
 
 impl Memory {
@@ -136,6 +138,8 @@ impl Memory {
             0xFF06 => self.timer_modulo,
             0xFF07 => self.timer_control,
 
+            0xFF4D => self.speed_switch.read_switch_byte(),
+
             0xFF4F => self.vram.bank as u8,
 
             0xFF70 => self.upper_wram_bank as u8,
@@ -188,6 +192,8 @@ impl Memory {
             0xFF06 => self.timer_modulo = value,
             0xFF07 => self.timer_control = value,
 
+            0xFF4D => self.speed_switch.write_switch_byte(value),
+
             // VRAM bank select
             0xFF4F => self.vram.bank_write(value),
 
@@ -238,7 +244,8 @@ impl Memory {
             timer_control: 0b00000010,
             timer_modulo: 0,
             joypad: Joypad::new(),
-            apu: APU::new()
+            apu: APU::new(),
+            speed_switch: CgbSpeedSwitch::new(cgb_features)
         }
     }
 }

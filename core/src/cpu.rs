@@ -315,6 +315,18 @@ impl Cpu {
                     4
                 }
 
+                // STOP
+                0b00010000 => {
+                    if self.mem.speed_switch.armed {
+                        self.mem.speed_switch.execute_speed_switch();
+                        // CPU halts for a really long time during speed switch
+                        SPEED_SWITCH_HALT_CYCLES
+                    } else {
+                        log!("[WARN] STOP with un-armed CGB Speed Switch. Not used in commercial games.");
+                        4
+                    }
+                }
+
                 // JR N
                 0b00011000 => {
                     // The displacement is signed
@@ -415,7 +427,7 @@ impl Cpu {
                     let reg_val = self.get_singular_register(v_d_alt);
                     self.set_singular_register(v_d, reg_val);
 
-                    if op == 0b01110110 {
+                    if op == HALT_INSTRUCTION_OPCODE {
                         self.halted = true;
                         return 4;
                     }

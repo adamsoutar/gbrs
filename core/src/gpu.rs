@@ -113,6 +113,9 @@ impl Gpu {
             0xFF41 => self.status.set_data(value, ints),
             0xFF42 => self.scy = value,
             0xFF43 => self.scx = value,
+            // The Y Scanline is read only.
+            // Space Invaders writes here. As a bug?
+            0xFF44 => {},
             0xFF45 => self.lyc = value,
 
             0xFF46 => self.begin_dma(value),
@@ -124,12 +127,7 @@ impl Gpu {
             0xFF4A => self.wy = value,
             0xFF4B => self.wx = value,
 
-            // TODO: 0xFF4D "CGB Prepare Speed Switch" is in this range.
-            0xFF4C ..= 0xFF4E => log!("[WARN] Unknown LCD register write at {:#06x} (value: {:#04x})", raw_address, value),
-
-            // The Y Scanline is read only.
-            // Space Invaders writes here. As a bug?
-            0xFF44 => {},
+            0xFF4C => log!("[WARN] Unknown LCD register write at {:#06x} (value: {:#04x})", raw_address, value),
 
             0xFF51 => self.cgb_dma.set_source_upper(value),
             0xFF52 => self.cgb_dma.set_source_lower(value),
