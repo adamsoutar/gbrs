@@ -1,5 +1,3 @@
-use crate::log;
-
 #[derive(Debug, PartialEq)]
 pub enum CgbDmaType {
     GeneralPurpose,
@@ -11,10 +9,12 @@ pub struct CgbDmaConfig {
     pub dest: u16,
     pub dma_type: CgbDmaType,
     pub bytes_left: u16,
+    pub transfer_done: bool
 }
 
 impl CgbDmaConfig {
     pub fn set_config_byte(&mut self, value: u8) {
+        self.transfer_done = false;
         self.dma_type = if value & 0x80 == 0x80 {
             CgbDmaType::HBlank
         } else {
@@ -23,6 +23,10 @@ impl CgbDmaConfig {
         self.bytes_left = ((value & 0x7F) + 1) as u16 * 0x10;
     }
     pub fn get_config_byte(&self) -> u8 {
+        if self.transfer_done {
+            return 0xFF
+        }
+
         // let top_bit = match self.dma_type {
         //     CgbDmaType::HBlank => 0x80,
         //     CgbDmaType::GeneralPurpose => 0x00
@@ -77,6 +81,7 @@ impl CgbDmaConfig {
             dest: 0,
             dma_type: CgbDmaType::GeneralPurpose,
             bytes_left: 0,
+            transfer_done: false
         }
     }
 }
