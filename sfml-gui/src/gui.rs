@@ -115,7 +115,7 @@ pub fn run_gui (mut gameboy: Cpu) {
             }));
             match &mut SOUND {
                 Some(sound) => {
-                    sound.set_volume(0.);
+                    // sound.set_volume(0.);
                     sound.play();
                     while sound.status() == SoundStatus::PLAYING {
                         if !gameboy.mem.apu.buffer_full {

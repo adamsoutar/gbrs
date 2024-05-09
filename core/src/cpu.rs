@@ -172,7 +172,10 @@ impl Cpu {
     // Runs enough steps to be ready to render one frame
     // (GUI implementations should get the frame from gpu.finished_frame)
     pub fn step_one_frame (&mut self) -> usize {
-        let cycles_per_frame = CLOCK_SPEED / self.frame_rate;
+        let mut cycles_per_frame = CLOCK_SPEED / self.frame_rate;
+        if self.mem.speed_switch.current_speed_is_double {
+            cycles_per_frame *= 2;
+        }
 
         let mut cycles = 0;
         while cycles < cycles_per_frame {
@@ -198,7 +201,29 @@ impl Cpu {
         cycles
     }
 
-    pub fn step (&mut self) -> usize {
+    pub fn step(&mut self) -> usize {
+        let mut cycles = self.single_speed_step();
+        if self.mem.speed_switch.current_speed_is_double {
+            cycles += self.single_speed_step();
+        }
+        let half_speed_cycles = match self.mem.speed_switch.current_speed_is_double {
+            true => cycles / 2,
+            false => cycles
+        };
+
+        for _ in 0..half_speed_cycles {
+            self.gpu.step(&mut self.ints, &mut self.mem);
+            // Sound processing can take up to 40% of runtime
+            // Some ports don't even support sound output, so we'll allow them to
+            // turn off this waste of time
+            #[cfg(feature = "sound")]
+            self.mem.apu.step();
+        }
+
+        cycles
+    }
+
+    pub fn single_speed_step (&mut self) -> usize {
         let p = self.ime_on_pending;
 
         let cycles: usize;
@@ -663,10 +688,6 @@ impl Cpu {
         }
 
         self.mem.step(cycles, &mut self.ints, self.ms_since_boot);
-
-        for _ in 0..cycles {
-            self.gpu.step(&mut self.ints, &mut self.mem);
-        }
 
         self.process_interrupts();
 

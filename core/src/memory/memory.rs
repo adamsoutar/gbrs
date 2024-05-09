@@ -90,14 +90,6 @@ impl Memory {
         self.serial_cable.step(ints, cycles);
 
         self.mbc.step(ms_since_boot);
-
-        // Sound processing can take up to 40% of runtime
-        // Some ports don't even support sound output, so we'll allow them to
-        // turn off this waste of time
-        #[cfg(feature = "sound")]
-        for _ in 0..cycles {
-            self.apu.step();
-        }
     }
 
     #[inline(always)]
