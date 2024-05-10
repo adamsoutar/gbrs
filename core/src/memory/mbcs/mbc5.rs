@@ -35,8 +35,6 @@ impl MBC for MBC5 {
                 self.ram_enabled = (value & 0x0A) == 0x0A;
             },
             0x2000..=0x2FFF => {
-                // TODO: Are bank numbers masked to the max bank number?
-
                 // No zero check. You can map bank 0 twice on MBC5.
                 self.rom_bank =
                     (self.rom_bank & 0b0000_0001_0000_0000) | (value as u16);
@@ -101,12 +99,7 @@ impl MBC5 {
     }
 
     pub fn new(cart_info: Cartridge, rom: Rom) -> Self {
-        // TODO: Banked RAM
-        if cart_info.ram_size > 8_192 {
-            panic!("gbrs doesn't support banked (>=32K) MBC5 RAM");
-        }
-
-        let has_battery = cart_info.cart_type == 0x03;
+        let has_battery = cart_info.cart_type == 0x1B || cart_info.cart_type == 0x1E;
         MBC5 {
             rom,
             rom_bank: 1,
