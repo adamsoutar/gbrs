@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq)]
-pub enum CgbDmaType {
+enum CgbDmaType {
     GeneralPurpose,
     HBlank,
 }
@@ -7,7 +7,7 @@ pub enum CgbDmaType {
 pub struct CgbDmaConfig {
     pub source: u16,
     pub dest: u16,
-    pub dma_type: CgbDmaType,
+    dma_type: CgbDmaType,
     pub bytes_copied: u16,
     pub bytes_left: u16,
     pub transfer_done: bool,

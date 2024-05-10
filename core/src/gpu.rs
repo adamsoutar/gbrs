@@ -443,17 +443,22 @@ impl Gpu {
         let idx = uy * SCREEN_WIDTH + ux;
 
         let bg_col: Colour;
+        let priority: bool;
         let bg_col_id = if self.cgb_features || self.control.bg_display {
-            let (new_col, id) = self.get_background_colour_at(ints, mem, x, y);
+            let (new_col, id, prio) =
+                self.get_background_colour_at(ints, mem, x, y);
             bg_col = new_col;
+            priority = prio;
             id
         } else {
             bg_col = grey_shades::white();
+            priority = false;
             0
         };
 
         // If there's a non-transparent sprite here, use its colour
-        let s_col = self.get_sprite_colour_at(mem, bg_col, bg_col_id, x, y);
+        let s_col =
+            self.get_sprite_colour_at(mem, bg_col, bg_col_id, priority, x, y);
 
         self.frame[idx] = s_col;
     }
@@ -488,7 +493,7 @@ impl Gpu {
         mem: &Memory,
         x: u8,
         y: u8,
-    ) -> (Colour, u16) {
+    ) -> (Colour, u16, bool) {
         let is_window = self.control.window_enable
             && x as isize > self.wx as isize - 8
             && y >= self.wy;
@@ -525,7 +530,10 @@ impl Gpu {
 
         let byte_offset = ty * 32 + tx;
         let tilemap_address = tilemap_base + byte_offset;
-        let tile_metadata = mem.vram.bg_map_attributes.get_entry(byte_offset);
+        let tile_metadata = mem
+            .vram
+            .bg_map_attributes
+            .get_entry(tilemap_address - VRAM_BG_MAP_START);
 
         let tile_id_raw = mem.read(ints, self, tilemap_address);
         let tile_id: u16;
@@ -574,11 +582,12 @@ impl Gpu {
             let colour = mem
                 .palette_ram
                 .get_bg_palette_colour(tile_metadata.palette as u16, col_id);
-            (colour, col_id)
+            (colour, col_id, tile_metadata.priority)
         } else {
             (
                 self.get_shade_from_colour_id(col_id, self.bg_pallette),
                 col_id,
+                false,
             )
         }
     }
@@ -588,6 +597,7 @@ impl Gpu {
         mem: &Memory,
         bg_col: Colour,
         bg_col_id: u16,
+        bg_priority: bool,
         x: u8,
         y: u8,
     ) -> Colour {
@@ -606,8 +616,9 @@ impl Gpu {
         for sprite in &self.sprites_on_line {
             let mut above_bg = sprite.above_bg;
             // In CGB mode, bg_display off means sprites always get priority.
-            if self.cgb_features && !self.control.bg_display {
-                above_bg = true;
+            if self.cgb_features {
+                above_bg =
+                    !self.control.bg_display || (!bg_priority && above_bg);
             }
 
             if sprite.x_pos <= ix
