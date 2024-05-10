@@ -14,6 +14,7 @@ use smallvec::SmallVec;
 
 #[derive(Clone)]
 pub struct Sprite {
+    pub oam_position: u16,
     pub y_pos: i32,
     pub x_pos: i32,
     pub pattern_id: u8,
@@ -25,7 +26,7 @@ pub struct Sprite {
 
     // CGB-specific attributes
     pub use_upper_vram_bank: bool,
-    pub cgb_palette: u8,
+    pub cgb_palette: u8
 }
 
 pub struct Gpu {
@@ -80,6 +81,10 @@ pub struct Gpu {
     // TODO: These come straight from sprite_cache. Maybe they can be &Sprite?
     //   Would that be faster?
     sprites_on_line: SmallVec<[Sprite; 10]>,
+
+    // True = Sprites are prioritised only by lower OAM position
+    // False = Sprites are first prioritised by lower X coordinate, then the above
+    cgb_style_obj_conflict: bool
 }
 
 impl Gpu {
@@ -90,7 +95,7 @@ impl Gpu {
         &mut self,
         raw_address: u16,
         value: u8,
-        ints: &mut Interrupts,
+        ints: &mut Interrupts
     ) {
         match raw_address {
             OAM_START..=OAM_END => {
@@ -151,7 +156,7 @@ impl Gpu {
             _ => panic!(
                 "Unsupported GPU write at {:#06x} (value: {:#04x})",
                 raw_address, value
-            ),
+            )
         }
     }
     pub fn raw_read(&self, raw_address: u16) -> u8 {
@@ -184,7 +189,7 @@ impl Gpu {
             _ => {
                 log!("Unsupported GPU read at {:#06x}", raw_address);
                 0xFF
-            },
+            }
         }
     }
 
@@ -208,6 +213,7 @@ impl Gpu {
 
             if self.sprite_cache.len() > i {
                 self.sprite_cache[i] = Sprite {
+                    oam_position: address,
                     y_pos,
                     x_pos,
                     pattern_id,
@@ -216,10 +222,11 @@ impl Gpu {
                     x_flip,
                     use_palette_0,
                     use_upper_vram_bank,
-                    cgb_palette,
+                    cgb_palette
                 };
             } else {
                 self.sprite_cache.push(Sprite {
+                    oam_position: address,
                     y_pos,
                     x_pos,
                     pattern_id,
@@ -228,7 +235,7 @@ impl Gpu {
                     x_flip,
                     use_palette_0,
                     use_upper_vram_bank,
-                    cgb_palette,
+                    cgb_palette
                 });
             }
 
@@ -251,7 +258,7 @@ impl Gpu {
     fn update_cgb_generic_dma(
         &mut self,
         ints: &mut Interrupts,
-        mem: &mut Memory,
+        mem: &mut Memory
     ) {
         if self.cgb_dma.bytes_left > 0 && !self.cgb_dma.is_hblank_dma() {
             for i in 0..self.cgb_dma.bytes_left {
@@ -265,7 +272,7 @@ impl Gpu {
     fn update_cgb_hblank_dma(
         &mut self,
         ints: &mut Interrupts,
-        mem: &mut Memory,
+        mem: &mut Memory
     ) {
         if self.cgb_dma.bytes_left > 0 && self.cgb_dma.is_hblank_dma() {
             for i in 0..0x10 {
@@ -276,13 +283,13 @@ impl Gpu {
                 let value = mem.read(
                     ints,
                     self,
-                    self.cgb_dma.source + self.cgb_dma.bytes_copied + i,
+                    self.cgb_dma.source + self.cgb_dma.bytes_copied + i
                 );
                 mem.write(
                     ints,
                     self,
                     self.cgb_dma.dest + self.cgb_dma.bytes_copied + i,
-                    value,
+                    value
                 );
             }
             self.cgb_dma.bytes_left -= 0x10;
@@ -421,7 +428,7 @@ impl Gpu {
     fn draw_line_if_necessary(
         &mut self,
         ints: &mut Interrupts,
-        mem: &mut Memory,
+        mem: &mut Memory
     ) {
         let line_start =
             gpu_timing::HTRANSFER_ON + if self.ly == 0 { 160 } else { 48 };
@@ -479,7 +486,7 @@ impl Gpu {
     fn get_shade_from_colour_id(
         &self,
         pixel_colour_id: u16,
-        palette: u8,
+        palette: u8
     ) -> Colour {
         let shift_2 = pixel_colour_id * 2;
         let shade = (palette & (0b11 << shift_2)) >> shift_2;
@@ -492,7 +499,7 @@ impl Gpu {
         ints: &Interrupts,
         mem: &Memory,
         x: u8,
-        y: u8,
+        y: u8
     ) -> (Colour, u16, bool) {
         let is_window = self.control.window_enable
             && x as isize > self.wx as isize - 8
@@ -587,7 +594,7 @@ impl Gpu {
             (
                 self.get_shade_from_colour_id(col_id, self.bg_pallette),
                 col_id,
-                false,
+                false
             )
         }
     }
@@ -599,7 +606,7 @@ impl Gpu {
         bg_col_id: u16,
         bg_priority: bool,
         x: u8,
-        y: u8,
+        y: u8
     ) -> Colour {
         // Sprites are hidden for this scanline
         if !self.control.obj_enable {
@@ -613,6 +620,7 @@ impl Gpu {
 
         let mut maybe_colour: Option<Colour> = None;
         let mut min_x: i32 = SCREEN_WIDTH as i32 + 8;
+        let mut min_oam_position: u16 = 161; // 40 sprites * 4 + 1
         for sprite in &self.sprites_on_line {
             let mut above_bg = sprite.above_bg;
             // In CGB mode, bg_display off means sprites always get priority.
@@ -621,11 +629,22 @@ impl Gpu {
                     !self.control.bg_display || (!bg_priority && above_bg);
             }
 
+            let sprite_wins_so_far = if self.cgb_style_obj_conflict {
+                sprite.oam_position < min_oam_position
+            } else {
+                if sprite.x_pos == min_x {
+                    sprite.oam_position < min_oam_position
+                } else {
+                    sprite.x_pos < min_x
+                }
+            };
+
             if sprite.x_pos <= ix
                 && (sprite.x_pos + 8) > ix
-                && sprite.x_pos < min_x
+                && sprite_wins_so_far
             {
                 if !above_bg && bg_col_id != 0 {
+                    maybe_colour = None;
                     continue;
                 }
 
@@ -681,12 +700,17 @@ impl Gpu {
 
                 if col_id == 0 {
                     // This pixel is transparent
-                    continue;
+                    // Since this sprite is higher priority (eg. lower X on DMG),
+                    // its transparent-ness overrides any previously calculated
+                    // colour.
+                    maybe_colour = None
                 } else {
+                    min_x = sprite.x_pos;
+                    min_oam_position = sprite.oam_position;
                     if self.cgb_features {
                         let colour = mem.palette_ram.get_obj_palette_colour(
                             sprite.cgb_palette as u16,
-                            col_id,
+                            col_id
                         );
                         maybe_colour = Some(colour)
                     } else {
@@ -695,8 +719,6 @@ impl Gpu {
                         } else {
                             self.sprite_pallete_2
                         };
-
-                        min_x = sprite.x_pos;
                         maybe_colour =
                             Some(self.get_shade_from_colour_id(col_id, palette))
                     }
@@ -706,7 +728,7 @@ impl Gpu {
 
         match maybe_colour {
             Some(col) => col,
-            None => bg_col,
+            None => bg_col
         }
     }
 
@@ -763,6 +785,7 @@ impl Gpu {
             cgb_dma: CgbDmaConfig::new(),
             sprite_cache: SmallVec::with_capacity(40),
             sprites_on_line: SmallVec::with_capacity(10),
+            cgb_style_obj_conflict: cgb_features
         }
     }
 }
