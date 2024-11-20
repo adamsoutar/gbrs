@@ -134,6 +134,7 @@ version = "0.1.0"
 dependencies = [
  "gbrs-core",
  "libretro-rs",
+ "spin",
 ]
 
 [[package]]
