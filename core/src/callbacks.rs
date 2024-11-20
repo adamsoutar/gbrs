@@ -5,7 +5,7 @@
 use alloc::{vec, vec::Vec};
 use spin::mutex::spin::SpinMutex;
 #[cfg(feature = "std")]
-use std::{fs, io::Read, path::PathBuf, time::Instant};
+use std::{fs, io::Read, path::PathBuf};
 
 pub type LogCallback = fn(log_str: &str);
 pub type SaveCallback =
@@ -17,12 +17,7 @@ pub type LoadCallback =
 pub struct Callbacks {
     pub log: LogCallback,
     pub save: SaveCallback,
-    pub load: LoadCallback
-}
-
-#[cfg(feature = "std")]
-lazy_static! {
-    static ref PROGRAM_START: Instant = Instant::now();
+    pub load: LoadCallback,
 }
 
 #[cfg(feature = "std")]
