@@ -52,13 +52,11 @@ impl BatteryBackedRam {
     fn save_ram_contents(&mut self) {
         self.changed_since_last_save = false;
 
-        unsafe {
-            (CALLBACKS.save)(
-                &self.cart.title[..],
-                &self.cart.rom_path[..],
-                &self.ram.bytes
-            );
-        }
+        (CALLBACKS.lock().save)(
+            &self.cart.title[..],
+            &self.cart.rom_path[..],
+            &self.ram.bytes,
+        );
     }
 
     pub fn new(cart: Cartridge, additional_ram_size: usize, battery_enabled: bool) -> BatteryBackedRam {
@@ -66,9 +64,11 @@ impl BatteryBackedRam {
         // The cartridge header only tells us about additional external RAM.
         let ram_size = cart.ram_size + additional_ram_size;
 
-        let save_contents = unsafe {
-            (CALLBACKS.load)(&cart.title[..], &cart.rom_path[..], ram_size)
-        };
+        let save_contents = (CALLBACKS.lock().load)(
+            &cart.title[..],
+            &cart.rom_path[..],
+            ram_size,
+        );
 
         let ram = Ram::from_bytes(save_contents, ram_size);
 
