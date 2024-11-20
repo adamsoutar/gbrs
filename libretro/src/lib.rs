@@ -8,6 +8,7 @@ use libretro_rs::retro::env::{Init, UnloadGame};
 use libretro_rs::retro::pixel::{Format, XRGB8888};
 use libretro_rs::retro::*;
 use libretro_rs::{ext, libretro_core};
+use spin::{mutex::SpinMutex, Once};
 
 struct LibretroCore {
     gameboy: Cpu,
@@ -17,7 +18,7 @@ struct LibretroCore {
     pixel_format: Format<XRGB8888>,
 }
 
-static mut LOGGER: Option<PlatformLogger> = None;
+static LOGGER: Once<SpinMutex<PlatformLogger>> = Once::new();
 
 impl<'a> Core<'a> for LibretroCore {
     type Init = ();
@@ -31,20 +32,19 @@ impl<'a> Core<'a> for LibretroCore {
     }
 
     fn init(env: &mut impl Init) -> Self::Init {
-        unsafe {
-            LOGGER = Some(env.get_log_interface().unwrap());
-        }
-        unsafe {
-            gbrs_core::callbacks::set_callbacks(gbrs_core::callbacks::Callbacks {
-                log: |log_str| {
-                    let null_terminated = &format!("{}\0",log_str)[..];
-                    let retro_str = CUtf8::from_str(null_terminated).unwrap();
-                    LOGGER.unwrap().log(RETRO_LOG_INFO, retro_str)
-                },
-                save: |_game_name, _rom_path, _save_data| {},
-                load: |_game_name, _rom_path, expected_size| vec![0; expected_size]
-            })
-        }
+        LOGGER.call_once(|| SpinMutex::new(env.get_log_interface().unwrap()));
+
+        gbrs_core::callbacks::set_callbacks(gbrs_core::callbacks::Callbacks {
+            log: |log_str| {
+                let null_terminated = &format!("{}\0", log_str)[..];
+                let retro_str = CUtf8::from_str(null_terminated).unwrap();
+                if let Some(logger) = LOGGER.get() {
+                    logger.lock().log(RETRO_LOG_INFO, retro_str);
+                }
+            },
+            save: |_game_name, _rom_path, _save_data| {},
+            load: |_game_name, _rom_path, expected_size| vec![0; expected_size],
+        })
     }
 
     fn get_system_av_info(&self, _env: &mut impl env::GetAvInfo) -> SystemAVInfo {
