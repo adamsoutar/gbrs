@@ -1,5 +1,4 @@
 use crate::cgb_dma::CgbDmaConfig;
-use crate::cgb_dma::CgbDmaType;
 use crate::colour::colour::Colour;
 use crate::colour::grey_shades;
 use crate::colour::grey_shades::colour_from_grey_shade_id;
