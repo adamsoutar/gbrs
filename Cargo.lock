@@ -206,6 +206,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "433bfe06b8c75da9b2e3fbea6e5329ff87748f0b144ef75306e674c3f6f7c13f"
 
 [[package]]
+name = "libflac-sys"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b0d9b582c1affe84b051d5a0faf3665e4da0c0b7b0e3b391213e3a5a670365b"
+dependencies = [
+ "cmake",
+ "libc",
+]
+
+[[package]]
 name = "libloading"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -308,6 +318,12 @@ name = "peeking_take_while"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
+
+[[package]]
+name = "pkg-config"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
 name = "proc-macro2"
@@ -414,15 +430,17 @@ dependencies = [
 
 [[package]]
 name = "sfml"
-version = "0.21.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42445c6febfd55d5cdbc70d97cd8dc975031664e67fd929418c41a33cba999af"
+checksum = "941169c8be33fd81c006591c0dff6056f94bca0bff6057a262ba946bdb6dc0ed"
 dependencies = [
  "bitflags 2.6.0",
  "cc",
+ "cmake",
+ "libflac-sys",
  "link-cplusplus",
  "num-traits",
- "once_cell",
+ "pkg-config",
  "widestring",
 ]
 

@@ -27,20 +27,19 @@ pub fn run_gui (mut gameboy: Cpu) {
         &format!("{} - gbrs (SFML)", gameboy.cart_info.title)[..],
         style,
         &Default::default()
-    );
+    ).unwrap();
     // window.set_framerate_limit(gameboy.frame_rate as u32);
 
     let mut screen_texture = Texture::new().unwrap();
-    if !screen_texture.create(sw, sh) {
-        panic!("Failed to create screen texture");
-    }
+    screen_texture.create(sw, sh).expect("Failed to create screen texture");
+
     // Scale the 160x144 image to the appropriate resolution
     let sprite_scale = Vector2f::new(
         window_width as f32 / sw as f32,
         window_height as f32 / sh as f32
     );
 
-    let mut clock = Clock::start();
+    let mut clock = Clock::start().unwrap();
 
     let font;
     let mut text = None;
@@ -74,9 +73,7 @@ pub fn run_gui (mut gameboy: Cpu) {
         // gameboy.step_until_full_audio_buffer();
 
         // Draw the previous frame
-        unsafe {
-            screen_texture.update_from_pixels(&gameboy.gpu.get_rgba_frame(), sw, sh, 0, 0);
-        }
+        screen_texture.update_from_pixels(&gameboy.gpu.get_rgba_frame(), sw, sh, 0, 0);
         let mut screen_sprite = Sprite::with_texture(&screen_texture);
         screen_sprite.set_scale(sprite_scale);
 

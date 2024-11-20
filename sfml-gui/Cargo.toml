@@ -6,5 +6,5 @@ edition = "2021"
 
 [dependencies]
 gbrs-core = { path = "../core" }
-sfml = "0.21.0"
+sfml = "0.24.0"
 spin = { version = "0.9.8", features = ["spin_mutex"] }
