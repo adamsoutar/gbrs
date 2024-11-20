@@ -39,7 +39,6 @@ dependencies = [
 name = "gbrs-core"
 version = "0.2.0"
 dependencies = [
- "lazy_static",
  "smallvec",
  "spin",
 ]
