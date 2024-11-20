@@ -1,7 +1,5 @@
 use crate::control::*;
 
-use gbrs_core::callbacks::{Callbacks, CALLBACKS};
-use gbrs_core::callbacks::set_callbacks;
 use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
 
@@ -44,15 +42,6 @@ pub fn run_gui (mut gameboy: Cpu) {
     );
 
     let mut clock = Clock::start();
-
-    unsafe {
-        set_callbacks(Callbacks {
-            log: CALLBACKS.log,
-            save: CALLBACKS.save,
-            load: CALLBACKS.load
-        })
-    }
-
 
     let font;
     let mut text = None;
