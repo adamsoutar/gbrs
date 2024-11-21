@@ -1,0 +1,36 @@
+name: Rust
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libx11-xcb-dev libxcb-image0-dev libxrandr-dev libxcb-randr0-dev libudev-dev libfreetype6-dev libglew-dev libjpeg8-dev libgpgme11-dev libsndfile1-dev libopenal-dev libjpeg62 libxcursor-dev cmake libclang-dev clang libsfml-dev
+      - name: Build
+        run: cargo build
+      - name: Run tests
+        run: cargo test
+      - name: Run tests without default features
+        run: cargo test --no-default-features
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format Rust code
+        run: cargo fmt --all -- --check
