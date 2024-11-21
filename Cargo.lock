@@ -169,6 +169,7 @@ version = "0.2.0"
 dependencies = [
  "gbrs-core",
  "sfml",
+ "spin",
 ]
 
 [[package]]

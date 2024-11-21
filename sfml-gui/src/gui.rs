@@ -5,17 +5,16 @@ use gbrs_core::constants::*;
 
 use sfml::graphics::*;
 use sfml::window::*;
-use sfml::SfBox;
 use sfml::system::*;
-use sfml::audio::{Sound, SoundBuffer, SoundStatus, SoundSource};
+use sfml::audio::{Sound, SoundBuffer, SoundStatus};
+use spin::mutex::SpinMutex;
 
 pub const STEP_BY_STEP: bool = false;
 // NOTE: This debug option is only supported on macOS. See note below
 pub const DRAW_FPS: bool = false;
 
-pub static mut SOUND_BACKING_STORE: [i16; SOUND_BUFFER_SIZE] = [0; SOUND_BUFFER_SIZE];
-pub static mut SOUND_BUFFER: Option<SfBox<SoundBuffer>> = None;
-pub static mut SOUND: Option<Sound> = None;
+static SOUND_BACKING_STORE: SpinMutex<[i16; SOUND_BUFFER_SIZE]> =
+    SpinMutex::new([0; SOUND_BUFFER_SIZE]);
 
 pub fn run_gui (mut gameboy: Cpu) {
     let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
@@ -93,30 +92,27 @@ pub fn run_gui (mut gameboy: Cpu) {
         // This way we're not idling, we're actively computing the next event.
         // let sound_buffer = SoundBuffer::from_samples(&gameboy.mem.apu.buffer, 2, SOUND_SAMPLE_RATE as u32).unwrap();
         // let mut sound = Sound::with_buffer(&sound_buffer);
-        // sound.play();
+        // sound.play();    
 
-        unsafe {
-            SOUND_BACKING_STORE = gameboy.mem.apu.buffer.clone();
-            SOUND_BUFFER = Some(SoundBuffer::from_samples(&SOUND_BACKING_STORE, 2, SOUND_SAMPLE_RATE as u32).unwrap());
-            SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
-                Some(buff) => buff,
-                None => unreachable!()
-            }));
-            match &mut SOUND {
-                Some(sound) => {
-                    // sound.set_volume(0.);
-                    sound.play();
-                    while sound.status() == SoundStatus::PLAYING {
-                        if !gameboy.mem.apu.buffer_full {
-                            gameboy.step();
-                        } else {
-                            // We're finished with this frame. Let's just wait for audio
-                            // to sync up.
-                            std::hint::spin_loop();
-                        }
-                    }
-                },
-                None => unreachable!()
+        let mut sound_backing_store = SOUND_BACKING_STORE.lock();
+        *sound_backing_store = gameboy.mem.apu.buffer;
+        let sound_buffer = SoundBuffer::from_samples(
+            &*sound_backing_store,
+            2,
+            SOUND_SAMPLE_RATE as u32,
+        )
+        .unwrap();
+        let mut sound = Sound::with_buffer(&sound_buffer);
+
+        // sound.set_volume(0.);
+        sound.play();
+        while sound.status() == SoundStatus::PLAYING {
+            if !gameboy.mem.apu.buffer_full {
+                gameboy.step();
+            } else {
+                // We're finished with this frame. Let's just wait for audio
+                // to sync up.
+                std::hint::spin_loop();
             }
         }
 
