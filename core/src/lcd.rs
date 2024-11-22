@@ -1,4 +1,4 @@
-use crate::interrupts::{Interrupts, InterruptReason};
+use crate::interrupts::{InterruptReason, Interrupts};
 
 #[derive(Clone, Copy)]
 pub struct LcdControl {
@@ -9,10 +9,10 @@ pub struct LcdControl {
     pub bg_tile_map_display_select: bool,
     pub obj_size: bool,
     pub obj_enable: bool,
-    pub bg_display: bool
+    pub bg_display: bool,
 }
 impl LcdControl {
-    pub fn new () -> LcdControl {
+    pub fn new() -> LcdControl {
         // This value is set by the DMG boot rom.
         LcdControl::from(0b10000101)
     }
@@ -27,20 +27,20 @@ impl From<u8> for LcdControl {
             bg_and_window_data_select: (n & 0b0001_0000) == 0b0001_0000,
             window_enable: (n & 0b0010_0000) == 0b0010_0000,
             window_tile_map_display_select: (n & 0b0100_0000) == 0b0100_0000,
-            display_enable: (n & 0b1000_0000) == 0b1000_0000
+            display_enable: (n & 0b1000_0000) == 0b1000_0000,
         }
     }
 }
 impl From<LcdControl> for u8 {
-    fn from (lcd: LcdControl) -> u8 {
-        lcd.bg_display as u8 |
-        (lcd.obj_enable as u8) << 1 |
-        (lcd.obj_size as u8) << 2 |
-        (lcd.bg_tile_map_display_select as u8) << 3 |
-        (lcd.bg_and_window_data_select as u8) << 4 |
-        (lcd.window_enable as u8) << 5 |
-        (lcd.window_tile_map_display_select as u8) << 6 |
-        (lcd.display_enable as u8) << 7
+    fn from(lcd: LcdControl) -> u8 {
+        lcd.bg_display as u8
+            | (lcd.obj_enable as u8) << 1
+            | (lcd.obj_size as u8) << 2
+            | (lcd.bg_tile_map_display_select as u8) << 3
+            | (lcd.bg_and_window_data_select as u8) << 4
+            | (lcd.window_enable as u8) << 5
+            | (lcd.window_tile_map_display_select as u8) << 6
+            | (lcd.display_enable as u8) << 7
     }
 }
 
@@ -49,7 +49,7 @@ pub enum LcdMode {
     HBlank = 0,
     VBlank = 1,
     OAMSearch = 2,
-    Transfer = 3
+    Transfer = 3,
 }
 
 #[derive(Clone, Copy)]
@@ -59,21 +59,21 @@ pub struct LcdStatus {
     pub vblank_interrupt: bool,
     pub hblank_interrupt: bool,
     pub coincidence_flag: bool,
-    pub mode_flag: u8
+    pub mode_flag: u8,
 }
 impl LcdStatus {
-    pub fn get_mode (&self) -> LcdMode {
+    pub fn get_mode(&self) -> LcdMode {
         match self.mode_flag {
             0 => LcdMode::HBlank,
             1 => LcdMode::VBlank,
             2 => LcdMode::OAMSearch,
             3 => LcdMode::Transfer,
-            _ => panic!("Invalid LCD mode")
+            _ => panic!("Invalid LCD mode"),
         }
     }
 
     #[inline(always)]
-    pub fn set_data (&mut self, data: u8, ints: &mut Interrupts) {
+    pub fn set_data(&mut self, data: u8, ints: &mut Interrupts) {
         // There's actually a DMG GPU bug when writing to LCDStat
         // where sometimes it fires off an interrupt at the wrong time
         // https://robertovaccari.com/blog/2020_09_26_gameboy/
@@ -83,7 +83,7 @@ impl LcdStatus {
                     ints.raise_interrupt(InterruptReason::LCDStat)
                 }
             },
-            _ => {}
+            _ => {},
         }
 
         let new_stat = LcdStatus::from(data);
@@ -96,11 +96,11 @@ impl LcdStatus {
     }
 
     #[inline(always)]
-    pub fn set_mode (&mut self, mode: LcdMode) {
+    pub fn set_mode(&mut self, mode: LcdMode) {
         self.mode_flag = mode as u8;
     }
 
-    pub fn new () -> LcdStatus {
+    pub fn new() -> LcdStatus {
         // LCD starts in OAMSearch, not HBlank
         LcdStatus::from(0b000000_10)
     }
@@ -114,18 +114,18 @@ impl From<u8> for LcdStatus {
             vblank_interrupt: (n & 0b10000) == 0b10000,
             hblank_interrupt: (n & 0b1000) == 0b1000,
             coincidence_flag: (n & 0b100) == 0b100,
-            mode_flag: n & 0b11
+            mode_flag: n & 0b11,
         }
     }
 }
 impl From<LcdStatus> for u8 {
     #[inline(always)]
     fn from(lcd: LcdStatus) -> u8 {
-        lcd.mode_flag |
-        (lcd.coincidence_flag as u8) << 2 |
-        (lcd.hblank_interrupt as u8) << 3 |
-        (lcd.vblank_interrupt as u8) << 4 |
-        (lcd.oam_interrupt as u8) << 5 |
-        (lcd.lyc as u8) << 6
+        lcd.mode_flag
+            | (lcd.coincidence_flag as u8) << 2
+            | (lcd.hblank_interrupt as u8) << 3
+            | (lcd.vblank_interrupt as u8) << 4
+            | (lcd.oam_interrupt as u8) << 5
+            | (lcd.lyc as u8) << 6
     }
 }

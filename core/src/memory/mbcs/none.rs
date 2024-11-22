@@ -2,7 +2,7 @@ use crate::memory::mbcs::MBC;
 use crate::memory::rom::Rom;
 
 pub struct MBCNone {
-    pub rom: Rom
+    pub rom: Rom,
 }
 
 impl MBC for MBCNone {
@@ -23,15 +23,13 @@ impl MBC for MBCNone {
         // We don't have RAM
     }
 
-    fn step (&mut self, _ms_since_boot: usize) {
+    fn step(&mut self, _ms_since_boot: usize) {
         // We don't need to do anything here
     }
 }
 
 impl MBCNone {
     pub fn new(rom: Rom) -> Self {
-        MBCNone {
-            rom
-        }
+        MBCNone { rom }
     }
 }

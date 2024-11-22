@@ -20,5 +20,9 @@ fn main() {
         harness_total += time;
     }
 
-    println!("Average execution time across {} runs: {} microseconds", RUNS, harness_total / RUNS);
+    println!(
+        "Average execution time across {} runs: {} microseconds",
+        RUNS,
+        harness_total / RUNS
+    );
 }

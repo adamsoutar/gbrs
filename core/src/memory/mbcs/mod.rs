@@ -1,6 +1,6 @@
-use crate::memory::rom::Rom;
 use crate::cartridge::Cartridge;
 use crate::log;
+use crate::memory::rom::Rom;
 
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
@@ -16,11 +16,11 @@ pub trait MBC {
     fn step(&mut self, ms_since_boot: usize);
 }
 
-mod none;
 mod mbc1;
 mod mbc2;
 mod mbc3;
 mod mbc5;
+mod none;
 
 pub fn mbc_from_info(cart_info: Cartridge, rom: Rom) -> Box<dyn MBC> {
     log!("Loading game \"{}\"", cart_info.title);
@@ -38,7 +38,7 @@ pub fn mbc_from_info(cart_info: Cartridge, rom: Rom) -> Box<dyn MBC> {
     }
 }
 
-fn get_cart_type_string (cart_info: &Cartridge) -> &str {
+fn get_cart_type_string(cart_info: &Cartridge) -> &str {
     match cart_info.cart_type {
         0x00 => "None",
         0x01 => "MBC1",

@@ -1,9 +1,9 @@
+use gbrs_core::config::Config;
 use gbrs_core::constants::*;
 use gbrs_core::cpu::Cpu;
-use gbrs_core::config::Config;
 use gbrs_core::memory::rom::Rom;
-use libretro_rs::ffi::retro_log_level::*;
 use libretro_rs::c_utf8::{c_utf8, CUtf8};
+use libretro_rs::ffi::retro_log_level::*;
 use libretro_rs::retro::env::{Init, UnloadGame};
 use libretro_rs::retro::pixel::{Format, XRGB8888};
 use libretro_rs::retro::*;
@@ -27,7 +27,7 @@ impl<'a> Core<'a> for LibretroCore {
         SystemInfo::new(
             c_utf8!("gbrs"),
             c_utf8!(env!("CARGO_PKG_VERSION")),
-            ext!["gb","gbc"]
+            ext!["gb", "gbc"],
         )
     }
 
@@ -47,14 +47,24 @@ impl<'a> Core<'a> for LibretroCore {
         })
     }
 
-    fn get_system_av_info(&self, _env: &mut impl env::GetAvInfo) -> SystemAVInfo {
+    fn get_system_av_info(
+        &self,
+        _env: &mut impl env::GetAvInfo,
+    ) -> SystemAVInfo {
         SystemAVInfo::new(
             GameGeometry::fixed(SCREEN_WIDTH as u16, SCREEN_HEIGHT as u16),
-            SystemTiming::new(DEFAULT_FRAME_RATE as f64, SOUND_SAMPLE_RATE as f64)
+            SystemTiming::new(
+                DEFAULT_FRAME_RATE as f64,
+                SOUND_SAMPLE_RATE as f64,
+            ),
         )
     }
 
-    fn run(&mut self, _env: &mut impl env::Run, runtime: &mut impl Callbacks) -> InputsPolled {
+    fn run(
+        &mut self,
+        _env: &mut impl env::Run,
+        runtime: &mut impl Callbacks,
+    ) -> InputsPolled {
         let gb = &mut self.gameboy;
 
         for i in 0..SCREEN_BUFFER_SIZE {
@@ -68,20 +78,36 @@ impl<'a> Core<'a> for LibretroCore {
             self.frame_buffer[i] = XRGB8888::new_with_raw_value(pixel);
         }
 
-        let frame = Frame::new(&self.frame_buffer, SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
-        runtime.upload_video_frame(&self.rendering_mode, &self.pixel_format, &frame);
+        let frame = Frame::new(
+            &self.frame_buffer,
+            SCREEN_WIDTH as u32,
+            SCREEN_HEIGHT as u32,
+        );
+        runtime.upload_video_frame(
+            &self.rendering_mode,
+            &self.pixel_format,
+            &frame,
+        );
         runtime.upload_audio_frame(&gb.mem.apu.buffer);
 
         let inputs_polled = runtime.poll_inputs();
         let port = DevicePort::new(0);
-        gb.mem.joypad.a_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::A);
-        gb.mem.joypad.b_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::B);
-        gb.mem.joypad.start_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::Start);
-        gb.mem.joypad.select_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::Select);
-        gb.mem.joypad.left_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::Left);
-        gb.mem.joypad.right_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::Right);
-        gb.mem.joypad.up_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::Up);
-        gb.mem.joypad.down_pressed = runtime.is_joypad_button_pressed(port, JoypadButton::Down);
+        gb.mem.joypad.a_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::A);
+        gb.mem.joypad.b_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::B);
+        gb.mem.joypad.start_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::Start);
+        gb.mem.joypad.select_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::Select);
+        gb.mem.joypad.left_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::Left);
+        gb.mem.joypad.right_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::Right);
+        gb.mem.joypad.up_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::Up);
+        gb.mem.joypad.down_pressed =
+            runtime.is_joypad_button_pressed(port, JoypadButton::Down);
 
         while !gb.mem.apu.buffer_full {
             gb.step();
@@ -92,37 +118,37 @@ impl<'a> Core<'a> for LibretroCore {
     }
 
     fn load_game<E: env::LoadGame>(
-      game: &GameInfo,
-      args: LoadGameExtraArgs<'a, '_, E, Self::Init>,
+        game: &GameInfo,
+        args: LoadGameExtraArgs<'a, '_, E, Self::Init>,
     ) -> Result<Self, CoreError> {
-      let LoadGameExtraArgs {
-        env,
-        pixel_format,
-        rendering_mode,
-        ..
-      } = args;
-      let pixel_format = env.set_pixel_format_xrgb8888(pixel_format)?;
-      let data: &[u8] = game.as_data().ok_or(CoreError::new())?.data();
-      let config = Config {
-          sound_buffer_size: SOUND_BUFFER_SIZE,
-          sound_sample_rate: SOUND_SAMPLE_RATE,
-          rom: Rom::from_bytes(data.to_vec())
-      };
-      Ok(Self {
-        rendering_mode,
-        pixel_format,
-        gameboy: Cpu::from_config(config.clone()),
-        last_cpu_config: config,
-        frame_buffer: [XRGB8888::DEFAULT; SCREEN_WIDTH * SCREEN_HEIGHT],
-      })
+        let LoadGameExtraArgs {
+            env,
+            pixel_format,
+            rendering_mode,
+            ..
+        } = args;
+        let pixel_format = env.set_pixel_format_xrgb8888(pixel_format)?;
+        let data: &[u8] = game.as_data().ok_or(CoreError::new())?.data();
+        let config = Config {
+            sound_buffer_size: SOUND_BUFFER_SIZE,
+            sound_sample_rate: SOUND_SAMPLE_RATE,
+            rom: Rom::from_bytes(data.to_vec()),
+        };
+        Ok(Self {
+            rendering_mode,
+            pixel_format,
+            gameboy: Cpu::from_config(config.clone()),
+            last_cpu_config: config,
+            frame_buffer: [XRGB8888::DEFAULT; SCREEN_WIDTH * SCREEN_HEIGHT],
+        })
     }
 
     fn reset(&mut self, _env: &mut impl env::Reset) {
-      self.gameboy = Cpu::from_config(self.last_cpu_config.clone());
+        self.gameboy = Cpu::from_config(self.last_cpu_config.clone());
     }
 
     fn unload_game(self, _env: &mut impl UnloadGame) -> Self::Init {
-      ()
+        ()
     }
 }
 

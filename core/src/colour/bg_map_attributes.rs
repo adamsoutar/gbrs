@@ -18,10 +18,18 @@ pub struct BgMapAttributeEntry {
 impl BgMapAttributeEntry {
     pub fn as_u8(&self) -> u8 {
         let mut val = 0;
-        if self.priority { val |= 0b1000_0000; }
-        if self.y_flip { val |= 0b0100_0000; }
-        if self.x_flip { val |= 0b0010_0000; }
-        if self.bit_four { val |= 0b0001_0000; }
+        if self.priority {
+            val |= 0b1000_0000;
+        }
+        if self.y_flip {
+            val |= 0b0100_0000;
+        }
+        if self.x_flip {
+            val |= 0b0010_0000;
+        }
+        if self.bit_four {
+            val |= 0b0001_0000;
+        }
         val |= self.vram_bank << 3;
         val |= self.palette & 0b0000_0111;
         val
@@ -34,32 +42,32 @@ impl BgMapAttributeEntry {
             x_flip: (0b0010_0000 & val) > 0,
             bit_four: (0b0001_0000 & val) > 0,
             vram_bank: (0b0000_1000 & val) >> 3,
-            palette: 0b0000_0111 & val
+            palette: 0b0000_0111 & val,
         }
     }
 
-    pub fn new () -> BgMapAttributeEntry {
+    pub fn new() -> BgMapAttributeEntry {
         BgMapAttributeEntry {
             priority: false,
             y_flip: false,
             x_flip: false,
             bit_four: false,
             vram_bank: 0,
-            palette: 0
+            palette: 0,
         }
     }
 }
 
 pub struct BgMapAttributeTable {
-    entries: [BgMapAttributeEntry; BG_MAP_ATTRIBUTE_TABLE_SIZE]
+    entries: [BgMapAttributeEntry; BG_MAP_ATTRIBUTE_TABLE_SIZE],
 }
 
 impl BgMapAttributeTable {
-    pub fn get_entry (&self, address: u16) -> BgMapAttributeEntry {
+    pub fn get_entry(&self, address: u16) -> BgMapAttributeEntry {
         self.entries[address as usize]
     }
 
-    pub fn read (&self, address: u16) -> u8 {
+    pub fn read(&self, address: u16) -> u8 {
         self.get_entry(address).as_u8()
     }
 
@@ -67,9 +75,9 @@ impl BgMapAttributeTable {
         self.entries[address as usize] = BgMapAttributeEntry::from_u8(value);
     }
 
-    pub fn new () -> BgMapAttributeTable {
+    pub fn new() -> BgMapAttributeTable {
         BgMapAttributeTable {
-            entries: [BgMapAttributeEntry::new(); BG_MAP_ATTRIBUTE_TABLE_SIZE]
+            entries: [BgMapAttributeEntry::new(); BG_MAP_ATTRIBUTE_TABLE_SIZE],
         }
     }
 }

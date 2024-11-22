@@ -21,7 +21,7 @@ pub struct MBC3 {
     // read a Real Time Clock
     pub rtc_select: bool,
 
-    has_shown_ram_warning: bool
+    has_shown_ram_warning: bool,
 }
 
 impl MBC for MBC3 {
@@ -29,7 +29,7 @@ impl MBC for MBC3 {
         match address {
             0x0..=0x3FFF => self.read_bank(0, address),
             0x4000..=0x7FFF => self.read_bank(self.rom_bank, address - 0x4000),
-            _ => panic!("Unsupported MBC3 read at {:#06x}", address)
+            _ => panic!("Unsupported MBC3 read at {:#06x}", address),
         }
     }
 
@@ -43,7 +43,7 @@ impl MBC for MBC3 {
                 let max_bank = (self.rom.bytes.len() / KB_16) as u8;
                 let bitmask = max_bank - 1;
                 n = n & bitmask;
-                if n == 0 { 
+                if n == 0 {
                     n = 1
                 }
                 // log!("Selecting ROM bank {}", n);
@@ -61,13 +61,13 @@ impl MBC for MBC3 {
                         self.rtc_select = true;
                     },
                     // This is a noop
-                    _ => {}
+                    _ => {},
                 }
             },
             0x6000..=0x7FFF => {
                 // TODO: RTC latching
             },
-            _ => {}
+            _ => {},
         }
     }
 
@@ -147,7 +147,7 @@ impl MBC3 {
             ram_bank: 0,
             ram_enabled: false,
             rtc_select: false,
-            has_shown_ram_warning: false
+            has_shown_ram_warning: false,
         }
     }
 }

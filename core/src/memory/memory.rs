@@ -1,19 +1,19 @@
+use crate::cartridge::Cartridge;
+use crate::colour::palette_ram::PaletteRam;
 use crate::constants::*;
 use crate::cpu::EmulationTarget;
-use crate::memory::ram::Ram;
-use crate::memory::rom::Rom;
-use crate::memory::cgb_speed_switch::CgbSpeedSwitch;
 use crate::gpu::Gpu;
 use crate::interrupts::*;
-use crate::{split_u16, combine_u8};
 use crate::joypad::Joypad;
-use crate::cartridge::Cartridge;
-use crate::memory::mbcs::*;
-use crate::memory::vram::VRam;
-use crate::sound::apu::APU;
-use crate::serial_cable::SerialCable;
 use crate::log;
-use crate::colour::palette_ram::PaletteRam;
+use crate::memory::cgb_speed_switch::CgbSpeedSwitch;
+use crate::memory::mbcs::*;
+use crate::memory::ram::Ram;
+use crate::memory::rom::Rom;
+use crate::memory::vram::VRam;
+use crate::serial_cable::SerialCable;
+use crate::sound::apu::APU;
+use crate::{combine_u8, split_u16};
 
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
@@ -50,12 +50,17 @@ pub struct Memory {
     pub joypad: Joypad,
 
     pub apu: APU,
-    pub speed_switch: CgbSpeedSwitch
+    pub speed_switch: CgbSpeedSwitch,
 }
 
 impl Memory {
     // Memory has a step command for timers & MBCs
-    pub fn step (&mut self, cycles: usize, ints: &mut Interrupts, ms_since_boot: usize) {
+    pub fn step(
+        &mut self,
+        cycles: usize,
+        ints: &mut Interrupts,
+        ms_since_boot: usize,
+    ) {
         // These two timers are safe to implement like this vs per-cycle
         // because the CPU will never do more than about 16 cycles per step,
         // let alone >256
@@ -74,7 +79,7 @@ impl Memory {
                 0b01 => 16,
                 0b10 => 64,
                 0b11 => 256,
-                _ => unreachable!()
+                _ => unreachable!(),
             };
 
             while self.timer_counter_increase >= step {
@@ -93,34 +98,45 @@ impl Memory {
     }
 
     #[inline(always)]
-    pub fn read (&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
+    pub fn read(&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u8 {
         match address {
             // Cartridge memory starts at the 0 address
-            0 ..= MBC_ROM_END => self.mbc.read(address),
+            0..=MBC_ROM_END => self.mbc.read(address),
 
-            VRAM_START ..= VRAM_END => self.vram.raw_read(address),
+            VRAM_START..=VRAM_END => self.vram.raw_read(address),
 
-            MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_read(address - MBC_RAM_START),
+            MBC_RAM_START..=MBC_RAM_END => {
+                self.mbc.ram_read(address - MBC_RAM_START)
+            },
 
-            WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
-                self.wram.read(address - WRAM_LOWER_BANK_START),
-            WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
-                self.wram.bytes[self.upper_wram_bank * WRAM_BANK_SIZE + (address - WRAM_UPPER_BANK_START) as usize],
+            WRAM_LOWER_BANK_START..=WRAM_LOWER_BANK_END => {
+                self.wram.read(address - WRAM_LOWER_BANK_START)
+            },
+            WRAM_UPPER_BANK_START..=WRAM_UPPER_BANK_END => {
+                self.wram.bytes[self.upper_wram_bank * WRAM_BANK_SIZE
+                    + (address - WRAM_UPPER_BANK_START) as usize]
+            },
             // TODO: How does upper echo RAM work with CGB bank switching?
-            ECHO_RAM_START ..= ECHO_RAM_END => self.read(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START)),
+            ECHO_RAM_START..=ECHO_RAM_END => self.read(
+                ints,
+                gpu,
+                address - (ECHO_RAM_START - WRAM_LOWER_BANK_START),
+            ),
 
-            OAM_START ..= OAM_END => gpu.raw_read(address),
+            OAM_START..=OAM_END => gpu.raw_read(address),
 
-            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => 0xFF,
+            UNUSABLE_MEMORY_START..=UNUSABLE_MEMORY_END => 0xFF,
 
             LINK_CABLE_SB | LINK_CABLE_SC => self.serial_cable.read(address),
 
-            APU_START ..= APU_END => self.apu.read(address),
+            APU_START..=APU_END => self.apu.read(address),
 
-            LCD_DATA_START ..= LCD_DATA_END => gpu.raw_read(address),
-            CGB_DMA_START ..= CGB_DMA_END => gpu.raw_read(address),
-            CGB_PALETTE_DATA_START ..= CGB_PALETTE_DATA_END => self.palette_ram.raw_read(address),
-            HRAM_START ..= HRAM_END => self.hram.read(address - HRAM_START),
+            LCD_DATA_START..=LCD_DATA_END => gpu.raw_read(address),
+            CGB_DMA_START..=CGB_DMA_END => gpu.raw_read(address),
+            CGB_PALETTE_DATA_START..=CGB_PALETTE_DATA_END => {
+                self.palette_ram.raw_read(address)
+            },
+            HRAM_START..=HRAM_END => self.hram.read(address - HRAM_START),
 
             0xFF00 => self.joypad.read(),
 
@@ -139,41 +155,68 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_read(),
             INTERRUPT_FLAG_ADDRESS => ints.flag_read(),
 
-            _ => { log!("Unsupported memory read at {:#06x}", address); 0xFF }
+            _ => {
+                log!("Unsupported memory read at {:#06x}", address);
+                0xFF
+            },
         }
     }
 
     #[inline(always)]
-    pub fn write (&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u8) {
+    pub fn write(
+        &mut self,
+        ints: &mut Interrupts,
+        gpu: &mut Gpu,
+        address: u16,
+        value: u8,
+    ) {
         match address {
-            0 ..= MBC_ROM_END => self.mbc.write(address, value),
+            0..=MBC_ROM_END => self.mbc.write(address, value),
 
             // TODO: Disable writing to VRAM if GPU is reading it
-            VRAM_START ..= VRAM_END => self.vram.raw_write(address, value),
+            VRAM_START..=VRAM_END => self.vram.raw_write(address, value),
 
-            MBC_RAM_START ..= MBC_RAM_END => self.mbc.ram_write(address - MBC_RAM_START, value),
+            MBC_RAM_START..=MBC_RAM_END => {
+                self.mbc.ram_write(address - MBC_RAM_START, value)
+            },
 
-            WRAM_LOWER_BANK_START ..= WRAM_LOWER_BANK_END =>
-                self.wram.write(address - WRAM_LOWER_BANK_START, value),
+            WRAM_LOWER_BANK_START..=WRAM_LOWER_BANK_END => {
+                self.wram.write(address - WRAM_LOWER_BANK_START, value)
+            },
             // CGB WRAM is so big that upper bank addresses might not fit into a u16,
             // so we'll do this directly with a usize
-            WRAM_UPPER_BANK_START ..= WRAM_UPPER_BANK_END =>
-                self.wram.bytes[self.upper_wram_bank * WRAM_BANK_SIZE + (address - WRAM_UPPER_BANK_START) as usize] = value,
-            ECHO_RAM_START ..= ECHO_RAM_END => self.write(ints, gpu, address - (ECHO_RAM_START - WRAM_LOWER_BANK_START), value),
+            WRAM_UPPER_BANK_START..=WRAM_UPPER_BANK_END => {
+                self.wram.bytes[self.upper_wram_bank * WRAM_BANK_SIZE
+                    + (address - WRAM_UPPER_BANK_START) as usize] = value
+            },
+            ECHO_RAM_START..=ECHO_RAM_END => self.write(
+                ints,
+                gpu,
+                address - (ECHO_RAM_START - WRAM_LOWER_BANK_START),
+                value,
+            ),
 
-            OAM_START ..= OAM_END => gpu.raw_write(address, value, ints),
+            OAM_START..=OAM_END => gpu.raw_write(address, value, ints),
 
             // TETRIS writes here.. due to a bug
-            UNUSABLE_MEMORY_START ..= UNUSABLE_MEMORY_END => {},
+            UNUSABLE_MEMORY_START..=UNUSABLE_MEMORY_END => {},
 
-            LINK_CABLE_SB | LINK_CABLE_SC => self.serial_cable.write(address, value),
+            LINK_CABLE_SB | LINK_CABLE_SC => {
+                self.serial_cable.write(address, value)
+            },
 
-            APU_START ..= APU_END => self.apu.write(address, value),
+            APU_START..=APU_END => self.apu.write(address, value),
 
-            LCD_DATA_START ..= LCD_DATA_END => gpu.raw_write(address, value, ints),
-            CGB_DMA_START ..= CGB_DMA_END => gpu.raw_write(address, value, ints),
-            CGB_PALETTE_DATA_START ..= CGB_PALETTE_DATA_END => self.palette_ram.raw_write(address, value),
-            HRAM_START ..= HRAM_END => self.hram.write(address - HRAM_START, value),
+            LCD_DATA_START..=LCD_DATA_END => {
+                gpu.raw_write(address, value, ints)
+            },
+            CGB_DMA_START..=CGB_DMA_END => gpu.raw_write(address, value, ints),
+            CGB_PALETTE_DATA_START..=CGB_PALETTE_DATA_END => {
+                self.palette_ram.raw_write(address, value)
+            },
+            HRAM_START..=HRAM_END => {
+                self.hram.write(address - HRAM_START, value)
+            },
 
             0xFF00 => self.joypad.write(value),
 
@@ -191,9 +234,13 @@ impl Memory {
 
             // Upper WRAM bank select
             0xFF70 => {
-                if !self.cgb_features  { return; }
+                if !self.cgb_features {
+                    return;
+                }
                 let mut desired_bank = value & 0x07;
-                if desired_bank == 0 { desired_bank = 1; }
+                if desired_bank == 0 {
+                    desired_bank = 1;
+                }
                 self.upper_wram_bank = desired_bank as usize;
             },
 
@@ -203,22 +250,39 @@ impl Memory {
             INTERRUPT_ENABLE_ADDRESS => ints.enable_write(value),
             INTERRUPT_FLAG_ADDRESS => ints.flag_write(value),
 
-            _ => log!("Unsupported memory write at {:#06x} (value: {:#04x})", address, value)
+            _ => log!(
+                "Unsupported memory write at {:#06x} (value: {:#04x})",
+                address,
+                value
+            ),
         }
     }
 
     #[inline(always)]
     pub fn read_16(&self, ints: &Interrupts, gpu: &Gpu, address: u16) -> u16 {
-        combine_u8!(self.read(ints, gpu, address + 1), self.read(ints, gpu, address))
+        combine_u8!(
+            self.read(ints, gpu, address + 1),
+            self.read(ints, gpu, address)
+        )
     }
     #[inline(always)]
-    pub fn write_16(&mut self, ints: &mut Interrupts, gpu: &mut Gpu, address: u16, value: u16) {
+    pub fn write_16(
+        &mut self,
+        ints: &mut Interrupts,
+        gpu: &mut Gpu,
+        address: u16,
+        value: u16,
+    ) {
         let (b1, b2) = split_u16!(value);
         self.write(ints, gpu, address, b1);
         self.write(ints, gpu, address + 1, b2);
     }
 
-    pub fn from_info (cart_info: Cartridge, rom: Rom, target: &EmulationTarget) -> Memory {
+    pub fn from_info(
+        cart_info: Cartridge,
+        rom: Rom,
+        target: &EmulationTarget,
+    ) -> Memory {
         let cgb_features = target.has_cgb_features();
         Memory {
             cgb_features,
@@ -237,7 +301,7 @@ impl Memory {
             timer_modulo: 0,
             joypad: Joypad::new(),
             apu: APU::new(),
-            speed_switch: CgbSpeedSwitch::new(cgb_features)
+            speed_switch: CgbSpeedSwitch::new(cgb_features),
         }
     }
 }

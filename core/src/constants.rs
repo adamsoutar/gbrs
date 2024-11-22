@@ -87,7 +87,7 @@ pub mod gpu_timing {
     pub const HBLANK_ON: u16 = 252;
 
     // Total vertical lines incl. VBlank
-    pub const VTOTAL:   u8 = 154;
+    pub const VTOTAL: u8 = 154;
     // Start of VBlank
     pub const VBLANK_ON: u8 = 144;
 
