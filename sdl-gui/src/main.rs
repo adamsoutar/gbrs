@@ -2,9 +2,9 @@ pub mod gui;
 
 use std::env;
 
-use gbrs_core::memory::rom::Rom;
 use gbrs_core::config::Config;
 use gbrs_core::cpu::Cpu;
+use gbrs_core::memory::rom::Rom;
 use gui::run_gui;
 
 // TODO: Get these from an SDL audio device
@@ -16,7 +16,7 @@ fn main() {
     let processor = Cpu::from_config(Config {
         sound_buffer_size: SOUND_BUFFER_SIZE,
         sound_sample_rate: SOUND_SAMPLE_RATE,
-        rom: Rom::from_file(&rom_path)
+        rom: Rom::from_file(&rom_path),
     });
     run_gui(processor);
 }

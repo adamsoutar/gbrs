@@ -17,7 +17,7 @@ pub struct MBC5 {
     pub ram_enabled: bool,
     pub ram_bank: u8,
 
-    has_shown_ram_warning: bool
+    has_shown_ram_warning: bool,
 }
 
 impl MBC for MBC5 {
@@ -25,7 +25,7 @@ impl MBC for MBC5 {
         match address {
             0x0..=0x3FFF => self.read_bank(0, address),
             0x4000..=0x7FFF => self.read_bank(self.rom_bank, address - 0x4000),
-            _ => panic!("Unsupported MBC5 read at {:#06x}", address)
+            _ => panic!("Unsupported MBC5 read at {:#06x}", address),
         }
     }
 
@@ -44,16 +44,17 @@ impl MBC for MBC5 {
             0x3000..=0x3FFF => {
                 let bit = if value > 0 { 1 } else { 0 };
                 self.rom_bank =
-                    (self.rom_bank & 0b0000_0000_1111_1111)
-                    | (bit << 8);
+                    (self.rom_bank & 0b0000_0000_1111_1111) | (bit << 8);
             },
-            0x4000 ..= 0x5FFF => {
+            0x4000..=0x5FFF => {
                 // TODO: Rumble. If the MBC has rumble circuitry, this may be
                 //   wrong because we pass on bit 3.
-                if value > 0x0F { return; }
+                if value > 0x0F {
+                    return;
+                }
                 self.ram_bank = value;
             },
-            _ => {}
+            _ => {},
         }
     }
 
@@ -112,7 +113,7 @@ impl MBC5 {
             ram: BatteryBackedRam::new(cart_info, 0, has_battery),
             ram_enabled: false,
             ram_bank: 0,
-            has_shown_ram_warning: false
+            has_shown_ram_warning: false,
         }
     }
 }

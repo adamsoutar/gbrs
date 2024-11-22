@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq)]
 pub enum CgbDmaType {
     GeneralPurpose,
-    HBlank
+    HBlank,
 }
 
 pub struct CgbDmaConfig {
@@ -10,7 +10,7 @@ pub struct CgbDmaConfig {
     pub dma_type: CgbDmaType,
     pub bytes_copied: u16,
     pub bytes_left: u16,
-    pub transfer_done: bool
+    pub transfer_done: bool,
 }
 
 impl CgbDmaConfig {
@@ -26,7 +26,7 @@ impl CgbDmaConfig {
     }
     pub fn get_config_byte(&self) -> u8 {
         if self.transfer_done {
-            return 0xFF
+            return 0xFF;
         }
         // TODO: Not sure this is quite the correct calculation
         ((self.bytes_left / 0x10) - 1) as u8
@@ -82,7 +82,7 @@ impl CgbDmaConfig {
             dma_type: CgbDmaType::GeneralPurpose,
             bytes_left: 0,
             bytes_copied: 0,
-            transfer_done: false
+            transfer_done: false,
         }
     }
 }

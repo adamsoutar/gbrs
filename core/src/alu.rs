@@ -20,7 +20,9 @@ impl Cpu {
                 // ADD
                 let res = a.wrapping_add(n);
                 self.regs.set_carry_flag((a as u16 + n as u16 > 0xFF) as u8);
-                self.regs.set_half_carry_flag(((a & 0x0F) + (n & 0x0F) > 0x0F) as u8);
+                self.regs.set_half_carry_flag(
+                    ((a & 0x0F) + (n & 0x0F) > 0x0F) as u8,
+                );
                 self.regs.set_zero_flag((res == 0) as u8);
                 self.regs.set_operation_flag(0);
                 self.regs.a = res;
@@ -28,8 +30,12 @@ impl Cpu {
             ALU_ADC => {
                 // ADC
                 let res = a.wrapping_add(n).wrapping_add(c);
-                self.regs.set_carry_flag((a as u16 + n as u16 + c as u16 > 0xFF) as u8);
-                self.regs.set_half_carry_flag(((a & 0x0F) + (n & 0x0F) + c > 0x0F) as u8);
+                self.regs.set_carry_flag(
+                    (a as u16 + n as u16 + c as u16 > 0xFF) as u8,
+                );
+                self.regs.set_half_carry_flag(
+                    ((a & 0x0F) + (n & 0x0F) + c > 0x0F) as u8,
+                );
                 self.regs.set_zero_flag((res == 0) as u8);
                 self.regs.set_operation_flag(0);
                 self.regs.a = res;
@@ -38,7 +44,8 @@ impl Cpu {
                 // SUB
                 let res = a.wrapping_sub(n);
                 self.regs.set_carry_flag((a < n) as u8);
-                self.regs.set_half_carry_flag(((a & 0x0F) < (n & 0x0F)) as u8);
+                self.regs
+                    .set_half_carry_flag(((a & 0x0F) < (n & 0x0F)) as u8);
                 self.regs.set_operation_flag(1);
                 self.regs.set_zero_flag((res == 0) as u8);
                 self.regs.a = res;
@@ -46,8 +53,10 @@ impl Cpu {
             ALU_SBC => {
                 // SBC
                 let res = a.wrapping_sub(n).wrapping_sub(c);
-                self.regs.set_carry_flag(((a as u16) < (n as u16 + c as u16)) as u8);
-                self.regs.set_half_carry_flag(((a & 0x0F) < (n & 0x0F) + c) as u8);
+                self.regs
+                    .set_carry_flag(((a as u16) < (n as u16 + c as u16)) as u8);
+                self.regs
+                    .set_half_carry_flag(((a & 0x0F) < (n & 0x0F) + c) as u8);
                 self.regs.set_operation_flag(1);
                 self.regs.set_zero_flag((res == 0) as u8);
                 self.regs.a = res;
@@ -85,20 +94,22 @@ impl Cpu {
                 self.alu(ALU_SUB, n);
                 self.regs.a = a;
             },
-            _ => panic!("Unsupported ALU operation {:b}", operation)
+            _ => panic!("Unsupported ALU operation {:b}", operation),
         }
     }
 
-    pub fn alu_dec (&mut self, n: u8) -> u8 {
+    pub fn alu_dec(&mut self, n: u8) -> u8 {
         let r = n.wrapping_sub(1);
-        self.regs.set_half_carry_flag((n.trailing_zeros() >= 4) as u8);
+        self.regs
+            .set_half_carry_flag((n.trailing_zeros() >= 4) as u8);
         self.regs.set_operation_flag(1);
         self.regs.set_zero_flag((r == 0) as u8);
         r
     }
     pub fn alu_inc(&mut self, n: u8) -> u8 {
         let r = n.wrapping_add(1);
-        self.regs.set_half_carry_flag(((n & 0x0f) + 0x01 > 0x0f) as u8);
+        self.regs
+            .set_half_carry_flag(((n & 0x0f) + 0x01 > 0x0f) as u8);
         self.regs.set_operation_flag(0);
         self.regs.set_zero_flag((r == 0) as u8);
         r
@@ -108,7 +119,8 @@ impl Cpu {
         let r = hl.wrapping_add(n);
 
         self.regs.set_carry_flag((hl > 0xffff - n) as u8);
-        self.regs.set_half_carry_flag(((hl & 0x0fff) + (n & 0x0fff) > 0x0fff) as u8);
+        self.regs
+            .set_half_carry_flag(((hl & 0x0fff) + (n & 0x0fff) > 0x0fff) as u8);
         self.regs.set_operation_flag(0);
 
         self.regs.set_hl(r);
@@ -124,7 +136,7 @@ impl Cpu {
         self.regs.set_zero_flag((r == 0) as u8);
         r
     }
-    fn alu_rl (&mut self, n: u8) -> u8 {
+    fn alu_rl(&mut self, n: u8) -> u8 {
         let c = (n & 0b10000000) >> 7;
         let r = (n << 1) | self.regs.get_carry_flag();
         self.regs.set_carry_flag(c);
@@ -133,7 +145,7 @@ impl Cpu {
         self.regs.set_zero_flag((r == 0) as u8);
         r
     }
-    fn alu_rrc (&mut self, n: u8) -> u8 {
+    fn alu_rrc(&mut self, n: u8) -> u8 {
         let c = n & 1;
         let r = (n >> 1) | (c << 7);
         self.regs.set_carry_flag(c);
@@ -142,7 +154,7 @@ impl Cpu {
         self.regs.set_zero_flag((r == 0) as u8);
         r
     }
-    fn alu_rr (&mut self, n: u8) -> u8 {
+    fn alu_rr(&mut self, n: u8) -> u8 {
         let c = n & 1;
         let r = (n >> 1) | (self.regs.get_carry_flag() << 7);
         self.regs.set_carry_flag(c);
@@ -152,7 +164,7 @@ impl Cpu {
         r
     }
 
-    fn alu_sla (&mut self, n: u8) -> u8 {
+    fn alu_sla(&mut self, n: u8) -> u8 {
         let c = (n & 0x80) >> 7;
         let r = n << 1;
         self.regs.set_carry_flag(c);
@@ -161,7 +173,7 @@ impl Cpu {
         self.regs.set_zero_flag((r == 0) as u8);
         r
     }
-    fn alu_sra (&mut self, n: u8) -> u8 {
+    fn alu_sra(&mut self, n: u8) -> u8 {
         let c = n & 1;
         let r = (n >> 1) | (n & 0x80);
         self.regs.set_carry_flag(c);
@@ -170,11 +182,15 @@ impl Cpu {
         self.regs.set_zero_flag((r == 0) as u8);
         r
     }
-    pub fn alu_special_rotate (&mut self, right: bool, n: u8) -> u8 {
-        if right { self.alu_sra(n) } else { self.alu_sla(n) }
+    pub fn alu_special_rotate(&mut self, right: bool, n: u8) -> u8 {
+        if right {
+            self.alu_sra(n)
+        } else {
+            self.alu_sla(n)
+        }
     }
 
-    pub fn alu_srl (&mut self, n: u8) -> u8 {
+    pub fn alu_srl(&mut self, n: u8) -> u8 {
         let c = n & 1;
         let r = n >> 1;
         self.regs.set_carry_flag(c);
@@ -184,16 +200,22 @@ impl Cpu {
         r
     }
 
-    pub fn alu_rotate_val (&mut self, right: bool, carry: bool, a: u8) -> u8 {
+    pub fn alu_rotate_val(&mut self, right: bool, carry: bool, a: u8) -> u8 {
         if !right {
-            if carry { self.alu_rlc(a) }
-            else { self.alu_rl(a) }
+            if carry {
+                self.alu_rlc(a)
+            } else {
+                self.alu_rl(a)
+            }
         } else {
-            if carry { self.alu_rrc(a) }
-            else { self.alu_rr(a) }
+            if carry {
+                self.alu_rrc(a)
+            } else {
+                self.alu_rr(a)
+            }
         }
     }
-    pub fn alu_rotate (&mut self, right: bool, carry: bool) {
+    pub fn alu_rotate(&mut self, right: bool, carry: bool) {
         let a = self.regs.a;
         self.regs.a = self.alu_rotate_val(right, carry, a);
     }
@@ -203,8 +225,11 @@ impl Cpu {
     pub fn alu_daa(&mut self) {
         let mut a = self.regs.a;
 
-        let mut adjust =
-            if self.regs.get_carry_flag() == 1 { 0x60 } else { 0 };
+        let mut adjust = if self.regs.get_carry_flag() == 1 {
+            0x60
+        } else {
+            0
+        };
 
         if self.regs.get_half_carry_flag() == 1 {
             adjust |= 0x06;

@@ -14,7 +14,7 @@ pub struct MBC1 {
     pub ram: BatteryBackedRam,
     pub ram_enabled: bool,
 
-    has_shown_ram_warning: bool
+    has_shown_ram_warning: bool,
 }
 
 impl MBC for MBC1 {
@@ -22,7 +22,7 @@ impl MBC for MBC1 {
         match address {
             0x0..=0x3FFF => self.read_bank(0, address),
             0x4000..=0x7FFF => self.read_bank(self.rom_bank, address - 0x4000),
-            _ => panic!("Unsupported MBC1 read at {:#06x}", address)
+            _ => panic!("Unsupported MBC1 read at {:#06x}", address),
         }
     }
 
@@ -46,7 +46,7 @@ impl MBC for MBC1 {
             // 0x6000 ..= 0x7FFF => {
             //     panic!("Unsupported MBC1 mode select write")
             // },
-            _ => {} //panic!("Unsupported MBC1 write at {:#06x} (value: {:#04x})", address, value)
+            _ => {}, //panic!("Unsupported MBC1 write at {:#06x} (value: {:#04x})", address, value)
         }
     }
 
@@ -105,7 +105,7 @@ impl MBC1 {
             ram_enabled: false,
             rom_bank: 1,
             ram: BatteryBackedRam::new(cart_info, 0, has_battery),
-            has_shown_ram_warning: false
+            has_shown_ram_warning: false,
         }
     }
 }

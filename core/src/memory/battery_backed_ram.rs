@@ -14,7 +14,7 @@ pub struct BatteryBackedRam {
 
     battery_enabled: bool,
     changed_since_last_save: bool,
-    last_saved_at: usize
+    last_saved_at: usize,
 }
 
 impl BatteryBackedRam {
@@ -59,7 +59,11 @@ impl BatteryBackedRam {
         );
     }
 
-    pub fn new(cart: Cartridge, additional_ram_size: usize, battery_enabled: bool) -> BatteryBackedRam {
+    pub fn new(
+        cart: Cartridge,
+        additional_ram_size: usize,
+        battery_enabled: bool,
+    ) -> BatteryBackedRam {
         // Some MBCs, like MBC2, always have a few bytes of RAM installed.
         // The cartridge header only tells us about additional external RAM.
         let ram_size = cart.ram_size + additional_ram_size;
@@ -80,7 +84,7 @@ impl BatteryBackedRam {
             battery_enabled,
             changed_since_last_save: false,
 
-            last_saved_at: 0
+            last_saved_at: 0,
         }
     }
 }

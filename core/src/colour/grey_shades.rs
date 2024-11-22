@@ -19,6 +19,6 @@ pub fn colour_from_grey_shade_id(id: u8) -> Colour {
         1 => light_grey(),
         2 => dark_grey(),
         3 => black(),
-        _ => panic!("Invalid grey shade id {}", id)
+        _ => panic!("Invalid grey shade id {}", id),
     }
 }
