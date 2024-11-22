@@ -6,4 +6,4 @@ edition = "2021"
 
 [dependencies]
 gbrs-core = { path = "../core" }
-sdl2 = { version = "0.35.2", features = ["bundled"] }
+sdl2 = { version = "0.37.0", features = ["bundled"] }
