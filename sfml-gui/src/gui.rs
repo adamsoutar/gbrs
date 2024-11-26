@@ -27,7 +27,7 @@ pub fn run_gui(mut gameboy: Cpu) {
         (window_width, window_height),
         &format!("{} - gbrs (SFML)", gameboy.cart_info.title)[..],
         style,
-        &Default::default(),
+        &ContextSettings::default(),
     )
     .unwrap();
     // window.set_framerate_limit(gameboy.frame_rate as u32);
