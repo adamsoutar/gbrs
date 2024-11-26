@@ -8,6 +8,8 @@ use crate::memory::memory::Memory;
 use crate::registers::Registers;
 use crate::{bitmatch, combine_u8, compute_equal, compute_mask, set_bit};
 
+// This array is allowed to be empty
+// skipcq: RS-W1096
 const BREAKPOINTS: [u16; 0] = [];
 const CPU_DEBUG: bool = false;
 
