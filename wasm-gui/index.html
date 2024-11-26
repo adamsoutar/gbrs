@@ -10,8 +10,8 @@
         overflow: hidden;
       }
       canvas {
-        width: 640px; 
-        height: 576px; 
+        width: 640px;
+        height: 576px;
         image-rendering: pixelated;
         -webkit-backface-visibility: hidden;
         -webkit-perspective: 1000px;
@@ -23,13 +23,12 @@
 
     </canvas>
     <script type="module">
-      import init, { 
+      import init, {
         create_gameboy, step_one_frame, get_finished_frame, set_control_state
       } from "./pkg/gbrs_wasm_gui.js"
 
       const SCREEN_WIDTH = 160
       const SCREEN_HEIGHT = 144
-      const PALETTE = ['#DDDDDD', '#AAAAAA', '#888888', '#555555']
       const cnv = document.querySelector('canvas')
       const ctx = cnv.getContext('2d')
       const pushedKeys = new Set()
@@ -60,8 +59,8 @@
         for (let x = 0; x < SCREEN_WIDTH; x++) {
           for (let y = 0; y < SCREEN_HEIGHT; y++) {
             const pixelIndex = y * SCREEN_WIDTH + x
-            const greyShade = frame[pixelIndex]
-            ctx.fillStyle = PALETTE[greyShade]
+            const shade = frame[pixelIndex]
+            ctx.fillStyle = shade
             ctx.fillRect(x, y, 1, 1)
           }
         }
