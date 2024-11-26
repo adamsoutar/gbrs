@@ -388,8 +388,10 @@ impl Cpu {
                     if disp > 0 {
                         self.regs.pc = self.regs.pc.wrapping_add(disp as u16);
                     } else {
-                        self.regs.pc =
-                            self.regs.pc.wrapping_sub(disp.abs() as u16);
+                        self.regs.pc = self
+                            .regs
+                            .pc
+                            .wrapping_sub(disp.unsigned_abs() as u16);
                     }
                     12
                 },
@@ -405,8 +407,10 @@ impl Cpu {
                             self.regs.pc =
                                 self.regs.pc.wrapping_add(disp as u16);
                         } else {
-                            self.regs.pc =
-                                self.regs.pc.wrapping_sub(disp.abs() as u16);
+                            self.regs.pc = self
+                                .regs
+                                .pc
+                                .wrapping_sub(disp.unsigned_abs() as u16);
                         }
                         12
                     } else {
