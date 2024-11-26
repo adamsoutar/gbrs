@@ -3,13 +3,12 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-#[cfg(feature = "std")]
-#[macro_use]
-extern crate lazy_static;
-
-pub mod sound;
+pub mod alu;
 pub mod callbacks;
 pub mod cartridge;
+pub mod cgb_dma;
+pub mod colour; // innit bruv
+pub mod config;
 pub mod constants;
 pub mod cpu;
 pub mod gpu;
@@ -20,3 +19,4 @@ pub mod lcd;
 pub mod memory;
 pub mod registers;
 pub mod serial_cable;
+pub mod sound;

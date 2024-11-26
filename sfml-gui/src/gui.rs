@@ -1,54 +1,49 @@
 use crate::control::*;
 
-use gbrs_core::callbacks::{Callbacks, CALLBACKS};
-use gbrs_core::callbacks::set_callbacks;
-use gbrs_core::cpu::Cpu;
 use gbrs_core::constants::*;
+use gbrs_core::cpu::Cpu;
 
-use sfml::graphics::*;
-use sfml::window::*;
-use sfml::system::*;
 use sfml::audio::{Sound, SoundBuffer, SoundStatus};
+use sfml::graphics::*;
+use sfml::system::*;
+use sfml::window::*;
+use spin::mutex::SpinMutex;
 
 pub const STEP_BY_STEP: bool = false;
 // NOTE: This debug option is only supported on macOS. See note below
 pub const DRAW_FPS: bool = false;
 
-pub static mut SOUND_BACKING_STORE: [i16; SOUND_BUFFER_SIZE] = [0; SOUND_BUFFER_SIZE];
-pub static mut SOUND_BUFFER: Option<SfBox<SoundBuffer>> = None;
-pub static mut SOUND: Option<Sound> = None;
+static SOUND_BACKING_STORE: SpinMutex<[i16; SOUND_BUFFER_SIZE]> =
+    SpinMutex::new([0; SOUND_BUFFER_SIZE]);
 
-pub fn run_gui (mut gameboy: Cpu) {
-    let sw = SCREEN_WIDTH as u32; let sh = SCREEN_HEIGHT as u32;
-    let window_width: u32 = 1280;
-    let window_height: u32 = 1024;
+pub fn run_gui(mut gameboy: Cpu) {
+    let sw = SCREEN_WIDTH as u32;
+    let sh = SCREEN_HEIGHT as u32;
+    let window_width: u32 = 640;
+    let window_height: u32 = 512;
 
     let style = Style::RESIZE | Style::TITLEBAR | Style::CLOSE;
     let mut window = RenderWindow::new(
         (window_width, window_height),
         &format!("{} - gbrs (SFML)", gameboy.cart_info.title)[..],
         style,
-        &Default::default()
-    );
+        &Default::default(),
+    )
+    .unwrap();
     // window.set_framerate_limit(gameboy.frame_rate as u32);
 
-    let mut screen_texture = Texture::new(sw, sh).unwrap();
+    let mut screen_texture = Texture::new().unwrap();
+    screen_texture
+        .create(sw, sh)
+        .expect("Failed to create screen texture");
+
     // Scale the 160x144 image to the appropriate resolution
     let sprite_scale = Vector2f::new(
         window_width as f32 / sw as f32,
-        window_height as f32 / sh as f32
+        window_height as f32 / sh as f32,
     );
 
-    let mut clock = Clock::start();
-
-    unsafe {
-        set_callbacks(Callbacks {
-            log: CALLBACKS.log,
-            save: CALLBACKS.save,
-            load: CALLBACKS.load
-        })
-    }
-
+    let mut clock = Clock::start().unwrap();
 
     let font;
     let mut text = None;
@@ -74,7 +69,7 @@ pub fn run_gui (mut gameboy: Cpu) {
                     window.close();
                     return;
                 },
-                _ => {}
+                _ => {},
             }
         }
 
@@ -82,16 +77,22 @@ pub fn run_gui (mut gameboy: Cpu) {
         // gameboy.step_until_full_audio_buffer();
 
         // Draw the previous frame
-        unsafe {
-            screen_texture.update_from_pixels(&gameboy.gpu.get_sfml_frame(), sw, sh, 0, 0);
-        }
+        screen_texture.update_from_pixels(
+            &gameboy.gpu.get_rgba_frame(),
+            sw,
+            sh,
+            0,
+            0,
+        );
         let mut screen_sprite = Sprite::with_texture(&screen_texture);
         screen_sprite.set_scale(sprite_scale);
 
         window.clear(Color::BLACK);
         window.draw(&screen_sprite);
         if DRAW_FPS {
-            text.as_mut().unwrap().set_string(&format!("{} FPS", (1. / secs) as usize)[..]);
+            text.as_mut()
+                .unwrap()
+                .set_string(&format!("{} FPS", (1. / secs) as usize)[..]);
             window.draw(text.as_ref().unwrap());
         }
         window.display();
@@ -102,27 +103,25 @@ pub fn run_gui (mut gameboy: Cpu) {
         // let mut sound = Sound::with_buffer(&sound_buffer);
         // sound.play();
 
-        unsafe {
-            SOUND_BACKING_STORE = gameboy.mem.apu.buffer.clone();
-            SOUND_BUFFER = Some(SoundBuffer::from_samples(&SOUND_BACKING_STORE, 2, SOUND_SAMPLE_RATE as u32).unwrap());
-            SOUND = Some(Sound::with_buffer(match &SOUND_BUFFER {
-                Some(buff) => buff,
-                None => unreachable!()
-            }));
-            match &mut SOUND {
-                Some(sound) => {
-                    sound.play();
-                    while sound.status() == SoundStatus::Playing {
-                        if !gameboy.mem.apu.buffer_full {
-                            gameboy.step();
-                        } else {
-                            // We're finished with this frame. Let's just wait for audio
-                            // to sync up.
-                            std::hint::spin_loop();
-                        }
-                    }
-                },
-                None => unreachable!()
+        let mut sound_backing_store = SOUND_BACKING_STORE.lock();
+        *sound_backing_store = gameboy.mem.apu.buffer;
+        let sound_buffer = SoundBuffer::from_samples(
+            &*sound_backing_store,
+            2,
+            SOUND_SAMPLE_RATE as u32,
+        )
+        .unwrap();
+        let mut sound = Sound::with_buffer(&sound_buffer);
+
+        // sound.set_volume(0.);
+        sound.play();
+        while sound.status() == SoundStatus::PLAYING {
+            if !gameboy.mem.apu.buffer_full {
+                gameboy.step();
+            } else {
+                // We're finished with this frame. Let's just wait for audio
+                // to sync up.
+                std::hint::spin_loop();
             }
         }
 

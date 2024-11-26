@@ -3,8 +3,9 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::{vec, vec::Vec};
+use spin::mutex::spin::SpinMutex;
 #[cfg(feature = "std")]
-use std::{fs, io::Read, path::PathBuf, time::Instant};
+use std::{fs, io::Read, path::PathBuf};
 
 pub type LogCallback = fn(log_str: &str);
 pub type SaveCallback =
@@ -16,12 +17,7 @@ pub type LoadCallback =
 pub struct Callbacks {
     pub log: LogCallback,
     pub save: SaveCallback,
-    pub load: LoadCallback
-}
-
-#[cfg(feature = "std")]
-lazy_static! {
-    static ref PROGRAM_START: Instant = Instant::now();
+    pub load: LoadCallback,
 }
 
 #[cfg(feature = "std")]
@@ -33,7 +29,7 @@ fn get_save_file_path(rom_path: &str) -> String {
 }
 
 #[cfg(feature = "std")]
-pub static mut CALLBACKS: Callbacks = Callbacks {
+pub static CALLBACKS: SpinMutex<Callbacks> = SpinMutex::new(Callbacks {
     log: |log_str| println!("{}", log_str),
     save: |_game_name, rom_path, save_data| {
         let save_path = get_save_file_path(rom_path);
@@ -52,16 +48,16 @@ pub static mut CALLBACKS: Callbacks = Callbacks {
             // The save file likely does not exist
             vec![0; expected_size]
         }
-    }
-};
+    },
+});
 
 #[cfg(not(feature = "std"))]
-pub static mut CALLBACKS: Callbacks = Callbacks {
+pub static CALLBACKS: SpinMutex<Callbacks> = SpinMutex::new(Callbacks {
     log: |_log_str| {},
     save: |_game_name, _rom_path, _save_data| {},
-    load: |_game_name, _rom_path, expected_size| vec![0; expected_size]
-};
+    load: |_game_name, _rom_path, expected_size| vec![0; expected_size],
+});
 
-pub unsafe fn set_callbacks(cbs: Callbacks) {
-    CALLBACKS = cbs;
+pub fn set_callbacks(cbs: Callbacks) {
+    *CALLBACKS.lock() = cbs;
 }

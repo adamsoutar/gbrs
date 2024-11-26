@@ -6,7 +6,7 @@ pub struct InterruptFields {
     pub lcd_stat: bool,
     pub timer: bool,
     pub serial: bool,
-    pub joypad: bool
+    pub joypad: bool,
 }
 
 pub enum InterruptReason {
@@ -14,9 +14,9 @@ pub enum InterruptReason {
     LCDStat,
     Timer,
     Serial,
-    Joypad
+    Joypad,
 }
-fn get_interrupt_reason_bitmask (reason: InterruptReason) -> u8 {
+fn get_interrupt_reason_bitmask(reason: InterruptReason) -> u8 {
     match reason {
         InterruptReason::VBlank => 0b00000001,
         InterruptReason::LCDStat => 0b00000010,
@@ -28,13 +28,13 @@ fn get_interrupt_reason_bitmask (reason: InterruptReason) -> u8 {
 
 impl InterruptFields {
     // TODO: Check if these actually do all start false
-    pub fn new () -> InterruptFields {
+    pub fn new() -> InterruptFields {
         InterruptFields {
             v_blank: false,
             lcd_stat: false,
             timer: false,
             serial: false,
-            joypad: false
+            joypad: false,
         }
     }
 }
@@ -45,7 +45,7 @@ impl From<u8> for InterruptFields {
             lcd_stat: ((n >> 1) & 1) == 1,
             timer: ((n >> 2) & 1) == 1,
             serial: ((n >> 3) & 1) == 1,
-            joypad: ((n >> 4) & 1) == 1
+            joypad: ((n >> 4) & 1) == 1,
         }
     }
 }
@@ -65,12 +65,12 @@ pub struct Interrupts {
     pub flag: InterruptFields,
 
     // "Interrupts master enabled" flag
-    pub ime: bool
+    pub ime: bool,
 }
 
 impl Interrupts {
     #[inline(always)]
-    pub fn raise_interrupt (&mut self, reason: InterruptReason) {
+    pub fn raise_interrupt(&mut self, reason: InterruptReason) {
         let mut data = self.flag_read();
         data |= get_interrupt_reason_bitmask(reason);
         self.flag_write(data);
@@ -78,35 +78,35 @@ impl Interrupts {
 
     // Called when GB writes to FFFF
     #[inline(always)]
-    pub fn enable_write (&mut self, value: u8) {
+    pub fn enable_write(&mut self, value: u8) {
         // log!("{:08b} written to IE", value);
         self.enable = InterruptFields::from(value)
     }
 
     // Called when GB writes to FF0F
     #[inline(always)]
-    pub fn flag_write (&mut self, value: u8) {
+    pub fn flag_write(&mut self, value: u8) {
         self.flag = InterruptFields::from(value)
     }
 
     // Called when GB reads from FFFF
     #[inline(always)]
-    pub fn enable_read (&self) -> u8 {
+    pub fn enable_read(&self) -> u8 {
         u8::from(self.enable.clone())
     }
 
     // Called when GB reads from FF0F
     #[inline(always)]
-    pub fn flag_read (&self) -> u8 {
+    pub fn flag_read(&self) -> u8 {
         u8::from(self.flag.clone())
     }
 
-    pub fn new () -> Interrupts {
+    pub fn new() -> Interrupts {
         Interrupts {
             enable: InterruptFields::new(),
             flag: InterruptFields::new(),
 
-            ime: false
+            ime: false,
         }
     }
 }

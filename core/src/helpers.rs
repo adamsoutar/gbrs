@@ -25,24 +25,36 @@ macro_rules! log {
         {
             #[cfg(not(feature = "std"))]
             use alloc::format;
-            unsafe { (crate::callbacks::CALLBACKS.log)(&format!($($a,)*)[..]) }
+            (crate::callbacks::CALLBACKS.lock().log)(&format!($($a,)*)[..])
         }
-    };  
+    };
 }
 
 // Macro for bit-matching
 // https://www.reddit.com/r/rust/comments/2d7rrj/comment/cjo2c7t/?context=3
 #[macro_export]
 macro_rules! compute_mask {
-    (0) => { 1 };
-    (1) => { 1 };
-    (_) => { 0 };
+    (0) => {
+        1
+    };
+    (1) => {
+        1
+    };
+    (_) => {
+        0
+    };
 }
 #[macro_export]
 macro_rules! compute_equal {
-    (0) => { 0 };
-    (1) => { 1 };
-    (_) => { 0 };
+    (0) => {
+        0
+    };
+    (1) => {
+        1
+    };
+    (_) => {
+        0
+    };
 }
 #[macro_export]
 macro_rules! bitmatch(

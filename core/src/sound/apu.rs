@@ -1,9 +1,9 @@
-use crate::constants::*;
 use super::channel1::APUChannel1;
 use super::channel2::APUChannel2;
 use super::channel3::APUChannel3;
 use super::channel4::APUChannel4;
 use super::registers::*;
+use crate::constants::*;
 
 pub trait APUChannel {
     fn step(&mut self);
@@ -28,15 +28,15 @@ pub struct APU {
     pub channel4: APUChannel4,
 
     pub sample_counter: usize,
-    // This could be a Vec that we check len() against, but we can save the 
+    // This could be a Vec that we check len() against, but we can save the
     // allocation because we know the size it's always going to be.
     pub buffer: [i16; SOUND_BUFFER_SIZE],
     pub buffer_idx: usize,
-    pub buffer_full: bool
+    pub buffer_full: bool,
 }
 
 impl APU {
-    pub fn step (&mut self) {
+    pub fn step(&mut self) {
         self.channel1.step();
         self.channel2.step();
         self.channel3.step();
@@ -50,7 +50,7 @@ impl APU {
         }
     }
 
-    pub fn sample (&mut self) {
+    pub fn sample(&mut self) {
         let mut left_sample = 0.;
         let mut right_sample = 0.;
 
@@ -111,10 +111,10 @@ impl APU {
 
     #[allow(unused_variables)]
     #[allow(unreachable_code)]
-    pub fn read (&self, address: u16) -> u8 {
+    pub fn read(&self, address: u16) -> u8 {
         #[cfg(not(feature = "sound"))]
         return 0;
-        
+
         match address {
             0xFF24 => self.serialise_nr50(),
             0xFF25 => u8::from(self.stereo_panning.clone()),
@@ -126,13 +126,13 @@ impl APU {
             0xFF20..=0xFF23 => self.channel4.read(address),
 
             WAVE_RAM_START..=WAVE_RAM_END => self.channel3.read(address),
-            _ => 0 //panic!("Unknown read {:#06x} in APU", address)
+            _ => 0, //panic!("Unknown read {:#06x} in APU", address)
         }
     }
 
     #[allow(unused_variables)]
     #[allow(unreachable_code)]
-    pub fn write (&mut self, address: u16, value: u8) {
+    pub fn write(&mut self, address: u16, value: u8) {
         #[cfg(not(feature = "sound"))]
         return;
 
@@ -146,22 +146,24 @@ impl APU {
             0xFF1A..=0xFF1E => self.channel3.write(address, value),
             0xFF20..=0xFF23 => self.channel4.write(address, value),
 
-            WAVE_RAM_START..=WAVE_RAM_END => self.channel3.write(address, value),
-            _ => {} //log!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
+            WAVE_RAM_START..=WAVE_RAM_END => {
+                self.channel3.write(address, value)
+            },
+            _ => {}, //log!("Unknown write {:#06x} (value: {:#04}) in APU", address, value)
         }
     }
 
     // NOTE: These functions don't take into account the
     //       Vin output flags. That feature is unused in all
     //       commercial Gameboy games, so we ignore it.
-    fn deserialise_nr50 (&mut self, nr50: u8) {
+    fn deserialise_nr50(&mut self, nr50: u8) {
         let right_vol = nr50 & 0b111;
         let left_vol = (nr50 & 0b111_0_000) >> 4;
 
         self.stereo_left_volume = (left_vol as f32) / 7.;
         self.stereo_right_volume = (right_vol as f32) / 7.;
     }
-    fn serialise_nr50 (&self) -> u8 {
+    fn serialise_nr50(&self) -> u8 {
         // These might turn out 1 level too low because of float flooring
         // TODO: Test this
         let right_vol = (self.stereo_right_volume * 7.) as u8;
@@ -170,7 +172,7 @@ impl APU {
         (left_vol << 4) & right_vol
     }
 
-    pub fn new () -> APU {
+    pub fn new() -> APU {
         APU {
             // These might be meant to start 0, not sure
             stereo_left_volume: 1.,
@@ -186,7 +188,7 @@ impl APU {
             sample_counter: 0,
             buffer: [0; SOUND_BUFFER_SIZE],
             buffer_idx: 0,
-            buffer_full: false
+            buffer_full: false,
         }
     }
 }

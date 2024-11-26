@@ -1,6 +1,6 @@
 // "WRAM" is Work RAM, not Wave RAM
-pub const WRAM_SIZE: usize = 8192;
-pub const VRAM_SIZE: usize = 8192;
+pub const WRAM_BANK_SIZE: usize = 4096;
+pub const VRAM_BANK_SIZE: usize = 8192;
 pub const HRAM_SIZE: usize = 127;
 pub const OAM_SIZE: usize = 160;
 pub const WAVE_RAM_SIZE: usize = 16;
@@ -18,8 +18,8 @@ pub const DEFAULT_FRAME_RATE: usize = 60;
 
 // The amount of sound samples we collect before firing them off for
 // playback. This number is essentially guessed.
-pub const SOUND_BUFFER_SIZE: usize = 1024;
-pub const SOUND_SAMPLE_RATE: usize = 44100;
+pub const SOUND_BUFFER_SIZE: usize = 2048;
+pub const SOUND_SAMPLE_RATE: usize = 48000;
 // The amount of APU step()s we should run before
 // we sample for audio.
 pub const APU_SAMPLE_CLOCKS: usize = CLOCK_SPEED / SOUND_SAMPLE_RATE;
@@ -31,10 +31,14 @@ pub const MBC_RAM_START: u16 = 0xA000;
 pub const MBC_RAM_END: u16 = 0xBFFF;
 
 pub const VRAM_START: u16 = 0x8000;
+// For CGB BG Map Attribute Table
+pub const VRAM_BG_MAP_START: u16 = 0x9800;
 pub const VRAM_END: u16 = 0x9FFF;
 
-pub const WRAM_START: u16 = 0xC000;
-pub const WRAM_END: u16 = 0xDFFF;
+pub const WRAM_LOWER_BANK_START: u16 = 0xC000;
+pub const WRAM_LOWER_BANK_END: u16 = 0xCFFF;
+pub const WRAM_UPPER_BANK_START: u16 = 0xD000;
+pub const WRAM_UPPER_BANK_END: u16 = 0xDFFF;
 
 pub const ECHO_RAM_START: u16 = 0xE000;
 pub const ECHO_RAM_END: u16 = 0xFDFF;
@@ -57,13 +61,20 @@ pub const WAVE_RAM_END: u16 = 0xFF3F;
 pub const HRAM_START: u16 = 0xFF80;
 pub const HRAM_END: u16 = 0xFFFE;
 
-// This isn't *strictly* true, but it only overlaps CGB
-// functionality, so it's OK.
 pub const LCD_DATA_START: u16 = 0xFF40;
-pub const LCD_DATA_END: u16 = 0xFF4F;
+pub const LCD_DATA_END: u16 = 0xFF4C;
+
+pub const CGB_DMA_START: u16 = 0xFF51;
+pub const CGB_DMA_END: u16 = 0xFF55;
+
+pub const CGB_PALETTE_DATA_START: u16 = 0xFF68;
+pub const CGB_PALETTE_DATA_END: u16 = 0xFF6B;
 
 pub const INTERRUPT_ENABLE_ADDRESS: u16 = 0xFFFF;
 pub const INTERRUPT_FLAG_ADDRESS: u16 = 0xFF0F;
+
+pub const HALT_INSTRUCTION_OPCODE: u8 = 0x76;
+pub const SPEED_SWITCH_HALT_CYCLES: usize = 8200;
 
 pub mod gpu_timing {
     // Total line size incl. HBlank
@@ -76,7 +87,7 @@ pub mod gpu_timing {
     pub const HBLANK_ON: u16 = 252;
 
     // Total vertical lines incl. VBlank
-    pub const VTOTAL:   u8 = 154;
+    pub const VTOTAL: u8 = 154;
     // Start of VBlank
     pub const VBLANK_ON: u8 = 144;
 

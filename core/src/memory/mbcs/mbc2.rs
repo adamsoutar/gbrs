@@ -14,7 +14,7 @@ pub struct MBC2 {
     pub ram: BatteryBackedRam,
     pub ram_enabled: bool,
 
-    has_shown_ram_warning: bool
+    has_shown_ram_warning: bool,
 }
 
 impl MBC for MBC2 {
@@ -22,7 +22,7 @@ impl MBC for MBC2 {
         match address {
             0x0..=0x3FFF => self.read_bank(0, address),
             0x4000..=0x7FFF => self.read_bank(self.rom_bank, address - 0x4000),
-            _ => panic!("Unsupported MBC2 read at {:#06x}", address)
+            _ => panic!("Unsupported MBC2 read at {:#06x}", address),
         }
     }
 
@@ -38,7 +38,7 @@ impl MBC for MBC2 {
                 }
                 self.rom_bank = n
             },
-            _ => {}
+            _ => {},
         }
     }
 
@@ -96,7 +96,7 @@ impl MBC2 {
             rom_bank: 1,
             // The MBC2 always has 512 (half-)bytes of RAM built-in
             ram: BatteryBackedRam::new(cart_info, 512, has_battery),
-            has_shown_ram_warning: false
+            has_shown_ram_warning: false,
         }
     }
 }

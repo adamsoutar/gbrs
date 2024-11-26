@@ -14,7 +14,7 @@ pub struct BatteryBackedRam {
 
     battery_enabled: bool,
     changed_since_last_save: bool,
-    last_saved_at: usize
+    last_saved_at: usize,
 }
 
 impl BatteryBackedRam {
@@ -22,8 +22,17 @@ impl BatteryBackedRam {
         self.ram.read(address)
     }
 
+    pub fn read_usize(&self, address: usize) -> u8 {
+        self.ram.bytes[address]
+    }
+
     pub fn write(&mut self, address: u16, value: u8) {
         self.ram.write(address, value);
+        self.changed_since_last_save = true;
+    }
+
+    pub fn write_usize(&mut self, address: usize, value: u8) {
+        self.ram.bytes[address] = value;
         self.changed_since_last_save = true;
     }
 
@@ -43,23 +52,27 @@ impl BatteryBackedRam {
     fn save_ram_contents(&mut self) {
         self.changed_since_last_save = false;
 
-        unsafe {
-            (CALLBACKS.save)(
-                &self.cart.title[..],
-                &self.cart.rom_path[..],
-                &self.ram.bytes
-            );
-        }
+        (CALLBACKS.lock().save)(
+            &self.cart.title[..],
+            &self.cart.rom_path[..],
+            &self.ram.bytes,
+        );
     }
 
-    pub fn new(cart: Cartridge, additional_ram_size: usize, battery_enabled: bool) -> BatteryBackedRam {
+    pub fn new(
+        cart: Cartridge,
+        additional_ram_size: usize,
+        battery_enabled: bool,
+    ) -> BatteryBackedRam {
         // Some MBCs, like MBC2, always have a few bytes of RAM installed.
         // The cartridge header only tells us about additional external RAM.
         let ram_size = cart.ram_size + additional_ram_size;
 
-        let save_contents = unsafe {
-            (CALLBACKS.load)(&cart.title[..], &cart.rom_path[..], ram_size)
-        };
+        let save_contents = (CALLBACKS.lock().load)(
+            &cart.title[..],
+            &cart.rom_path[..],
+            ram_size,
+        );
 
         let ram = Ram::from_bytes(save_contents, ram_size);
 
@@ -71,7 +84,7 @@ impl BatteryBackedRam {
             battery_enabled,
             changed_since_last_save: false,
 
-            last_saved_at: 0
+            last_saved_at: 0,
         }
     }
 }
