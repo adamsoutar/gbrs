@@ -320,7 +320,7 @@ impl Gpu {
             ints.raise_interrupt(InterruptReason::LCDStat);
         }
 
-        self.finished_frame = self.frame.clone();
+        self.finished_frame.clone_from(&self.frame);
     }
 
     fn run_ly_compare(&mut self, ints: &mut Interrupts) {

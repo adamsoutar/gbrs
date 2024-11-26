@@ -60,9 +60,8 @@ pub fn run_gui(mut gameboy: Cpu) {
 
     'running: loop {
         for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. } => break 'running,
-                _ => {},
+            if let Event::Quit { .. } = event {
+                break 'running;
             }
         }
 

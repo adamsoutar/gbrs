@@ -32,7 +32,7 @@ impl Rom {
     pub fn from_bytes(bytes: Vec<u8>) -> Rom {
         Rom {
             bytes,
-            path: String::new(),
+            path: String::default(),
         }
     }
 }
