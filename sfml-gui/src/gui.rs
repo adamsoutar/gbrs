@@ -64,7 +64,7 @@ pub fn run_gui(mut gameboy: Cpu) {
         let secs = clock.restart().as_seconds();
 
         while let Some(ev) = window.poll_event() {
-            if let Event::Closed = ev {
+            if ev == Event::Closed {
                 window.close();
                 return;
             }
