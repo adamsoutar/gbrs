@@ -239,6 +239,9 @@ impl Cpu {
         cycles
     }
 
+    // Function complexity warning here is due to the massive switch statement.
+    // Such a thing is expected in an emulator.
+    // skipcq: RS-R1000
     pub fn single_speed_step(&mut self) -> usize {
         let p = self.ime_on_pending;
 

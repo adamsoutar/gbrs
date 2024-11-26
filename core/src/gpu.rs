@@ -83,6 +83,9 @@ pub struct Gpu {
 }
 
 impl Gpu {
+    // Function complexity warning here is due to the massive switch statement.
+    // Such a thing is expected in an emulator.
+    // skipcq: RS-R1000
     pub fn raw_write(
         &mut self,
         raw_address: u16,
