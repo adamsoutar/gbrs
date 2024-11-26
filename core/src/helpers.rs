@@ -25,7 +25,7 @@ macro_rules! log {
         {
             #[cfg(not(feature = "std"))]
             use alloc::format;
-            (crate::callbacks::CALLBACKS.lock().log)(&format!($($a,)*)[..])
+            ($crate::callbacks::CALLBACKS.lock().log)(&format!($($a,)*)[..])
         }
     };
 }
