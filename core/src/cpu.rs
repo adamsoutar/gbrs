@@ -221,11 +221,12 @@ impl Cpu {
         if self.mem.speed_switch.current_speed_is_double {
             cycles += self.single_speed_step();
         }
-        let half_speed_cycles =
-            match self.mem.speed_switch.current_speed_is_double {
-                true => cycles / 2,
-                false => cycles,
-            };
+        let half_speed_cycles = if self.mem.speed_switch.current_speed_is_double
+        {
+            cycles / 2
+        } else {
+            cycles
+        };
 
         for _ in 0..half_speed_cycles {
             self.gpu.step(&mut self.ints, &mut self.mem);

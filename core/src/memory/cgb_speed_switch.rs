@@ -15,14 +15,12 @@ impl CgbSpeedSwitch {
         }
     }
     pub fn read_switch_byte(&self) -> u8 {
-        let top_bit = match self.current_speed_is_double {
-            true => 0x80,
-            false => 0x00,
+        let top_bit = if self.current_speed_is_double {
+            0x80
+        } else {
+            0x00
         };
-        let bottom_bit = match self.armed {
-            true => 0x01,
-            false => 0x00,
-        };
+        let bottom_bit = if self.armed { 0x01 } else { 0x00 };
         top_bit | bottom_bit
     }
     pub fn execute_speed_switch(&mut self) {
