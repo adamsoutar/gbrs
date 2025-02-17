@@ -5,7 +5,7 @@ authors = ["Adam Soutar <adam@overflo.me>"]
 edition = "2021"
 
 [dependencies]
-smallvec = "1.8.0"
+smallvec = "1.14.0"
 spin = { version = "0.9.8", features = ["spin_mutex"] }
 
 [features]
