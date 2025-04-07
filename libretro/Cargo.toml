@@ -8,7 +8,7 @@ libretro-rs = { git = "https://github.com/libretro-rs/libretro-rs.git", features
   "experimental",
 ] }
 gbrs-core = { path = "../core", features = ["sound"], default-features = false }
-spin = { version = "0.9.8", features = ["once", "spin_mutex"] }
+spin = { version = "0.10.0", features = ["once", "spin_mutex"] }
 
 [lib]
 crate-type = ["cdylib"]
