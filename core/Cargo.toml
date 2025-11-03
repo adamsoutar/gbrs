@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 smallvec = "1.15.0"
-spin = { version = "0.9.8", features = ["spin_mutex"] }
+spin = { version = "0.10.0", features = ["spin_mutex"] }
 
 [features]
 default = ["std", "sound"]
