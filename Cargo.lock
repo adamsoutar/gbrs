@@ -271,18 +271,19 @@ dependencies = [
 [[package]]
 name = "libretro-rs"
 version = "0.2.0-SNAPSHOT"
-source = "git+https://github.com/libretro-rs/libretro-rs.git#8ebf60c023d2f1d36e41eb8beec3ff86524ca500"
+source = "git+https://github.com/libretro-rs/libretro-rs.git#c7f414d19d837921b8762656e53e7f1b8f892179"
 dependencies = [
  "arbitrary-int",
  "bitbybit",
  "c_utf8",
  "libretro-rs-ffi",
+ "thiserror",
 ]
 
 [[package]]
 name = "libretro-rs-ffi"
 version = "0.1.0"
-source = "git+https://github.com/libretro-rs/libretro-rs.git#8ebf60c023d2f1d36e41eb8beec3ff86524ca500"
+source = "git+https://github.com/libretro-rs/libretro-rs.git#c7f414d19d837921b8762656e53e7f1b8f892179"
 dependencies = [
  "bindgen",
  "sptr",
@@ -540,6 +541,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
 ]
 
 [[package]]
